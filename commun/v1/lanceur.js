@@ -1,13 +1,38 @@
 // Briques communes de la suite GolfNexus — v1 : lanceur de modules (https://titoustaff.github.io/nexus/commun/v1/lanceur.js)
 // Un clic sur le drapeau (logo du bandeau, .bandeau .logo) ouvre une grille : une pastille par module (modules.json),
 // le module ouvert mis en avant, les modules à venir grisés « Bientôt », et un lien vers l'accueil GolfNexus.
-// Script classique, chargé après nexus.js. Styles : charte.css (« lanceur »).
+// Script classique, chargé après nexus.js. Styles intégrés ci-dessous (indépendants du cache de charte.css).
 "use strict";
 (() => {
   const ICI = new URL(".", document.currentScript.src);          // …/nexus/commun/v1/
   const RACINE = new URL("../../", ICI);                          // …/nexus/
   const logo = document.querySelector(".bandeau .marque .logo");
   if (!logo) return;
+  const style = document.createElement("style");
+  style.textContent = `
+/* le drapeau garde exactement son aspect : bouton invisible, seulement le curseur main (contour au clavier uniquement) */
+.lanceur-btn { all: unset; display: inline-flex; flex: none; cursor: pointer; line-height: 0; border-radius: 12px; }
+.lanceur-btn:focus-visible { outline: 2px solid var(--jaune); outline-offset: 3px; }
+.lanceur { position: absolute; z-index: 2500; width: min(340px, calc(100vw - 16px)); background: var(--carte); color: var(--texte);
+  border-radius: 16px; box-shadow: 0 12px 40px rgba(10, 30, 18, .28); border: 1px solid var(--bord); padding: 14px 12px 10px; }
+.lanceur[hidden] { display: none; }
+.lc-titre { font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--doux); margin: 0 6px 10px; }
+.lc-grille { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.lc-module { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px 8px; border-radius: 12px; text-decoration: none; color: inherit; text-align: center; }
+a.lc-module:hover, a.lc-module:focus-visible { background: var(--sauge-pale); outline: none; }
+.lc-pastille { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: var(--c); color: #fff;
+  box-shadow: 0 0 0 3px var(--carte), 0 0 0 5px color-mix(in srgb, var(--c) 30%, transparent); }
+.lc-pastille svg { width: 26px; height: 26px; }
+.lc-module b { font-size: 13px; font-weight: 700; }
+.lc-module small { font-size: 11px; color: var(--doux); line-height: 1.2; }
+.lc-ici { background: var(--sauge-pale); }
+.lc-ici small { color: var(--vert-2); font-weight: 700; }
+.lc-bientot .lc-pastille { filter: grayscale(.85); opacity: .5; }
+.lc-bientot b { color: var(--doux); }
+.lc-accueil { display: block; text-align: center; margin: 8px 4px 0; padding: 8px; border-top: 1px solid var(--bord); color: var(--vert-2); font-size: 13px; font-weight: 600; text-decoration: none; }
+.lc-accueil:hover { text-decoration: underline; }
+`;
+  document.head.append(style);
   // le drapeau devient un bouton (même place, même taille)
   const btn = document.createElement("button");
   btn.type = "button"; btn.className = "lanceur-btn"; btn.id = "lanceur-btn";
