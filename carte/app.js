@@ -134,10 +134,15 @@ function majTournois() {
   const g = golfDuChamp(), ctx = $("nv-contexte").value === "tournoi";
   $("nv-tournoi-l").hidden = !ctx;
   if (!ctx) return;
-  const j = new Date($("nv-jour").value + "T12:00:00");
-  const T = g ? etat.tournois.filter((t) => t.golf === g.slug && Math.abs((new Date(t.date + "T12:00:00") - j) / 864e5) <= 10) : [];
-  $("nv-tournoi").innerHTML = T.length ? T.map((t) => `<option value="${esc(t.id)}">${esc(fmtDate(t.date))} · ${esc(t.nom)}</option>`).join("") : `<option value="">Aucun tournoi ffgolf sur ce golf à cette date</option>`;
+  // tous les tournois ffgolf de ce golf, les plus proches de la date choisie d'abord (champ « debut » des données)
+  const j = new Date($("nv-jour").value + "T12:00:00"), ecart = (t) => Math.abs(new Date(t.debut + "T12:00:00") - j);
+  const T = g ? etat.tournois.filter((t) => t.golf === g.slug && t.debut).sort((a, b) => ecart(a) - ecart(b)).slice(0, 20) : [];
+  const avant = $("nv-tournoi").value;
+  $("nv-tournoi").innerHTML = T.length ? T.map((t) => `<option value="${esc(t.id)}" ${t.id === avant ? "selected" : ""}>${esc(fmtDate(t.debut))} ${t.annee || ""} · ${esc(t.nom)}</option>`).join("")
+    : `<option value="">${g ? "Aucun tournoi ffgolf sur ce golf" : "Choisis d'abord le golf"}</option>`;
 }
+// choisir un tournoi règle la date de la partie sur son premier jour
+$("nv-tournoi").addEventListener("change", () => { const t = etat.tournois.find((x) => x.id === $("nv-tournoi").value); if (t?.debut) $("nv-jour").value = t.debut; });
 $("nv-golf").addEventListener("change", majParcours);
 $("nv-golf").addEventListener("input", () => { if (golfDuChamp()) majParcours(); });
 $("nv-parcours").addEventListener("change", majReperes);
