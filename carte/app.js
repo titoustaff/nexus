@@ -239,9 +239,15 @@ function sauver(tout = false) {
   const p = etat.partie; p.modifie_le = new Date().toISOString();
   lsSet("carte-brouillon", JSON.stringify(p));
   const ecrire = async () => {
-    const { error } = await sb.from("carte_parties").update({ trous: p.trous, terminee: p.terminee, modifie_le: p.modifie_le }).eq("id", p.id);
+    // .select : on vérifie qu'une ligne a vraiment été écrite (session expirée → 0 ligne, sans erreur : faux « enregistré »)
+    let { data, error } = await sb.from("carte_parties").update({ trous: p.trous, terminee: p.terminee, modifie_le: p.modifie_le }).eq("id", p.id).select("id");
+    if (!error && !data?.length) {   // session à rafraîchir, puis un nouvel essai
+      await sb.auth.refreshSession().catch(() => {});
+      ({ data, error } = await sb.from("carte_parties").update({ trous: p.trous, terminee: p.terminee, modifie_le: p.modifie_le }).eq("id", p.id).select("id"));
+      if (!error && !data?.length) error = { message: "session expirée : reconnecte-toi (tes saisies sont gardées et repartiront)" };
+    }
     const m = $("sa-etat");
-    if (error) { if (m) m.textContent = "⚠ pas encore enregistré (réseau ?)"; signaler("Enregistrement impossible : " + error.message + " — tes saisies sont gardées dans ce navigateur."); return; }
+    if (error) { if (m) m.textContent = "⚠ pas encore enregistré"; signaler("Enregistrement impossible : " + error.message + " — tes saisies sont gardées dans ce navigateur."); return; }
     try { localStorage.removeItem("carte-brouillon"); } catch { /* */ }
     if (m) m.textContent = "✓ enregistré";
   };
@@ -317,7 +323,7 @@ async function entrer() {
 }
 // ------------------------------------------------------------------ partage en direct par lien (07/11)
 // Le joueur crée un jeton pour UNE partie (table carte_partages) ; le lien …/carte/#direct=<jeton> montre cette carte
-// seulement, sans compte (fonction carte_partagee), mise à jour toutes les 20 s tant que la partie n'est pas terminée.
+// seulement, sans compte (fonction carte_partagee), mise à jour toutes les 15 s tant que la partie n'est pas terminée.
 async function lienDePartage(partie) {
   const maintenant = new Date().toISOString();
   let { data } = await sb.from("carte_partages").select("jeton,expire_le").eq("partie_id", partie.id).gt("expire_le", maintenant).order("expire_le", { ascending: false }).limit(1);
@@ -374,7 +380,12 @@ async function modePartage(jeton) {
     etat.partie = p; rendreVoir();
     return !p.terminee;
   };
-  if (await lire()) { const minuteur = setInterval(async () => { if (!(await lire())) clearInterval(minuteur); }, 20000); }
+  // toutes les 15 s, et tout de suite quand on revient sur la page (téléphone sorti de veille : les minuteries y sont suspendues)
+  let enDirect = await lire();
+  const relire = async () => { if (enDirect) enDirect = await lire(); };
+  setInterval(relire, 15000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) relire(); });
+  window.addEventListener("focus", relire);
 }
 
 const jetonPartage = new URLSearchParams(location.hash.slice(1)).get("direct");
