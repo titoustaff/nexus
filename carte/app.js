@@ -108,7 +108,7 @@ async function rendreListe() {
   const attend = etat.vue ? [] : (etat.agenda || []).map((a) => ({ ...a, carte: etat.parties.find((p) => p.tournoi_id === a.t.id && (p.tour || 1) === a.tour) }))
     .filter((a) => !a.carte || !a.carte.terminee);
   const htmlAttend = attend.map((a) => `<div class="li-attend"><span>⛳ <b>Aujourd'hui : ${esc(titre(a.t.nom))}</b>${(a.t.nb_tours || 1) > 1 ? ` · tour ${a.tour}` : ""}
-      <small>${esc(titre(a.t.golf_nom || a.t.golf))} · dans ta saison (${esc({ envisage: "envisagé", inscrit: "inscrit", joue: "joué" }[a.statut] || a.statut)})</small></span>
+      <small>${esc(titre(a.t.golf_nom || a.t.golf || ""))}${a.t.categorie ? " · " + esc(a.t.categorie) : ""} · ${a.t.club ? "ajoutée par ton coach" : `dans ta saison (${esc({ envisage: "envisagé", inscrit: "inscrit", joue: "joué" }[a.statut] || a.statut)})`}</small></span>
       ${a.carte ? `<button type="button" class="btn plein" data-partie="${esc(a.carte.id)}">Reprendre ma carte</button>` : `<button type="button" class="btn plein" data-attend="${esc(a.t.id)}">Ta carte t'attend · commencer</button>`}</div>`).join("");
   if (!etat.parties.length) {
     box.innerHTML = etat.vue ? `<div class="bloc vide">Aucune carte pour ce joueur.</div>`
@@ -147,6 +147,15 @@ async function chargerAgenda() {
     const t = etat.tournois.find((x) => x.id === r.tournoi_id);
     if (t?.debut && t.debut <= JOUR && JOUR <= (t.fin || t.debut)) etat.agenda.push({ t, statut: r.statut, tour: tourDuJour(t, JOUR) });
   }
+  // compétitions ajoutées par le coach (module Club : club_competitions), auxquelles je suis inscrit, qui se jouent aujourd'hui
+  const C = await sb.from("club_competition_joueurs").select("competition:club_competitions(id,nom,golf,golf_nom,debut,fin,nb_tours,categorie)").eq("joueur_id", Compte.moi.id);
+  for (const r of C.data || []) {
+    const c = r.competition;
+    if (c?.debut && c.debut <= JOUR && JOUR <= (c.fin || c.debut)) {
+      const t = { id: "club:" + c.id, nom: c.nom, golf: c.golf, golf_nom: c.golf_nom, debut: c.debut, fin: c.fin, nb_tours: c.nb_tours, categorie: c.categorie, club: true };
+      etat.agenda.push({ t, statut: "coach", tour: tourDuJour(t, JOUR) });
+    }
+  }
 }
 function preremplir(id) {
   const a = etat.agenda.find((x) => x.t.id === id); if (!a) return;
@@ -154,8 +163,13 @@ function preremplir(id) {
   ecran("nouvelle");
   $("nv-jour").value = JOUR;
   if (g) { $("nv-golf").value = libGolf(g); majParcours(); }
-  $("nv-contexte").value = "tournoi"; majTournois();
-  $("nv-tournoi").value = a.t.id; majTours(); $("nv-tour").value = String(a.tour);
+  if (a.t.club) {   // compétition ajoutée par le coach : contexte « hors Mérite », rattachée à la compétition (club:<id>)
+    $("nv-contexte").value = "competition"; majTournois();
+    etat.attente = { ref: a.t.id, tour: a.tour };
+  } else {
+    $("nv-contexte").value = "tournoi"; majTournois();
+    $("nv-tournoi").value = a.t.id; majTours(); $("nv-tour").value = String(a.tour);
+  }
   signaler("Carte pré-remplie : vérifie le parcours et les repères, puis commence la saisie.");
 }
 
@@ -163,6 +177,7 @@ function preremplir(id) {
 const golfDuChamp = () => { const v = $("nv-golf").value.trim().toLowerCase(); return Object.values(etat.golfs).find((g) => libGolf(g).toLowerCase() === v || g.nom.toLowerCase() === v) || null; };
 const libGolf = (g) => `${titre(g.nom)}${g.ville ? " (" + titre(g.ville) + ")" : ""}`;
 function preparerNouvelle() {
+  etat.attente = null;   // rattachement à une compétition du coach : posé par preremplir() juste après
   if (!$("nv-jour").value) $("nv-jour").value = JOUR;
   if (!$("nv-golfs").children.length) $("nv-golfs").innerHTML = Object.values(etat.golfs).sort((a, b) => a.nom.localeCompare(b.nom, "fr")).map((g) => `<option value="${esc(libGolf(g))}">`).join("");
   majParcours();
@@ -220,8 +235,9 @@ $("nv-form").addEventListener("submit", async (e) => {
   const ligne = { jour: $("nv-jour").value, golf: g.slug, golf_nom: g.nom, parcours: p?.code || null, parcours_nom: p?.nom || null,
     repere: $("nv-repere").value || null, nb_trous: nb, premier, contexte: $("nv-contexte").value,
     tournoi_id: $("nv-contexte").value === "tournoi" ? ($("nv-tournoi").value || null) : null, trous, note: $("nv-note").value.trim() || null };
+  if (ligne.contexte === "competition" && etat.attente) { ligne.tournoi_id = etat.attente.ref; ligne.tour = etat.attente.tour; }
+  else if (ligne.tournoi_id) ligne.tour = +$("nv-tour").value || 1;
   if (ligne.tournoi_id) {
-    ligne.tour = +$("nv-tour").value || 1;
     // déjà une carte pour ce tournoi et ce tour : on l'ouvre plutôt que d'en créer une deuxième
     const deja = etat.parties.find((x) => x.tournoi_id === ligne.tournoi_id && (x.tour || 1) === ligne.tour);
     if (deja) { signaler("Ta carte de ce tour existe déjà : on la rouvre."); etat.partie = deja; etat.i = Math.max(0, deja.trous.findIndex((t) => !t.score)); ecran(deja.terminee ? "voir" : "saisie"); return; }
@@ -235,7 +251,7 @@ $("nv-form").addEventListener("submit", async (e) => {
   }
   $("nv-ok").disabled = false;
   if (error) { signaler("Création impossible : " + error.message); return; }
-  $("nv-form").reset(); $("nv-jour").value = JOUR;
+  $("nv-form").reset(); $("nv-jour").value = JOUR; etat.attente = null;
   etat.partie = data; etat.i = 0; ecran("saisie");
 });
 
@@ -345,7 +361,7 @@ function rendreVoir0() {
     <div class="st-tuiles">${tuileSt(b.n ? b.score : "—", "score", b.n ? ecartPar(b.ecart) + (b.n < p.nb_trous ? ` sur ${b.n} trous` : "") : "")}${tuileSt(b.putts ?? "—", "putts")}${tuileSt(b.fairways, "fairways touchés")}${tuileSt(b.gir, "greens en régulation")}${tuileSt(b.pen, "pénalités")}</div>
     <div class="bloc vo-carte">${moities.map((T, k) => `<div class="defile">${tableau(T, moities.length > 1 ? (k ? "Retour" : "Aller") : "Total")}</div>`).join("")}
       <p class="meta vo-legende"><span class="nt nt-albatros">2</span> albatros <span class="nt nt-aigle">3</span> eagle <span class="nt nt-birdie">4</span> birdie <span class="nt nt-par">5</span> par <span class="nt nt-bogey">6</span> bogey <span class="nt nt-double">7</span> double + · départ ${miniFw("fairway")} · ${SABLE} bunker</p></div>
-    ${p.contexte === "tournoi" && p.tournoi_id && !etat.partage ? `<div id="vo-ffgolf"></div>` : ""}
+    ${p.contexte === "tournoi" && p.tournoi_id && !String(p.tournoi_id).startsWith("club:") && !etat.partage ? `<div id="vo-ffgolf"></div>` : ""}
     ${p.note ? `<div class="bloc"><b>Note</b> <span>${esc(p.note)}</span></div>` : ""}
     ${etat.partage ? `<p class="meta pt-pied">Carte partagée par lien (lecture seule) · <a href="../">GolfNexus</a></p>` : `<div class="vo-actions"><button type="button" class="btn" data-ecran="liste">← ${etat.vue ? "Cartes du joueur" : "Mes cartes"}</button>
       ${lecture ? `<span class="meta">Lecture seule</span>` : `<button type="button" class="btn plein" data-partager>🔗 Partager en direct</button><button type="button" class="btn" data-modifier>Modifier la saisie</button><button type="button" class="lien vo-suppr" data-supprimer>Supprimer la partie</button>`}</div>`}`;
