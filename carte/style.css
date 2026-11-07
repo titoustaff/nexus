@@ -167,3 +167,4 @@ body.partage .vues, body.partage #b-compte { display: none; }
 .ff-ecart { background: #fef3c7; color: #7a4b00; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; line-height: 1.6; }
 .ff-ecart .btn { margin-left: 8px; height: 34px; padding: 0 12px; }
 .ff-attente { margin: 0 0 10px; }
+.nv-form label[hidden] { display: none; }   /* « Tournoi » et « Tour » : seulement pour le contexte Tournoi ffgolf */
