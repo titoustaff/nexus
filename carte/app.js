@@ -60,7 +60,7 @@ const classeScore = (t) => { if (!t.score) return ""; const d = t.score - t.par;
 // notation des cartes de golf : rond = birdie, double rond = eagle ou mieux, carré = bogey, double carré = double bogey ou pire
 const notation = (t) => { if (!t.score) return ""; const d = t.score - t.par; return d <= -3 ? "nt-albatros" : d === -2 ? "nt-aigle" : d === -1 ? "nt-birdie" : d === 0 ? "nt-par" : d === 1 ? "nt-bogey" : "nt-double"; };
 const SABLE = `<svg class="ic-sable" viewBox="0 0 24 16" aria-hidden="true"><path d="M2 12c2-6 6-9 10-9s8 3 10 9c-3 2-17 2-20 0z"/></svg>`;
-const gir = (t) => t.score && t.putts != null && t.score - t.putts <= t.par - 2;
+const gir = (t) => t.score && t.putts != null && t.score - t.putts >= 1 && t.score - t.putts - (t.pen || 0) <= t.par - 2;
 function bilan(p) {
   const J = joues(p), avecPutts = J.filter((t) => t.putts != null), fw = J.filter((t) => t.par > 3 && t.fw);
   return {
@@ -208,6 +208,7 @@ function rendreSaisie() {
     <div class="bloc sa-trou">
       <div class="sa-num"><span>Trou <b>${t.t}</b></span><span class="sa-par">Par <b>${t.par}</b></span></div>
       <h3>Score</h3>${choix("score", scores, nomScore, true)}
+      ${t.score && (t.putts || 0) + (t.pen || 0) > t.score - 1 ? `<p class="sa-alerte">⚠ ${t.putts || 0} putt${t.putts > 1 ? "s" : ""}${t.pen ? ` + ${t.pen} pénalité${t.pen > 1 ? "s" : ""}` : ""} pour un score de ${t.score} : il manque au moins le coup de départ. Vérifie le score ou les putts.</p>` : ""}
       <div class="sa-ligne"><div><h3>Putts</h3>${choix("putts", [0, 1, 2, 3, 4], undefined, true)}</div><div><h3>Pénalités</h3>${choix("pen", [0, 1, 2, 3], undefined, true)}</div></div>
       ${t.par > 3 ? `<h3>Mise en jeu : où a fini ton départ ?</h3>${terrainFw(t.fw)}` : ""}
       <h3>Bunker</h3>${choix("bunker", [false, true], (v) => (v ? "Oui, joué depuis un bunker" : "Non"))}

@@ -156,3 +156,5 @@ body.partage .vues, body.partage #b-compte { display: none; }
   box-shadow: 0 0 0 2px var(--carte), 0 0 0 4px #b8860b, 0 0 0 6px var(--carte), 0 0 0 8px #b8860b; }
 .vo-table tr.vo-score td { padding: 12px 4px; }
 .vo-legende .nt-albatros, .vo-legende .nt-aigle, .vo-legende .nt-double { margin: 0 4px 0 10px; }
+
+.sa-alerte { margin: 10px 0 0; padding: 10px 12px; border-radius: 10px; background: #fef3c7; color: #7a4b00; font-size: 13.5px; font-weight: 600; }
