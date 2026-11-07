@@ -27,7 +27,8 @@ a.lc-module:hover, a.lc-module:focus-visible { background: var(--sauge-pale); ou
 .lc-module small { font-size: 11px; color: var(--doux); line-height: 1.2; }
 .lc-ici { background: var(--sauge-pale); }
 .lc-ici small { color: var(--vert-2); font-weight: 700; }
-.lc-bientot .lc-pastille { filter: saturate(.75); }   /* comme sur la page d'accueil */
+.lc-bientot .lc-pastille { filter: grayscale(1); opacity: .45; }   /* pas encore ouvert : grisé (l'utilisateur, 07/11) */
+.lc-bientot b { color: var(--doux); }
 .lc-accueil { display: block; text-align: center; margin: 8px 4px 0; padding: 8px; border-top: 1px solid var(--bord); color: var(--vert-2); font-size: 13px; font-weight: 600; text-decoration: none; }
 .lc-accueil:hover { text-decoration: underline; }
 `;
