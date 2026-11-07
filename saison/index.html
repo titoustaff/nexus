@@ -207,35 +207,6 @@
     <div id="st-bulle" class="st-bulle" role="tooltip" hidden></div>
   </section>
 
-  <section id="ecran-coach" class="ecran-admin" hidden aria-labelledby="co-titre">
-    <div class="s-tete"><h2 id="co-titre">Coach</h2></div>
-    <div id="co-contenu"></div>
-  </section>
-
-  <section id="ecran-admin" class="ecran-admin" hidden aria-labelledby="ad-titre">
-    <div class="s-tete"><h2 id="ad-titre">Administration</h2></div>
-    <form class="bloc" id="ad-form" autocomplete="off">
-      <h3>Inviter quelqu'un</h3>
-      <p class="meta">La personne reçoit un e-mail GolfNexus avec un lien (24 heures, une seule fois) ; elle choisit ensuite son mot de passe. La licence d'un joueur est fixée ici : il ne pourra pas la changer (seul l'administrateur la corrige).</p>
-      <div class="ad-champs">
-        <label>E-mail <input id="ad-email" type="email" required placeholder="prenom.nom@exemple.fr"></label>
-        <label>Nom affiché <input id="ad-nom" type="text" maxlength="60" placeholder="ex. Léo Martin"></label>
-        <label>Licence ffgolf <input id="ad-lic" type="text" inputmode="numeric" maxlength="12" pattern="[0-9 ]{6,14}" placeholder="obligatoire pour un joueur"></label>
-        <label>Rôle <select id="ad-role">
-          <option value="joueur">Joueur (18 ans et +)</option>
-          <option value="mineur">Joueur de moins de 18 ans (e-mail du parent)</option>
-          <option value="coach">Coach</option>
-          <option value="admin">Administrateur</option>
-        </select></label>
-        <button type="submit" class="btn plein" id="ad-ok">Envoyer l'invitation</button>
-      </div>
-      <p class="a-msg" id="ad-msg" aria-live="polite"></p>
-    </form>
-    <div class="bloc"><h3>Invitations en attente</h3><div id="ad-invits"></div></div>
-    <div class="bloc"><h3>Clubs <small>structures : un club ffgolf (son académie, les équipes de son AS) ou un coach indépendant</small></h3><div id="ad-structures"></div></div>
-    <div class="bloc"><h3>Comptes</h3><div id="ad-membres" class="st-table"></div></div>
-  </section>
-
   <section id="ecran-profil" class="ecran-profil" hidden aria-labelledby="p-titre">
     <div class="s-tete"><h2 id="p-titre">Mon profil</h2></div>
     <div class="p-col p-col-g">
