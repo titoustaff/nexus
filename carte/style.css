@@ -151,3 +151,8 @@ body.partage .vues, body.partage #b-compte { display: none; }
 .ic-sable { width: 22px; height: 15px; vertical-align: middle; } .ic-sable path { fill: #e6c98a; stroke: #b9965a; stroke-width: 1; }
 .fw-mini { width: 18px; height: 24px; }
 .vo-legende .nt { width: 22px; height: 22px; font-size: 12px; margin-left: 6px; }
+
+.nt-albatros { border: 2px solid #b8860b; border-radius: 50%; color: #8a6400; background: #fff6d6;
+  box-shadow: 0 0 0 2px var(--carte), 0 0 0 4px #b8860b, 0 0 0 6px var(--carte), 0 0 0 8px #b8860b; }
+.vo-table tr.vo-score td { padding: 12px 4px; }
+.vo-legende .nt-albatros, .vo-legende .nt-aigle, .vo-legende .nt-double { margin: 0 4px 0 10px; }

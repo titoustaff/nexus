@@ -58,7 +58,7 @@ const parJoue = (p) => joues(p).reduce((s, t) => s + (+t.par || 0), 0);
 const ecartPar = (n) => (n === 0 ? "par" : (n > 0 ? "+" : "") + n);
 const classeScore = (t) => { if (!t.score) return ""; const d = t.score - t.par; return d <= -2 ? "sc-aigle" : d === -1 ? "sc-birdie" : d === 0 ? "sc-par" : d === 1 ? "sc-bogey" : "sc-double"; };
 // notation des cartes de golf : rond = birdie, double rond = eagle ou mieux, carré = bogey, double carré = double bogey ou pire
-const notation = (t) => { if (!t.score) return ""; const d = t.score - t.par; return d <= -2 ? "nt-aigle" : d === -1 ? "nt-birdie" : d === 0 ? "nt-par" : d === 1 ? "nt-bogey" : "nt-double"; };
+const notation = (t) => { if (!t.score) return ""; const d = t.score - t.par; return d <= -3 ? "nt-albatros" : d === -2 ? "nt-aigle" : d === -1 ? "nt-birdie" : d === 0 ? "nt-par" : d === 1 ? "nt-bogey" : "nt-double"; };
 const SABLE = `<svg class="ic-sable" viewBox="0 0 24 16" aria-hidden="true"><path d="M2 12c2-6 6-9 10-9s8 3 10 9c-3 2-17 2-20 0z"/></svg>`;
 const gir = (t) => t.score && t.putts != null && t.score - t.putts <= t.par - 2;
 function bilan(p) {
@@ -198,9 +198,9 @@ function rendreSaisie() {
       `<button type="button" data-cle="${cle}" data-val="${v}" aria-pressed="${t[cle] === v}">${lib(v)}</button>`).join("")}${plus
       ? `<button type="button" class="sa-plus" data-plus="${cle}" data-max="${max}" aria-label="Ajouter 1">+</button>` : ""}</div>`;
   };
-  const scores = [], bas = Math.max(1, t.par - 2);
+  const scores = [], bas = 1;   // toujours à partir de 1 : trou en un, albatros, eagle…
   for (let s = bas; s <= t.par + 4; s++) scores.push(s);
-  const nomScore = (s) => { const d = s - t.par; return `<b>${s}</b><small>${d <= -2 ? "aigle" : d === -1 ? "birdie" : d === 0 ? "par" : d === 1 ? "bogey" : d === 2 ? "double" : "+" + d}</small>`; };
+  const nomScore = (s) => { const d = s - t.par; return `<b>${s}</b><small>${s === 1 ? "trou en 1" : d <= -3 ? "albatros" : d === -2 ? "eagle" : d === -1 ? "birdie" : d === 0 ? "par" : d === 1 ? "bogey" : d === 2 ? "double" : "+" + d}</small>`; };
   $("sa-contenu").innerHTML = `
     <div class="sa-tete"><div><h2 id="sa-titre">${esc(titre(p.golf_nom || p.golf))}</h2><p class="meta">${esc(p.parcours_nom || "")}${p.repere ? " · " + esc(p.repere) : ""} · ${dateLongue(p.jour)}</p></div>
       <div class="sa-total"><b>${b.n ? b.score : "—"}</b><small>${b.n ? ecartPar(b.ecart) + " · " + b.n + "/" + p.nb_trous : "à toi de jouer"}</small></div></div>
@@ -285,7 +285,7 @@ function rendreVoir() {
     <div class="s-tete"><h2>${esc(titre(p.golf_nom || p.golf))}</h2><span class="meta">${esc(p.parcours_nom || "")}${p.repere ? " · " + esc(p.repere) : ""} · ${dateLongue(p.jour)} · ${CONTEXTES[p.contexte] || ""}</span></div>
     <div class="st-tuiles">${tuileSt(b.n ? b.score : "—", "score", b.n ? ecartPar(b.ecart) + (b.n < p.nb_trous ? ` sur ${b.n} trous` : "") : "")}${tuileSt(b.putts ?? "—", "putts")}${tuileSt(b.fairways, "fairways touchés")}${tuileSt(b.gir, "greens en régulation")}${tuileSt(b.pen, "pénalités")}</div>
     <div class="bloc vo-carte">${moities.map((T, k) => `<div class="defile">${tableau(T, moities.length > 1 ? (k ? "Retour" : "Aller") : "Total")}</div>`).join("")}
-      <p class="meta vo-legende"><span class="nt nt-aigle">2</span> eagle <span class="nt nt-birdie">3</span> birdie <span class="nt nt-par">4</span> par <span class="nt nt-bogey">5</span> bogey <span class="nt nt-double">6</span> double + · départ ${miniFw("fairway")} · ${SABLE} bunker</p></div>
+      <p class="meta vo-legende"><span class="nt nt-albatros">2</span> albatros <span class="nt nt-aigle">3</span> eagle <span class="nt nt-birdie">4</span> birdie <span class="nt nt-par">5</span> par <span class="nt nt-bogey">6</span> bogey <span class="nt nt-double">7</span> double + · départ ${miniFw("fairway")} · ${SABLE} bunker</p></div>
     ${p.note ? `<div class="bloc"><b>Note</b> <span>${esc(p.note)}</span></div>` : ""}
     ${etat.partage ? `<p class="meta pt-pied">Carte partagée par lien (lecture seule) · <a href="../">GolfNexus</a></p>` : `<div class="vo-actions"><button type="button" class="btn" data-ecran="liste">← ${etat.vue ? "Cartes du joueur" : "Mes cartes"}</button>
       ${lecture ? `<span class="meta">Lecture seule</span>` : `<button type="button" class="btn plein" data-partager>🔗 Partager en direct</button><button type="button" class="btn" data-modifier>Modifier la saisie</button><button type="button" class="lien vo-suppr" data-supprimer>Supprimer la partie</button>`}</div>`}`;
