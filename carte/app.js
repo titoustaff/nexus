@@ -8,7 +8,7 @@ const etat = { golfs: {}, tournois: [], ecran: "liste", vue: "", parties: [], pa
 const $ = (id) => document.getElementById(id);
 // date du jour EN HEURE LOCALE (AUJ, commun, est en heure universelle : entre minuit et 1–2 h, il donne encore la veille)
 const JOUR = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })();
-const CONTEXTES = { libre: "Partie libre", entrainement: "Entraînement", rencontre: "Rencontre", competition: "Compétition hors Mérite", tournoi: "Tournoi ffgolf" };
+const CONTEXTES = { libre: "Partie libre", entrainement: "Entraînement", rencontre: "Rencontre", competition: "Événement hors Mérite", tournoi: "Tournoi ffgolf" };
 const FAIRWAYS = [["gauche", "Gauche"], ["fairway", "Fairway"], ["droite", "Droite"], ["court", "Court"], ["long", "Long"]];
 // mise en jeu : un fairway vu de dessus (rough à gauche et à droite, long au-dessus, court en dessous) ; la balle se pose
 // dans la zone touchée. Second appui sur la même zone : on efface.
@@ -108,7 +108,7 @@ async function rendreListe() {
   const attend = etat.vue ? [] : (etat.agenda || []).map((a) => ({ ...a, carte: etat.parties.find((p) => p.tournoi_id === a.t.id && (p.tour || 1) === a.tour) }))
     .filter((a) => !a.carte || !a.carte.terminee);
   const htmlAttend = attend.map((a) => `<div class="li-attend"><span>⛳ <b>Aujourd'hui : ${esc(titre(a.t.nom))}</b>${(a.t.nb_tours || 1) > 1 ? ` · tour ${a.tour}` : ""}
-      <small>${esc(titre(a.t.golf_nom || a.t.golf || ""))}${a.t.categorie ? " · " + esc(a.t.categorie) : ""} · ${a.t.club ? ({ rencontre: "rencontre inter-clubs", interne: "partie demandée par ton coach" }[a.t.type] || "compétition ajoutée par ton coach") : `dans ta saison (${esc({ envisage: "envisagé", inscrit: "inscrit", joue: "joué" }[a.statut] || a.statut)})`}</small></span>
+      <small>${esc(titre(a.t.golf_nom || a.t.golf || ""))}${a.t.categorie ? " · " + esc(a.t.categorie) : ""} · ${a.t.club ? ({ rencontre: "rencontre inter-clubs", interne: "partie demandée par ton coach" }[a.t.type] || "événement ajouté par ton coach") : `dans ta saison (${esc({ envisage: "envisagé", inscrit: "inscrit", joue: "joué" }[a.statut] || a.statut)})`}</small></span>
       ${a.carte ? `<button type="button" class="btn plein" data-partie="${esc(a.carte.id)}">Reprendre ma carte</button>` : `<button type="button" class="btn plein" data-attend="${esc(a.t.id)}">Ta carte t'attend · commencer</button>`}</div>`).join("");
   if (!etat.parties.length) {
     box.innerHTML = etat.vue ? `<div class="bloc vide">Aucune carte pour ce joueur.</div>`
@@ -248,7 +248,7 @@ $("nv-form").addEventListener("submit", async (e) => {
   if (error && /tour|contexte_check/.test(error.message)) {   // script carte-v1-tour.sql pas encore lancé
     delete ligne.tour; if (ligne.contexte === "competition") ligne.contexte = "rencontre";
     ({ data, error } = await sb.from("carte_parties").insert(ligne).select("*").single());
-    if (!error) signaler("Carte créée (le tour et le contexte « compétition hors Mérite » attendent le script carte-v1-tour.sql).");
+    if (!error) signaler("Carte créée (le tour et le contexte « événement hors Mérite » attendent le script carte-v1-tour.sql).");
   }
   $("nv-ok").disabled = false;
   if (error) { signaler("Création impossible : " + error.message); return; }
