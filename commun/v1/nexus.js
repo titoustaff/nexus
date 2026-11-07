@@ -12,6 +12,21 @@ const SB_CLE = "sb_publishable_74pMkWHpBVFYMgVl5lt0LA_gs2YFGKa";   // clé publi
 const sb = window.supabase ? window.supabase.createClient(SB_URL, SB_CLE,
   { auth: { flowType: "pkce", detectSessionInUrl: true, persistSession: true, storageKey: "gn-auth" } }) : null;
 
+// ------------------------------------------------------------------ outils (repris de Saison)
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+// mémoire du navigateur ; les clés « gn-* » sont partagées par tous les modules et l'ancien site (même origine)
+const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch { /* navigation privée */ } };
+const jsonLs = (k) => { try { return JSON.parse(lsGet(k) || "null"); } catch { return null; } };
+const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : "10000000-1000-4000-8000-100000000000".replace(/[018]/g,
+  (c) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)));
+// message en bas de l'écran (élément #toast de la page), 6 secondes
+let toastMinuteur;
+function signaler(msg) {
+  const t = document.getElementById("toast"); t.textContent = msg; t.hidden = false;
+  clearTimeout(toastMinuteur); toastMinuteur = setTimeout(() => { t.hidden = true; }, 6000);
+}
+
 // ------------------------------------------------------------------ accueil : connexion, liens reçus, démarrage
 // Repris de Saison (« accueil et démarrage », 05/11). La page du module fournit le balisage de l'accueil
 // (#accueil, #a-form, #a-email, #a-mdp, #a-ok, #a-lien, #a-msg) et sa fonction entrer() (chargement après connexion).
@@ -75,4 +90,22 @@ function nexusBrancherAccueil() {
     msgAccueil(/security purposes/i.test(error.message) ? "Un lien vient déjà d'être envoyé : regarde ta boîte (et les spams)."
       : /signups not allowed|not found|otp_disabled/i.test(error.message) ? "Cette adresse n'est pas invitée." : "Envoi impossible : " + error.message, true);
   });
+}
+
+// ------------------------------------------------------------------ profil : qui suis-je
+// Ligne « profils » du compte (filtrée sur MON compte : un coach peut aussi lire celles de ses joueurs).
+// structure (06/11) = le club du coach (rattaché par l'admin) : nom, club ffgolf, coach principal, coachs de l'académie.
+async function nexusLireProfil(user) {
+  const P = await sb.from("profils").select("domicile_nom,lat,lon,fiche,licence,licence_le,licence_verif,role,mineur,parent_valide_le,structure_id,club_licence").eq("id", user.id).maybeSingle();
+  if (P.error) throw P.error;
+  const d = P.data || {};
+  let structure = null;
+  if (d.structure_id) { const S = await sb.rpc("ma_structure_detail"); structure = (S.data || [])[0] || null; }
+  return {
+    role: d.role || "joueur", mineur: !!d.mineur, parentValide: d.parent_valide_le || null,
+    clubLicence: d.club_licence || null, structure,
+    licence: { num: d.licence || "", le: d.licence_le || null, verif: d.licence_verif || null },
+    dom: d.lat != null ? { lat: d.lat, lon: d.lon, nom: d.domicile_nom } : null,   // domicile
+    fiche: d.fiche || {},   // fiche joueur { nom, club, sexe, naissance, merite… }
+  };
 }
