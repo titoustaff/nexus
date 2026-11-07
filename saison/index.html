@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <title>GolfNexus</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <meta name="description" content="GolfNexus — trouvez vos tournois de golf, comparez les parcours, construisez votre saison.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="verrou">
+  <!-- Accueil (05/11) : plus de mot de passe de page ; il faut un compte (sur invitation) pour entrer -->
+  <section id="accueil" class="accueil" aria-labelledby="a-titre">
+    <div class="a-haut">
+      <div class="a-marque">
+        <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#f4f7f2"/><ellipse cx="30" cy="52" rx="20" ry="5" fill="#cfe3d3"/><path d="M22 10v41" stroke="#14532d" stroke-width="4.5" stroke-linecap="round"/><path d="M24 10l22 8-22 8z" fill="#f0b400"/><circle cx="43" cy="45" r="7" fill="#fff" stroke="#14532d" stroke-width="2"/></svg>
+        <span class="nom">Golf<b>Nexus</b></span>
+      </div>
+      <div class="a-grille">
+        <div class="a-texte">
+          <h1 id="a-titre">Prépare ta saison de golf, suis tes progrès.</h1>
+          <p class="a-sous">Les tournois de la ffgolf enfin lisibles : trouve les bons, planifie ta saison, compare ta place estimée et obtenue, et analyse ton jeu.</p>
+          <ul class="a-points">
+            <li><b>1 300 tournois</b> 2025-2026 sur une carte : Grands Prix, Jeunes, Mid-Amateurs, Seniors, filtrés par distance, tours, catégorie.</li>
+            <li><b>Une fiche par tournoi</b> : repères de départ, parcours, et le score qu'il a fallu pour gagner, faire un top 20 ou passer le cut.</li>
+            <li><b>Ma saison</b> : ton calendrier, ta place estimée avant, ta place obtenue après.</li>
+            <li><b>Mes stats</b> : Mérite mois par mois, régularité, trou par trou, points à marquer pour monter. Et ton coach peut les suivre.</li>
+          </ul>
+        </div>
+        <div class="a-carte" id="a-connexion">
+          <h2>Connexion</h2>
+          <form id="a-form" class="c-form c-col">
+            <input id="a-email" type="email" autocomplete="username" placeholder="ton e-mail" aria-label="Adresse e-mail" required>
+            <input id="a-mdp" type="password" autocomplete="current-password" placeholder="mot de passe" aria-label="Mot de passe">
+            <button type="submit" class="btn plein" id="a-ok">Se connecter</button>
+          </form>
+          <button type="button" class="lien" id="a-lien">Pas de mot de passe ou oublié ? Recevoir un lien par e-mail</button>
+          <p class="a-msg" id="a-msg" aria-live="polite"></p>
+          <p class="a-note">Accès sur invitation. Ton coach ou l'administrateur t'envoie un lien par e-mail.</p>
+        </div>
+      </div>
+    </div>
+    <p class="a-pied">Données publiques ffgolf.org · résultats des autres joueurs anonymisés · tes données ne sont vues que par toi et ceux que tu acceptes · <button type="button" class="lien a-rgpd" data-rgpd>Tes données personnelles</button></p>
+  </section>
+
+  <header class="bandeau">
+    <svg class="decor" aria-hidden="true" viewBox="0 0 1200 120" preserveAspectRatio="xMidYMid slice">
+      <g fill="none" stroke="currentColor" stroke-width="1.1">
+        <path d="M-20 100 C180 60 320 120 520 80 S860 10 1060 50 S1220 40 1240 30"/>
+        <path d="M-20 118 C190 80 330 138 530 100 S870 32 1070 72 S1220 62 1240 54"/>
+        <path d="M-20 136 C200 100 340 156 540 120 S880 54 1080 94 S1220 84 1240 78"/>
+        <path d="M560 -10 C640 20 700 40 820 30 S1000 -6 1100 10"/>
+        <path d="M600 -24 C680 8 740 22 860 14 S1020 -20 1120 -6"/>
+      </g>
+    </svg>
+    <div class="bandeau-in">
+      <div class="marque">
+        <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#f4f7f2"/><ellipse cx="30" cy="52" rx="20" ry="5" fill="#cfe3d3"/><path d="M22 10v41" stroke="#14532d" stroke-width="4.5" stroke-linecap="round"/><path d="M24 10l22 8-22 8z" fill="#f0b400"/><circle cx="43" cy="45" r="7" fill="#fff" stroke="#14532d" stroke-width="2"/></svg>
+        <div>
+          <div class="nom">Golf<span>Nexus</span></div>
+          <p class="devise">Trouvez vos tournois, construisez votre saison</p>
+        </div>
+      </div>
+      <nav class="vues" aria-label="Écrans">
+        <button type="button" data-ecran="tournois" aria-current="page">Tournois</button>
+        <button type="button" data-ecran="saison" id="v-saison">Ma saison<span class="nb" id="nb-saison" hidden></span></button>
+        <button type="button" data-ecran="stats" id="v-stats" hidden>Mes stats</button>
+        <button type="button" data-ecran="coach" id="v-coach" hidden>Coach</button>
+        <button type="button" data-ecran="admin" id="v-admin" hidden>Admin</button>
+        <button type="button" data-ecran="profil" id="v-profil" hidden>Mon profil</button>
+      </nav>
+      <p class="saison" id="saison"></p>
+      <div class="vue-bandeau" id="vue-bandeau" hidden></div>
+      <div class="b-compte" id="b-compte" aria-live="polite"></div>
+    </div>
+  </header>
+  <div class="b-pan-ancre"><div class="b-pan" id="b-pan" hidden></div></div>
+
+  <div id="ecran-tournois">
+
+  <section class="bienvenue" id="bienvenue" hidden aria-label="Bien démarrer"></section>
+  <section class="haut" aria-label="En bref">
+    <button type="button" class="prochain" id="prochain"></button>
+    <div class="kpis" id="kpis"></div>
+  </section>
+
+  <section class="filtres" aria-label="Filtres">
+    <div class="filtres-tete">
+      <button type="button" class="ouvrir-filtres" id="t-filtres" aria-expanded="false" aria-controls="champs">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18l-7 8.5V19l-4 2v-7.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        Critères<span class="nb" id="nb-filtres" hidden></span><span class="chevron" aria-hidden="true"></span>
+      </button>
+      <div class="actifs" id="actifs" aria-live="polite"></div>
+    </div>
+    <div class="champs" id="champs" hidden>
+      <label class="rang">Pays <select id="f-pays"><option value="">Tous</option></select></label>
+      <label>Année <select id="f-annee"></select></label>
+      <label>Mois <select id="f-mois"></select></label>
+      <label class="bascule"><input id="f-avenir" type="checkbox"><span class="piste" aria-hidden="true"></span>À venir</label>
+      <div class="champ multi rang" id="m-region" data-vide="Toutes">
+        <span class="lib" id="m-region-lib">Région</span>
+        <button type="button" class="multi-btn" aria-haspopup="true" aria-expanded="false" aria-labelledby="m-region-lib m-region-val"><span id="m-region-val">Toutes</span></button>
+        <div class="multi-pan" hidden>
+          <input type="search" placeholder="Rechercher…" aria-label="Rechercher">
+          <div class="multi-liste" role="group"></div>
+          <div class="multi-pied"><button type="button" class="multi-effacer">Effacer</button><button type="button" class="multi-ok">OK</button></div>
+        </div>
+      </div>
+      <div class="champ multi" id="m-dep" data-vide="Tous">
+        <span class="lib" id="m-dep-lib">Département</span>
+        <button type="button" class="multi-btn" aria-haspopup="true" aria-expanded="false" aria-labelledby="m-dep-lib m-dep-val"><span id="m-dep-val">Tous</span></button>
+        <div class="multi-pan" hidden>
+          <input type="search" placeholder="Rechercher…" aria-label="Rechercher">
+          <div class="multi-liste" role="group"></div>
+          <div class="multi-pied"><button type="button" class="multi-effacer">Effacer</button><button type="button" class="multi-ok">OK</button></div>
+        </div>
+      </div>
+      <label class="large">Autour de
+        <span class="ligne">
+          <input id="f-ref" type="text" placeholder="Ville ou code postal" autocomplete="off">
+          <button id="f-geo" type="button" title="Ma position" aria-label="Utiliser ma position">◎</button>
+        </span>
+      </label>
+      <label>Rayon <select id="f-rayon">
+        <option value="">—</option><option value="50">50 km</option><option value="100">100 km</option>
+        <option value="200">200 km</option><option value="300">300 km</option><option value="500">500 km</option>
+      </select></label>
+      <label class="rang">Circuit <select id="f-circuit">
+        <option value="">Tous</option><option value="jeunes">Jeunes (U12 à U16)</option><option value="gp" selected>Adultes (Grands Prix, tous âges)</option>
+        <option value="mid">Mid-Amateurs (25 ans et +)</option><option value="seniors">Seniors (50 ans et +)</option>
+      </select></label>
+      <label>Catégorie <select id="f-sexe">
+        <option value="">Toutes</option>
+        <option value="H">Masculin</option>
+        <option value="D">Féminin</option>
+      </select></label>
+      <label>Tours <select id="f-tours">
+        <option value="">Tous</option><option value="2">2 tours</option>
+        <option value="3">3 tours</option><option value="4">4 tours et +</option>
+      </select></label>
+    </div>
+  </section>
+
+  <main class="espace">
+    <div id="carte" class="carte" role="region" aria-label="Carte des tournois"></div>
+    <aside class="liste">
+      <div class="liste-tete">
+        <div class="recherche" role="search">
+          <input id="l-cherche" type="search" placeholder="Chercher un tournoi ou un golf…" aria-label="Chercher un tournoi ou un golf dans la liste" autocomplete="off">
+          <span id="l-cherche-n" class="recherche-n" aria-live="polite"></span>
+          <button type="button" id="l-cherche-prec" class="recherche-btn" title="Précédent (Maj+Entrée)" aria-label="Résultat précédent" hidden>↑</button>
+          <button type="button" id="l-cherche-suiv" class="recherche-btn" title="Suivant (Entrée)" aria-label="Résultat suivant" hidden>↓</button>
+        </div>
+        <div class="liste-ligne"><span id="compte"></span>
+          <span class="bascules">
+          <label class="bascule petite" id="l-prochain-lib" title="Faire défiler la liste jusqu'au prochain tournoi"><input id="l-prochain" type="checkbox" checked><span class="piste" aria-hidden="true"></span>Aller au prochain</label>
+          <label class="bascule petite" id="l-place-lib" title="Ta place estimée sur chaque tournoi : ta moyenne par rapport au SSS (Mon profil) comparée à la dernière édition"><input id="f-place" type="checkbox"><span class="piste" aria-hidden="true"></span>Ma place</label></span>
+        </div>
+        <div id="legende" class="legende"></div>
+      </div>
+      <ol id="liste"></ol>
+    </aside>
+  </main>
+
+  </div>
+
+  <section id="ecran-saison" class="ecran-saison" hidden aria-labelledby="s-titre">
+    <div class="s-tete">
+      <div class="s-titres">
+        <h2 id="s-titre">Ma saison <span class="seg s-annees" id="s-annees" role="group" aria-label="Année"></span></h2>
+      </div>
+      <div class="s-actions">
+        <button type="button" class="btn" id="s-parcourir">+ Ajouter des tournois</button>
+        <button type="button" class="btn plein" id="s-ics" title="Ajoute tes tournois « inscrit » à ton agenda (Google, Apple, Outlook)">Exporter vers l'agenda</button>
+      </div>
+    </div>
+    <div class="s-compte" id="s-compte" aria-live="polite"></div>
+    <div class="s-chiffres" id="s-chiffres"></div>
+    <div id="s-alertes" class="s-alertes" aria-live="polite"></div>
+    <div class="s-corps">
+      <div class="bloc s-carte-bloc">
+        <div class="s-cal-tete"><h3>Carte</h3>
+          <form class="s-dom" id="s-dom-f"><label for="s-dom">Domicile</label>
+            <input id="s-dom" type="text" placeholder="Ville ou code postal" autocomplete="off">
+            <button type="submit" class="btn">OK</button></form>
+        </div>
+        <div class="s-carte" id="s-carte" role="region" aria-label="Carte de ma saison"></div>
+      </div>
+      <div class="bloc s-cal-bloc">
+        <div class="s-cal-tete"><h3>Calendrier</h3><div class="legende" id="s-legende"></div></div>
+        <div class="s-cal" id="s-cal"></div>
+      </div>
+      <div class="bloc s-liste-bloc"><h3>Tournois</h3><div id="s-liste"></div></div>
+    </div>
+  </section>
+
+  <section id="ecran-stats" class="ecran-stats" hidden aria-labelledby="st-titre">
+    <div class="s-tete"><h2 id="st-titre">Mes stats <span class="seg" id="st-listes" role="group" aria-label="Circuit (Mérite)"></span></h2></div>
+    <div id="st-contenu"></div>
+    <div id="st-bulle" class="st-bulle" role="tooltip" hidden></div>
+  </section>
+
+  <section id="ecran-coach" class="ecran-admin" hidden aria-labelledby="co-titre">
+    <div class="s-tete"><h2 id="co-titre">Coach</h2></div>
+    <div id="co-contenu"></div>
+  </section>
+
+  <section id="ecran-admin" class="ecran-admin" hidden aria-labelledby="ad-titre">
+    <div class="s-tete"><h2 id="ad-titre">Administration</h2></div>
+    <form class="bloc" id="ad-form" autocomplete="off">
+      <h3>Inviter quelqu'un</h3>
+      <p class="meta">La personne reçoit un e-mail GolfNexus avec un lien (24 heures, une seule fois) ; elle choisit ensuite son mot de passe. La licence d'un joueur est fixée ici : il ne pourra pas la changer (seul l'administrateur la corrige).</p>
+      <div class="ad-champs">
+        <label>E-mail <input id="ad-email" type="email" required placeholder="prenom.nom@exemple.fr"></label>
+        <label>Nom affiché <input id="ad-nom" type="text" maxlength="60" placeholder="ex. Léo Martin"></label>
+        <label>Licence ffgolf <input id="ad-lic" type="text" inputmode="numeric" maxlength="12" pattern="[0-9 ]{6,14}" placeholder="obligatoire pour un joueur"></label>
+        <label>Rôle <select id="ad-role">
+          <option value="joueur">Joueur (18 ans et +)</option>
+          <option value="mineur">Joueur de moins de 18 ans (e-mail du parent)</option>
+          <option value="coach">Coach</option>
+          <option value="admin">Administrateur</option>
+        </select></label>
+        <button type="submit" class="btn plein" id="ad-ok">Envoyer l'invitation</button>
+      </div>
+      <p class="a-msg" id="ad-msg" aria-live="polite"></p>
+    </form>
+    <div class="bloc"><h3>Invitations en attente</h3><div id="ad-invits"></div></div>
+    <div class="bloc"><h3>Clubs <small>structures : un club ffgolf (son académie, les équipes de son AS) ou un coach indépendant</small></h3><div id="ad-structures"></div></div>
+    <div class="bloc"><h3>Comptes</h3><div id="ad-membres" class="st-table"></div></div>
+  </section>
+
+  <section id="ecran-profil" class="ecran-profil" hidden aria-labelledby="p-titre">
+    <div class="s-tete"><h2 id="p-titre">Mon profil</h2></div>
+    <div class="p-col p-col-g">
+      <div class="bloc p-bloc" id="p-merite-bloc">
+        <h3>Mon Mérite ffgolf</h3>
+        <div id="p-merite"></div>
+      </div>
+    <form class="bloc p-bloc" id="p-form" autocomplete="off">
+      <h3>Ma fiche joueur</h3>
+      <div class="p-champs">
+        <label>Nom affiché <input id="p-nom" type="text" maxlength="60" placeholder="ex. Léo"></label>
+        <label>Club <input id="p-club" type="text" maxlength="60" placeholder="ex. Golf du Pic Saint-Loup"></label>
+        <label id="p-licence-lib">N° de licence ffgolf <input id="p-licence" type="text" inputmode="numeric" maxlength="12" placeholder="ex. 123456789"><small id="p-licence-aide"></small></label>
+        <label>Sexe <select id="p-sexe"><option value="">—</option><option value="H">Messieurs</option><option value="D">Dames</option></select></label>
+        <label>Année de naissance <input id="p-naissance" type="number" min="1920" max="2025" step="1" placeholder="ex. 2010"><small id="p-categorie"></small></label>
+        <label>Index <input id="p-index" type="text" inputmode="decimal" placeholder="ex. 4,2"><small id="p-index-aide"></small></label>
+        <label>Code postal du domicile <input id="p-cp" type="text" inputmode="numeric" maxlength="5" placeholder="ex. 34270"><select id="p-commune" hidden></select><small id="p-cp-aide"></small></label>
+        <label>Distance maximale <span class="p-unite"><input id="p-dist" type="number" min="0" max="2000" step="10" placeholder="ex. 300"> km</span><small>depuis ton domicile</small></label>
+        <label>Circuit par défaut <select id="p-circuit">
+          <option value="gp">Adultes (Grands Prix, tous âges)</option><option value="jeunes">Jeunes (U12 à U16)</option>
+          <option value="mid">Mid-Amateurs (25 ans et +)</option><option value="seniors">Seniors (50 ans et +)</option><option value="">Tous les circuits</option>
+        </select><small id="p-circuit-aide">appliqué à la carte et à la liste à chaque ouverture</small></label>
+        <div class="p-bascule"><label class="bascule petite"><input id="p-dist-auto" type="checkbox"><span class="piste" aria-hidden="true"></span>Appliquer cette distance à la carte et à la liste à chaque ouverture</label>
+          <small>Tu peux toujours la changer ou l'enlever sur la carte : elle reviendra à la prochaine ouverture.</small></div>
+      </div>
+      <p class="meta">Ta fiche est enregistrée dans ton compte. Avec tes Mérites, elle sert à estimer ta <b>place probable</b> sur chaque tournoi. <button type="button" class="lien" data-rgpd>Tes données personnelles : ce qui est enregistré, qui le voit, tes droits</button></p>
+    </form>
+    </div>
+    <div class="p-col p-col-d">
+      <div id="p-acces"></div>
+    <div class="bloc p-bloc" id="p-rappels-bloc">
+      <h3>Rappels d'inscription</h3>
+      <label class="bascule"><input id="p-rappels" type="checkbox"><span class="piste" aria-hidden="true"></span>M'envoyer un e-mail avant la clôture des inscriptions</label>
+      <p class="meta">Pour les tournois de « Ma saison » encore « Envisagé » (pas encore inscrit). Un seul e-mail par tournoi et par délai, plus aucun dès que tu le passes en « Inscrit ».</p>
+      <div class="p-rappels-jours" id="p-rappels-jours">
+        <label><input type="checkbox" data-rappel="7"> 7 jours avant</label>
+        <label><input type="checkbox" data-rappel="3"> 3 jours avant</label>
+        <label><input type="checkbox" data-rappel="1"> la veille</label>
+      </div>
+    </div>
+    </div>
+  </section>
+
+  <div id="fiche" class="fiche" hidden>
+    <div class="fiche-boite" role="dialog" aria-modal="true" aria-labelledby="fiche-titre">
+      <button class="fermer" id="fiche-fermer" aria-label="Fermer">×</button>
+      <div id="fiche-contenu"></div>
+    </div>
+  </div>
+
+
+  <!-- Données personnelles (RGPD) — 06/11. RÈGLE : ce texte doit TOUJOURS décrire ce que fait vraiment GolfNexus.
+       Toute évolution qui touche aux données personnelles le met à jour dans le même commit (MD_DOC/PLAN.md). -->
+  <div id="rgpd" class="fiche rgpd" hidden>
+    <div class="fiche-boite" role="dialog" aria-modal="true" aria-labelledby="rgpd-titre">
+      <button class="fermer" id="rgpd-fermer" aria-label="Fermer">×</button>
+      <h2 id="rgpd-titre">Tes données personnelles</h2>
+      <p class="sous">Ce que GolfNexus enregistre, pourquoi, qui le voit, et tes droits. Mise à jour : 6 novembre 2026.</p>
+
+      <h3>En bref</h3>
+      <ul>
+        <li>GolfNexus est un <b>projet personnel, non commercial</b> : pas de publicité, pas de mesure d'audience, aucune donnée vendue ni partagée à des fins commerciales.</li>
+        <li>On entre <b>sur invitation</b>. Tes données restent <b>dans ton compte</b> : personne d'autre ne les voit, sauf un coach que <b>tu as accepté</b> (et seulement en lecture).</li>
+        <li>Les résultats des tournois sont ceux, publics, de la ffgolf, <b>sans aucun nom</b> : seule <b>ta</b> ligne est reliée à ton compte, grâce à ta licence.</li>
+      </ul>
+
+      <h3>Qui est responsable</h3>
+      <p>L'administrateur de GolfNexus. Contact : <a href="mailto:golfnexus@sportsdatabucket.fr">golfnexus@sportsdatabucket.fr</a>.</p>
+
+      <h3>Ce qui est enregistré dans ton compte</h3>
+      <table class="rgpd-t"><thead><tr><th>Donnée</th><th>D'où elle vient</th><th>À quoi elle sert</th></tr></thead><tbody>
+        <tr><td>Adresse e-mail, mot de passe (chiffré, jamais visible), dates de connexion</td><td>l'invitation, toi</td><td>te connecter, t'envoyer les liens et les rappels que tu as demandés</td></tr>
+        <tr><td>Nom affiché, sexe, année de naissance, index</td><td>toi, ta fiche Mérite</td><td>catégorie d'âge, tournois auxquels tu as droit, estimation de ta place</td></tr>
+        <tr><td>Commune du domicile (code postal) et sa position, distance maximale</td><td>toi</td><td>distances jusqu'aux golfs ; jamais ton adresse</td></tr>
+        <tr><td>N° de licence ffgolf et club de licence</td><td>l'invitation, la ffgolf</td><td>retrouver <b>tes</b> résultats ; reconnaître ton club</td></tr>
+        <tr><td>Ta fiche Mérite (places, moyennes par rapport au SSS, tournois comptés, points) mois par mois</td><td>ffgolf (pages publiques)</td><td>« Mon profil », « Mes stats », ta place probable</td></tr>
+        <tr><td>Ta ligne dans les résultats des tournois que tu as joués (place, scores, trou par trou)</td><td>ffgolf (pages publiques), par ta licence</td><td>« Ma saison », « Mes stats », cartes de score</td></tr>
+        <tr><td>Ta saison (tournois choisis, statut, notes) et tes préférences (rappels, circuit…)</td><td>toi</td><td>planifier ta saison, t'envoyer les rappels demandés</td></tr>
+        <tr><td>Coachs et club qui te suivent, tes équipes</td><td>tes acceptations, les coachs</td><td>le suivi par ton club ou ton coach</td></tr>
+        <tr><td>Rôle (joueur, coach, admin), compte d'un mineur, validation parentale</td><td>l'invitation, le parent</td><td>droits d'accès et protection des mineurs</td></tr>
+      </tbody></table>
+
+      <h3>Les résultats des autres joueurs</h3>
+      <p>Les classements des tournois sont conservés <b>sans nom, sans licence, sans club et sans index</b> des joueurs : seulement les places et les scores. Les noms sont retirés dès la lecture, avant tout enregistrement. Pour te retrouver, la liste du Mérite (nominative, publique sur ffgolf.org) est lue <b>une fois, dans ton navigateur</b> : rien d'autre que <b>ta</b> ligne n'est gardé. Ensuite, un robot relit seulement <b>ta</b> fiche après chaque parution du Mérite (il parcourt la liste pour y retrouver ta ligne, sans rien garder d'autre) et <b>tes</b> résultats chaque lundi.</p>
+
+      <h3>Qui voit tes données</h3>
+      <ul>
+        <li><b>Toi</b> (ou ton parent, qui tient le compte d'un joueur de moins de 18 ans).</li>
+        <li><b>Un club ou un coach que tu as accepté</b>, en lecture seule, sans rien pouvoir modifier. Si tu es licencié au club, <b>tous les coachs de son académie</b> te voient (sélection, équipes de l'AS) ; un coach d'un autre club ne te voit <b>que lui-même</b>. Tu peux retirer cet accès à tout moment dans « Mon profil ».</li>
+        <li><b>L'administrateur</b>, pour gérer les comptes (invitations, rôles, rattachements, correction d'une licence).</li>
+        <li>Une personne à qui l'administrateur a donné un <b>lien de démonstration</b> d'un compte, avec l'accord de son titulaire (lecture seule, révocable).</li>
+        <li>Personne d'autre : la base applique ces règles elle-même (sécurité ligne à ligne).</li>
+      </ul>
+
+      <h3>Les moins de 18 ans</h3>
+      <p>Le compte d'un joueur mineur est <b>celui de son parent</b> (son e-mail). Le parent valide d'abord qu'il en est responsable ; c'est lui qui accepte ou refuse les coachs.</p>
+
+      <h3>Où sont les données, avec quels prestataires</h3>
+      <table class="rgpd-t"><thead><tr><th>Prestataire</th><th>Rôle</th><th>Lieu</th></tr></thead><tbody>
+        <tr><td>Supabase</td><td>comptes et base de données</td><td>Union européenne (Paris)</td></tr>
+        <tr><td>Brevo</td><td>envoi des e-mails (invitation, connexion, rappels)</td><td>France / UE</td></tr>
+        <tr><td>GitHub (Microsoft)</td><td>héberge la page (sans aucune donnée) ; ses robots (GitHub Actions) relèvent le Mérite et les résultats des comptes et les écrivent dans la base, sans les conserver</td><td>États-Unis possible</td></tr>
+        <tr><td>Esri, cdnjs, jsDelivr</td><td>fonds de carte et bibliothèques de la page (reçoivent l'adresse IP du navigateur, comme tout site)</td><td>hors UE possible</td></tr>
+        <tr><td>api-adresse.data.gouv.fr, geo.api.gouv.fr</td><td>retrouver la commune d'un code postal (seul le code postal est envoyé)</td><td>France</td></tr>
+        <tr><td>ffgolf.org</td><td>source des données ; ton navigateur y lit la liste du Mérite quand tu cherches ta fiche</td><td>France</td></tr>
+      </tbody></table>
+
+      <h3>Dans ton navigateur</h3>
+      <p>Pas de cookie publicitaire ni de traceur. Le navigateur garde ta <b>session de connexion</b> et quelques <b>préférences d'affichage</b> (options cochées, totaux du Mérite du mois pour éviter de les retélécharger). Se déconnecter efface ta session et la copie locale de ta saison.</p>
+
+      <h3>Combien de temps</h3>
+      <p>Tant que ton compte existe. Les e-mails de rappel déjà envoyés et les relevés sont notés pour ne pas les refaire. <b>Pas encore de suppression automatique</b> des comptes inactifs.</p>
+
+      <h3>Tes droits</h3>
+      <p>Tu peux demander à <b>consulter</b>, <b>corriger</b>, <b>récupérer</b> ou <b>supprimer</b> tes données, et t'opposer à leur traitement, en écrivant à <a href="mailto:golfnexus@sportsdatabucket.fr">golfnexus@sportsdatabucket.fr</a>. La plupart se corrigent directement dans « Mon profil » ; ta licence, elle, est corrigée par l'administrateur. <b>La suppression de compte se fait pour l'instant sur demande</b> par e-mail (un bouton est prévu). Tu peux aussi saisir la CNIL (cnil.fr).</p>
+    </div>
+  </div>
+  <footer class="pied">
+    <span id="maj"></span> · Source : ffgolf.org · Résultats historiques anonymisés (aucun nom de joueur) · <button type="button" class="lien" data-rgpd>Tes données personnelles</button>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.js"></script>
+  <div id="assistant" class="assistant" role="dialog" aria-modal="true" aria-label="Bien démarrer" hidden><div class="as-carte" id="as-carte"></div></div>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <script src="app.js"></script>
+</body>
+</html>
