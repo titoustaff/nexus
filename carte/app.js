@@ -108,7 +108,7 @@ async function rendreListe() {
   const attend = etat.vue ? [] : (etat.agenda || []).map((a) => ({ ...a, carte: etat.parties.find((p) => p.tournoi_id === a.t.id && (p.tour || 1) === a.tour) }))
     .filter((a) => !a.carte || !a.carte.terminee);
   const htmlAttend = attend.map((a) => `<div class="li-attend"><span>⛳ <b>Aujourd'hui : ${esc(titre(a.t.nom))}</b>${(a.t.nb_tours || 1) > 1 ? ` · tour ${a.tour}` : ""}
-      <small>${esc(titre(a.t.golf_nom || a.t.golf || ""))}${a.t.categorie ? " · " + esc(a.t.categorie) : ""} · ${a.t.club ? "ajoutée par ton coach" : `dans ta saison (${esc({ envisage: "envisagé", inscrit: "inscrit", joue: "joué" }[a.statut] || a.statut)})`}</small></span>
+      <small>${esc(titre(a.t.golf_nom || a.t.golf || ""))}${a.t.categorie ? " · " + esc(a.t.categorie) : ""} · ${a.t.club ? ({ rencontre: "rencontre inter-clubs", interne: "partie demandée par ton coach" }[a.t.type] || "compétition ajoutée par ton coach") : `dans ta saison (${esc({ envisage: "envisagé", inscrit: "inscrit", joue: "joué" }[a.statut] || a.statut)})`}</small></span>
       ${a.carte ? `<button type="button" class="btn plein" data-partie="${esc(a.carte.id)}">Reprendre ma carte</button>` : `<button type="button" class="btn plein" data-attend="${esc(a.t.id)}">Ta carte t'attend · commencer</button>`}</div>`).join("");
   if (!etat.parties.length) {
     box.innerHTML = etat.vue ? `<div class="bloc vide">Aucune carte pour ce joueur.</div>`
@@ -147,12 +147,13 @@ async function chargerAgenda() {
     const t = etat.tournois.find((x) => x.id === r.tournoi_id);
     if (t?.debut && t.debut <= JOUR && JOUR <= (t.fin || t.debut)) etat.agenda.push({ t, statut: r.statut, tour: tourDuJour(t, JOUR) });
   }
-  // compétitions ajoutées par le coach (module Club : club_competitions), auxquelles je suis inscrit, qui se jouent aujourd'hui
-  const C = await sb.from("club_competition_joueurs").select("competition:club_competitions(id,nom,golf,golf_nom,debut,fin,nb_tours,categorie)").eq("joueur_id", Compte.moi.id);
+  // événements organisés par le coach (module Club : club_evenements — compétition hors Mérite, rencontre inter-clubs,
+  // partie interne) auxquels je suis inscrit, qui se jouent aujourd'hui
+  const C = await sb.from("club_evenement_joueurs").select("evenement:club_evenements(id,type,nom,golf,golf_nom,debut,fin,nb_tours,categorie)").eq("joueur_id", Compte.moi.id);
   for (const r of C.data || []) {
-    const c = r.competition;
+    const c = r.evenement;
     if (c?.debut && c.debut <= JOUR && JOUR <= (c.fin || c.debut)) {
-      const t = { id: "club:" + c.id, nom: c.nom, golf: c.golf, golf_nom: c.golf_nom, debut: c.debut, fin: c.fin, nb_tours: c.nb_tours, categorie: c.categorie, club: true };
+      const t = { id: "club:" + c.id, nom: c.nom, golf: c.golf, golf_nom: c.golf_nom, debut: c.debut, fin: c.fin, nb_tours: c.nb_tours, categorie: c.categorie, club: true, type: c.type };
       etat.agenda.push({ t, statut: "coach", tour: tourDuJour(t, JOUR) });
     }
   }
@@ -163,8 +164,8 @@ function preremplir(id) {
   ecran("nouvelle");
   $("nv-jour").value = JOUR;
   if (g) { $("nv-golf").value = libGolf(g); majParcours(); }
-  if (a.t.club) {   // compétition ajoutée par le coach : contexte « hors Mérite », rattachée à la compétition (club:<id>)
-    $("nv-contexte").value = "competition"; majTournois();
+  if (a.t.club) {   // événement du coach : contexte selon son type, carte rattachée à l'événement (club:<id>)
+    $("nv-contexte").value = { rencontre: "rencontre", interne: "libre" }[a.t.type] || "competition"; majTournois();
     etat.attente = { ref: a.t.id, tour: a.tour };
   } else {
     $("nv-contexte").value = "tournoi"; majTournois();
@@ -235,7 +236,7 @@ $("nv-form").addEventListener("submit", async (e) => {
   const ligne = { jour: $("nv-jour").value, golf: g.slug, golf_nom: g.nom, parcours: p?.code || null, parcours_nom: p?.nom || null,
     repere: $("nv-repere").value || null, nb_trous: nb, premier, contexte: $("nv-contexte").value,
     tournoi_id: $("nv-contexte").value === "tournoi" ? ($("nv-tournoi").value || null) : null, trous, note: $("nv-note").value.trim() || null };
-  if (ligne.contexte === "competition" && etat.attente) { ligne.tournoi_id = etat.attente.ref; ligne.tour = etat.attente.tour; }
+  if (etat.attente && ligne.contexte !== "tournoi") { ligne.tournoi_id = etat.attente.ref; ligne.tour = etat.attente.tour; }
   else if (ligne.tournoi_id) ligne.tour = +$("nv-tour").value || 1;
   if (ligne.tournoi_id) {
     // déjà une carte pour ce tournoi et ce tour : on l'ouvre plutôt que d'en créer une deuxième
