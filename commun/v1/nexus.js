@@ -34,7 +34,7 @@ function signaler(msg) {
 // gn-data.json.gz depuis l'espace privé Supabase (lisible par les comptes connectés seulement).
 const nx$ = (id) => document.getElementById(id);
 // invite : arrivé par un lien d'invitation ; mdpConnu : connecté par mot de passe (l'assistant ne le redemande pas)
-const nexus = { invite: false, mdpConnu: false };
+const nexus = { invite: false, mdpConnu: false, demandeMdp: false };
 async function telechargerDonnees() {
   const { data, error } = await sb.storage.from("donnees").download("gn-data.json.gz");
   if (error) throw error;
@@ -109,3 +109,114 @@ async function nexusLireProfil(user) {
     fiche: d.fiche || {},   // fiche joueur { nom, club, sexe, naissance, merite… }
   };
 }
+
+// ------------------------------------------------------------------ compte : panneau en haut à droite (#b-pan)
+// Repris de Saison. Le module garde rendreCompte() (onglets, vues coach / démo) et y appelle
+// nexusPanneauConnecte(mel) ou nexusPanneauConnexion() ; compteModule = son objet de compte (setFiche).
+// Connexion par lien e-mail : à ouvrir dans le navigateur qui a fait la demande (PKCE).
+const compte = { envoye: null, ouvert: false, parLien: false, mdp: false, email: "" };
+const LIEN_REGLES = "Le lien est <b>à usage unique</b>, valable <b>24 heures</b>, et ne fonctionne que <b>dans ce navigateur</b> (celui où tu l'as demandé).";
+// connecté : adresse, choisir son mot de passe, se déconnecter
+function nexusPanneauConnecte(mel) {
+  return `<p class="b-mel">Connecté : <b>${esc(mel)}</b></p>
+      ${compte.viaLien ? `<p class="b-regles"><b>Tu es connecté par lien.</b> Choisis un mot de passe : la prochaine fois, tu te connecteras directement, sans attendre d'e-mail.</p>` : ""}
+      <div class="b-menu b-bas">${compte.mdp
+        ? `<form id="c-form-nouveau" class="c-form c-col"><input id="c-nouveau" type="password" autocomplete="new-password" minlength="8" placeholder="nouveau mot de passe (8 car. min.)" aria-label="Nouveau mot de passe" required>
+          <button type="submit" class="btn plein">Enregistrer</button></form>${compte.viaLien ? `<button type="button" class="lien" id="c-plus-tard">Plus tard</button>` : `<p class="b-regles">Ensuite tu te connectes avec ton e-mail et ce mot de passe, sans attendre d'e-mail.</p>`}`
+        : `<button type="button" role="menuitem" class="b-item" id="c-mdp">Choisir mon mot de passe</button>`}
+      <button type="button" role="menuitem" class="b-item" id="c-sortir">Se déconnecter</button></div>`;
+}
+// pas connecté : mot de passe, ou lien par e-mail (e-mails envoyés par Brevo, golfnexus@sportsdatabucket.fr)
+function nexusPanneauConnexion() {
+  return compte.envoye
+    ? `<p>E-mail envoyé à <b>${esc(compte.envoye)}</b> (expéditeur GolfNexus). Ouvre-le et clique sur « Me connecter ».</p>
+      <p>${LIEN_REGLES}</p><div><button type="button" class="lien" id="c-autre">Autre adresse</button></div>`
+    : compte.parLien
+    ? `<p>Pas de mot de passe, ou oublié ? Reçois un lien de connexion par e-mail.</p>
+    <form id="c-form" class="c-form"><input id="c-email" type="email" autocomplete="email" placeholder="ton e-mail" aria-label="Adresse e-mail" required value="${esc(compte.email || "")}">
+    <button type="submit" class="btn plein">Recevoir le lien</button></form>
+    <p class="b-regles">${LIEN_REGLES} Une fois connecté, choisis un mot de passe : plus besoin d'e-mail ensuite.</p>
+    <div><button type="button" class="lien" id="c-par-mdp">← Se connecter avec un mot de passe</button></div>`
+    : `<p>Connecte-toi pour retrouver ta saison et ton profil sur tous tes appareils (accès sur invitation).</p>
+    <form id="c-form-mdp" class="c-form c-col"><input id="c-email" type="email" autocomplete="username" placeholder="ton e-mail" aria-label="Adresse e-mail" required value="${esc(compte.email || "")}">
+    <input id="c-mdp-in" type="password" autocomplete="current-password" placeholder="mot de passe" aria-label="Mot de passe" required>
+    <button type="submit" class="btn plein">Se connecter</button></form>
+    <div><button type="button" class="lien" id="c-par-lien">Pas de mot de passe ou oublié ? Recevoir un lien par e-mail</button></div>`;
+}
+// Connexion par mot de passe (aucun e-mail envoyé, donc pas de limite) ; le lien par e-mail reste en secours :
+// l'envoi intégré de Supabase est limité à 2 e-mails par heure pour tout le projet (constat du 04/11).
+function nexusBrancherPanneau(rendre, compteModule) {
+  nx$("b-pan").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const f = e.target, btn = f.querySelector("button[type=submit]"); btn.disabled = true;
+    try {
+      if (f.id === "c-form-nouveau") {
+        const { error } = await sb.auth.updateUser({ password: nx$("c-nouveau").value });
+        if (error) throw error;
+        compte.mdp = false; compte.viaLien = false; compte.ouvert = false; rendre(); compteModule.setFiche({ mdpChoisi: true });
+        signaler("Mot de passe enregistré : tu te connectes désormais avec ton e-mail et ce mot de passe.");
+        return;
+      }
+      const email = nx$("c-email").value.trim().toLowerCase(); compte.email = email;
+      if (f.id === "c-form-mdp") {
+        nexus.mdpConnu = true;
+        const { error } = await sb.auth.signInWithPassword({ email, password: nx$("c-mdp-in").value });
+        if (error) throw error;
+        compte.ouvert = false;   // la suite (chargement du compte) passe par onAuthStateChange
+        return;
+      }
+      const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false,
+        emailRedirectTo: location.origin + location.pathname } });
+      if (error) throw error;
+      compte.envoye = email; rendre();
+    } catch (err) {
+      const m = String(err.message || err);
+      signaler(/invalid login credentials/i.test(m) ? "E-mail ou mot de passe incorrect (pas encore de mot de passe ? reçois un lien par e-mail)." :
+        /signups not allowed|not found|otp_disabled/i.test(m) ? "Cette adresse n'est pas invitée." :
+        /security purposes/i.test(m) ? `Un e-mail vient déjà d'être envoyé à cette adresse : regarde ta boîte (et les spams), ou redemande dans ${(m.match(/(\d+) seconds?/) || [, "60"])[1]} secondes.` :
+        /rate limit/i.test(m) ? "Trop de demandes d'e-mail pour le moment : connecte-toi avec ton mot de passe, ou réessaie plus tard." :
+        /weak|at least|characters/i.test(m) ? "Mot de passe trop court ou trop simple (8 caractères minimum)." : "Connexion impossible : " + m);
+      btn.disabled = false;
+    }
+  });
+}
+// boutons du panneau ; renvoie true si le clic est traité (le module arrête alors son propre traitement)
+function nexusClicPanneau(id, rendre) {
+  if (id === "c-autre") { compte.envoye = null; rendre(); return true; }
+  if (id === "c-par-lien" || id === "c-par-mdp") { compte.email = nx$("c-email")?.value.trim() || compte.email; compte.parLien = id === "c-par-lien"; rendre(); nx$("c-email")?.focus(); return true; }
+  if (id === "c-plus-tard") { Object.assign(compte, { viaLien: false, mdp: false, ouvert: false }); rendre(); return true; }
+  if (id === "c-mdp") { compte.mdp = true; rendre(); nx$("c-nouveau")?.focus(); return true; }
+  if (id === "c-sortir") { compte.ouvert = false; sb.auth.signOut().then(() => { location.hash = ""; location.reload(); }); return true; }
+  return false;
+}
+
+// ------------------------------------------------------------------ assistant de démarrage : étapes communes
+// Le module garde l'assistant (écran, enchaînement, ses propres étapes) et y ajoute ces deux étapes obligatoires.
+// compteModule : { moi (utilisateur), mineur, parentValide, fiche, setFiche() }.
+// nexus.demandeMdp : arrivé par un lien (invitation, lien de connexion) → choisir un mot de passe.
+function nexusEtapesCommunes(compteModule) {
+  const E = [], f = compteModule.fiche || {};
+  if (nexus.demandeMdp && !f.mdpChoisi) E.push("mdp");
+  if (compteModule.mineur && !compteModule.parentValide) E.push("parent");
+  return E;
+}
+const NEXUS_ETAPES = {
+  mdp: {
+    html: (pied) => `<h2>Choisis ton mot de passe</h2><p>Tu te connecteras ensuite avec ton e-mail et ce mot de passe, sans attendre d'e-mail.</p>
+      <input id="as-mdp" type="password" autocomplete="new-password" minlength="8" required placeholder="8 caractères minimum">
+      <input id="as-mdp2" type="password" autocomplete="new-password" minlength="8" required placeholder="confirme le mot de passe">${pied}`,
+    async valider(compteModule) {
+      if (nx$("as-mdp").value !== nx$("as-mdp2").value) throw new Error("les deux mots de passe sont différents");
+      const { error } = await sb.auth.updateUser({ password: nx$("as-mdp").value }); if (error) throw error;
+      compteModule.setFiche({ mdpChoisi: true });
+    },
+  },
+  parent: {
+    html: (pied) => `<h2>Compte d'un joueur de moins de 18 ans</h2><p>Ce compte est celui du <b>parent ou représentant légal</b>. C'est toi qui décideras qui peut suivre le joueur (coachs).</p>
+      <label class="as-coche"><input type="checkbox" id="as-parent" required> Je suis le parent ou le représentant légal de ce joueur et j'accepte que ses données de golf (saison, résultats, Mérite) soient enregistrées dans GolfNexus.</label>${pied}`,
+    async valider(compteModule) {
+      const r = await sb.from("profils").update({ parent_valide_le: new Date().toISOString() }).eq("id", compteModule.moi.id).select("parent_valide_le").maybeSingle();
+      if (r.error) throw r.error; compteModule.parentValide = r.data?.parent_valide_le;
+    },
+  },
+};
