@@ -1,0 +1,59 @@
+{
+ "_note": "Modules de la suite GolfNexus, dans l'ordre de développement. adresse : relative à https://titoustaff.github.io/nexus/ ; etat : ouvert | bientot. Nouveau module = une ligne ici.",
+ "modules": [
+  {
+   "id": "saison",
+   "nom": "Saison",
+   "verbe": "Planifier",
+   "couleur": "#1f7a45",
+   "adresse": "saison/",
+   "etat": "ouvert",
+   "icone": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"5\" width=\"18\" height=\"16\" rx=\"3\"/><path d=\"M3 10h18M8 3v4M16 3v4\"/><path d=\"M10 13v6\" /><path d=\"M10.5 13l4 1.5-4 1.5z\" fill=\"currentColor\"/></svg>"
+  },
+  {
+   "id": "club",
+   "nom": "Club",
+   "verbe": "Accompagner",
+   "couleur": "#14532d",
+   "adresse": "club/",
+   "etat": "ouvert",
+   "icone": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z\"/><circle cx=\"9.5\" cy=\"11\" r=\"2\"/><circle cx=\"14.5\" cy=\"11\" r=\"2\"/><path d=\"M6.8 17c.6-1.7 1.6-2.5 2.7-2.5s2.1.8 2.5 1.6c.4-.8 1.4-1.6 2.5-1.6s2.1.8 2.7 2.5\"/></svg>"
+  },
+  {
+   "id": "carte",
+   "nom": "Carte",
+   "verbe": "Noter ses tours",
+   "couleur": "#0e7490",
+   "adresse": null,
+   "etat": "bientot",
+   "icone": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"4\" y=\"3\" width=\"16\" height=\"18\" rx=\"2.5\"/><path d=\"M4 8h16M4 13h16M10 3v18M15 3v18\"/><path d=\"M6.5 17.5l1.2 1.2 2-2.4\" /></svg>"
+  },
+  {
+   "id": "stats",
+   "nom": "Stats",
+   "verbe": "Analyser",
+   "couleur": "#6d28d9",
+   "adresse": null,
+   "etat": "bientot",
+   "icone": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 20h16\"/><rect x=\"5.5\" y=\"12\" width=\"3\" height=\"6\" rx=\"1\"/><rect x=\"10.5\" y=\"8\" width=\"3\" height=\"10\" rx=\"1\"/><rect x=\"15.5\" y=\"4\" width=\"3\" height=\"14\" rx=\"1\"/></svg>"
+  },
+  {
+   "id": "entrainement",
+   "nom": "Entraînement",
+   "verbe": "Progresser",
+   "couleur": "#b45309",
+   "adresse": null,
+   "etat": "bientot",
+   "icone": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><circle cx=\"12\" cy=\"12\" r=\"5\"/><circle cx=\"12\" cy=\"12\" r=\"1.6\" fill=\"currentColor\"/></svg>"
+  },
+  {
+   "id": "rencontres",
+   "nom": "Rencontres",
+   "verbe": "Jouer en équipe",
+   "couleur": "#c2410c",
+   "adresse": null,
+   "etat": "bientot",
+   "icone": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 21V4\"/><path d=\"M6 4l6 2.5L6 9z\" fill=\"currentColor\"/><path d=\"M18 21V4\"/><path d=\"M18 4l-6 2.5L18 9z\" fill=\"currentColor\"/><path d=\"M3 21h18\"/><path d=\"M10 14h4\"/></svg>"
+  }
+ ]
+}
