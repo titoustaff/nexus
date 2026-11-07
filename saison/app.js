@@ -1092,10 +1092,9 @@ $("s-annees").addEventListener("click", (e) => {
   etat.sAnnee = +b.dataset.an; toutRafraichir();
 });
 // ---- compte : connexion par lien e-mail, à ouvrir dans le navigateur qui a fait la demande (PKCE)
-const compte = { envoye: null, ouvert: false, parLien: false, mdp: false, email: "" };
+// compte (état du panneau), LIEN_REGLES : briques communes (../commun/v1/nexus.js).
 // Compte en haut à droite, les onglets juste en dessous (choix utilisateur du 04/11, après l'essai « menu dans le nom »).
 // Connecté : initiale + nom ▾ (adresse, se déconnecter) ; sinon « Se connecter » (formulaire). « Mon profil » : onglet visible connecté seulement.
-const LIEN_REGLES = "Le lien est <b>à usage unique</b>, valable <b>24 heures</b>, et ne fonctionne que <b>dans ce navigateur</b> (celui où tu l'as demandé).";
 function rendreCompte() {
   const b = $("b-compte"), pan = $("b-pan"), c = $("s-compte"), connecte = Saison.mode === "compte" && !!sb;
   $("v-profil").hidden = !connecte; $("v-stats").hidden = !connecte || coachSeul();
@@ -1129,32 +1128,12 @@ function rendreCompte() {
     const mel = Saison.user.email || "", nom = (Saison.fiche && Saison.fiche.nom) || mel;
     b.innerHTML = selecteurVue() + `<button type="button" class="b-btn b-moi" id="c-ouvrir" aria-haspopup="menu" aria-expanded="${compte.ouvert}" aria-controls="b-pan" title="${esc(mel)}">
       <span class="b-init" aria-hidden="true">${esc((nom.trim()[0] || "?").toUpperCase())}</span><span class="b-qui">${esc(nom)}</span><span aria-hidden="true">▾</span></button>`;
-    pan.innerHTML = `<p class="b-mel">Connecté : <b>${esc(mel)}</b></p>
-      ${compte.viaLien ? `<p class="b-regles"><b>Tu es connecté par lien.</b> Choisis un mot de passe : la prochaine fois, tu te connecteras directement, sans attendre d'e-mail.</p>` : ""}
-      <div class="b-menu b-bas">${compte.mdp
-        ? `<form id="c-form-nouveau" class="c-form c-col"><input id="c-nouveau" type="password" autocomplete="new-password" minlength="8" placeholder="nouveau mot de passe (8 car. min.)" aria-label="Nouveau mot de passe" required>
-          <button type="submit" class="btn plein">Enregistrer</button></form>${compte.viaLien ? `<button type="button" class="lien" id="c-plus-tard">Plus tard</button>` : `<p class="b-regles">Ensuite tu te connectes avec ton e-mail et ce mot de passe, sans attendre d'e-mail.</p>`}`
-        : `<button type="button" role="menuitem" class="b-item" id="c-mdp">Choisir mon mot de passe</button>`}
-      <button type="button" role="menuitem" class="b-item" id="c-sortir">Se déconnecter</button></div>`;
+    pan.innerHTML = nexusPanneauConnecte(mel);
     c.hidden = true; c.innerHTML = "";
     return;
   }
   b.innerHTML = sb ? `<button type="button" class="b-btn" id="c-ouvrir" aria-expanded="${compte.ouvert}" aria-controls="b-pan">Se connecter</button>` : "";
-  // e-mails envoyés par Brevo (golfnexus@sportsdatabucket.fr), modèles : pipeline/emails_supabase.py
-  pan.innerHTML = compte.envoye
-    ? `<p>E-mail envoyé à <b>${esc(compte.envoye)}</b> (expéditeur GolfNexus). Ouvre-le et clique sur « Me connecter ».</p>
-      <p>${LIEN_REGLES}</p><div><button type="button" class="lien" id="c-autre">Autre adresse</button></div>`
-    : compte.parLien
-    ? `<p>Pas de mot de passe, ou oublié ? Reçois un lien de connexion par e-mail.</p>
-    <form id="c-form" class="c-form"><input id="c-email" type="email" autocomplete="email" placeholder="ton e-mail" aria-label="Adresse e-mail" required value="${esc(compte.email || "")}">
-    <button type="submit" class="btn plein">Recevoir le lien</button></form>
-    <p class="b-regles">${LIEN_REGLES} Une fois connecté, choisis un mot de passe : plus besoin d'e-mail ensuite.</p>
-    <div><button type="button" class="lien" id="c-par-mdp">← Se connecter avec un mot de passe</button></div>`
-    : `<p>Connecte-toi pour retrouver ta saison et ton profil sur tous tes appareils (accès sur invitation).</p>
-    <form id="c-form-mdp" class="c-form c-col"><input id="c-email" type="email" autocomplete="username" placeholder="ton e-mail" aria-label="Adresse e-mail" required value="${esc(compte.email || "")}">
-    <input id="c-mdp-in" type="password" autocomplete="current-password" placeholder="mot de passe" aria-label="Mot de passe" required>
-    <button type="submit" class="btn plein">Se connecter</button></form>
-    <div><button type="button" class="lien" id="c-par-lien">Pas de mot de passe ou oublié ? Recevoir un lien par e-mail</button></div>`;
+  pan.innerHTML = nexusPanneauConnexion();
   // « Ma saison » : pas de ligne de connexion (retour du 04/11) ; le message de la saison vide suffit
   c.hidden = true; c.innerHTML = "";
 }
@@ -1162,48 +1141,10 @@ function ouvrirConnexion(ouvert = true) {
   compte.ouvert = ouvert; rendreCompte();
   if (ouvert) { window.scrollTo({ top: 0 }); setTimeout(() => $("c-email")?.focus(), 0); }
 }
-// Connexion par mot de passe (aucun e-mail envoyé, donc pas de limite) ; le lien par e-mail reste en secours :
-// l'envoi intégré de Supabase est limité à 2 e-mails par heure pour tout le projet (constat du 04/11).
-$("b-pan").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const f = e.target, btn = f.querySelector("button[type=submit]"); btn.disabled = true;
-  try {
-    if (f.id === "c-form-nouveau") {
-      const { error } = await sb.auth.updateUser({ password: $("c-nouveau").value });
-      if (error) throw error;
-      compte.mdp = false; compte.viaLien = false; compte.ouvert = false; rendreCompte(); Saison.setFiche({ mdpChoisi: true });
-      signaler("Mot de passe enregistré : tu te connectes désormais avec ton e-mail et ce mot de passe.");
-      return;
-    }
-    const email = $("c-email").value.trim().toLowerCase(); compte.email = email;
-    if (f.id === "c-form-mdp") {
-      nexus.mdpConnu = true;
-      const { error } = await sb.auth.signInWithPassword({ email, password: $("c-mdp-in").value });
-      if (error) throw error;
-      compte.ouvert = false;   // la suite (chargement du compte) passe par onAuthStateChange
-      return;
-    }
-    const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false,
-      emailRedirectTo: location.origin + location.pathname } });
-    if (error) throw error;
-    compte.envoye = email; rendreCompte();
-  } catch (err) {
-    const m = String(err.message || err);
-    signaler(/invalid login credentials/i.test(m) ? "E-mail ou mot de passe incorrect (pas encore de mot de passe ? reçois un lien par e-mail)." :
-      /signups not allowed|not found|otp_disabled/i.test(m) ? "Cette adresse n'est pas invitée." :
-      /security purposes/i.test(m) ? `Un e-mail vient déjà d'être envoyé à cette adresse : regarde ta boîte (et les spams), ou redemande dans ${(m.match(/(\d+) seconds?/) || [, "60"])[1]} secondes.` :
-      /rate limit/i.test(m) ? "Trop de demandes d'e-mail pour le moment : connecte-toi avec ton mot de passe, ou réessaie plus tard." :
-      /weak|at least|characters/i.test(m) ? "Mot de passe trop court ou trop simple (8 caractères minimum)." : "Connexion impossible : " + m);
-    btn.disabled = false;
-  }
-});
+nexusBrancherPanneau(rendreCompte, Saison);   // formulaires du panneau du compte : briques communes
 document.addEventListener("click", async (e) => {
   const id = e.target.closest("button")?.id || e.target.id;
-  if (id === "c-autre") { compte.envoye = null; rendreCompte(); return; }
-  if (id === "c-par-lien" || id === "c-par-mdp") { compte.email = $("c-email")?.value.trim() || compte.email; compte.parLien = id === "c-par-lien"; rendreCompte(); $("c-email")?.focus(); return; }
-  if (id === "c-plus-tard") { Object.assign(compte, { viaLien: false, mdp: false, ouvert: false }); rendreCompte(); return; }
-  if (id === "c-mdp") { compte.mdp = true; rendreCompte(); $("c-nouveau")?.focus(); return; }
-  if (id === "c-sortir") { compte.ouvert = false; await sb.auth.signOut(); location.hash = ""; location.reload(); return; }
+  if (nexusClicPanneau(id, rendreCompte)) return;   // boutons du panneau du compte : briques communes
   const ec = e.target.closest("#b-pan [data-ecran]");
   if (ec) { compte.ouvert = false; if ($("fiche")) $("fiche").hidden = true; ecran(ec.dataset.ecran); rendreCompte(); return; }
   if (id === "c-ouvrir") { ouvrirConnexion(!compte.ouvert); return; }
@@ -1242,7 +1183,7 @@ function initCompte() {
   }
   sb.auth.onAuthStateChange((ev, session) => setTimeout(async () => {   // pas d'appel Supabase dans le rappel lui-même
     // arrivé par un lien (invitation, lien de connexion) : l'assistant demandera un mot de passe
-    if ((venuDuLien || nexus.invite) && session && ev === "INITIAL_SESSION") etat.demandeMdp = true;
+    if ((venuDuLien || nexus.invite) && session && ev === "INITIAL_SESSION") nexus.demandeMdp = true;
     await majSession(session);
     if (session && Saison.mode === "compte" && !Saison.demo) ouvrirAssistant();
     if (venuDuLien) { const q = new URLSearchParams(location.search); q.delete("code");
@@ -2947,8 +2888,7 @@ $("bienvenue").addEventListener("click", (e) => {
 const asst = { etapes: [], i: 0, res: null };
 function etapesAssistant() {
   const f = Saison.fiche || {}, E = [];
-  if (etat.demandeMdp && !f.mdpChoisi) E.push("mdp");
-  if (Saison.mineur && !Saison.parentValide) E.push("parent");
+  E.push(...nexusEtapesCommunes(Saison));   // mot de passe, accord parental : briques communes
   if (!coachSeul() && !f.merite && !f.pasMerite) E.push("merite");
   if (!f.assistantFait) {
     if (!coachSeul() && !Saison.licence?.num) E.push("licence");
@@ -2976,11 +2916,8 @@ function rendreAssistant() {
   const pied = (ok, plusTard = !OBLIG.has(k)) => `<div class="as-pied">${plusTard ? `<button type="button" class="lien" data-as="passer">Plus tard</button>` : "<span></span>"}
     <button type="submit" class="btn plein">${ok}</button></div>`;
   const C = {
-    mdp: `<h2>Choisis ton mot de passe</h2><p>Tu te connecteras ensuite avec ton e-mail et ce mot de passe, sans attendre d'e-mail.</p>
-      <input id="as-mdp" type="password" autocomplete="new-password" minlength="8" required placeholder="8 caractères minimum">
-      <input id="as-mdp2" type="password" autocomplete="new-password" minlength="8" required placeholder="confirme le mot de passe">${pied("Enregistrer")}`,
-    parent: `<h2>Compte d'un joueur de moins de 18 ans</h2><p>Ce compte est celui du <b>parent ou représentant légal</b>. C'est toi qui décideras qui peut suivre le joueur (coachs).</p>
-      <label class="as-coche"><input type="checkbox" id="as-parent" required> Je suis le parent ou le représentant légal de ce joueur et j'accepte que ses données de golf (saison, résultats, Mérite) soient enregistrées dans GolfNexus.</label>${pied("Valider")}`,
+    mdp: NEXUS_ETAPES.mdp.html(pied("Enregistrer")),
+    parent: NEXUS_ETAPES.parent.html(pied("Valider")),
     structure: `<h2>Ta structure</h2><p>Les joueurs et les parents la verront dans tes demandes d'accès : ils doivent savoir qui tu représentes.</p>
       <select id="as-st-type" required><option value="">Type…</option>${Object.entries(STRUCTURES).map(([v, l]) => `<option value="${v}">${l}</option>`).join("")}</select>
       <input id="as-st-nom" maxlength="80" required placeholder="ex. Golf de Massane, Ligue Occitanie…">${pied("Enregistrer")}`,
@@ -3014,13 +2951,8 @@ $("assistant").addEventListener("submit", async (e) => {
   if (k === "fin") { fermerAssistant(); return; }
   btn.disabled = true;
   try {
-    if (k === "mdp") {
-      if ($("as-mdp").value !== $("as-mdp2").value) throw new Error("les deux mots de passe sont différents");
-      const { error } = await sb.auth.updateUser({ password: $("as-mdp").value }); if (error) throw error;
-      Saison.setFiche({ mdpChoisi: true });
-    } else if (k === "parent") {
-      const r = await sb.from("profils").update({ parent_valide_le: new Date().toISOString() }).eq("id", Saison.moi.id).select("parent_valide_le").maybeSingle();
-      if (r.error) throw r.error; Saison.parentValide = r.data?.parent_valide_le;
+    if (NEXUS_ETAPES[k]) {   // étapes communes (mot de passe, accord parental)
+      await NEXUS_ETAPES[k].valider(Saison);
     } else if (k === "structure") {
       const type = $("as-st-type").value, nom = $("as-st-nom").value.trim();
       const { error } = await sb.from("profils").update({ structure_type: type, structure_nom: nom }).eq("id", Saison.moi.id); if (error) throw error;
