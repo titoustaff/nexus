@@ -178,8 +178,14 @@ const oublierEnCours = (id) => { const m = jsonLs("carte-en-cours"); if (!id || 
 function rendreSaisie() {
   const p = etat.partie, t = p.trous[etat.i], b = bilan(p);
   memoriserEnCours();
-  const choix = (cle, valeurs, lib = (v) => v) => `<div class="sa-choix" role="group">${valeurs.map((v) =>
-    `<button type="button" data-cle="${cle}" data-val="${v}" aria-pressed="${t[cle] === v}">${lib(v)}</button>`).join("")}</div>`;
+  // plus = true : pas de limite (stroke play) → bouton « + » qui ajoute 1 au-delà du dernier choix ; la valeur atteinte s'affiche
+  const choix = (cle, valeurs, lib = (v) => v, plus = false) => {
+    const V = [...valeurs], max = V[V.length - 1];
+    if (plus && typeof t[cle] === "number" && t[cle] > max) V.push(t[cle]);
+    return `<div class="sa-choix" role="group">${V.map((v) =>
+      `<button type="button" data-cle="${cle}" data-val="${v}" aria-pressed="${t[cle] === v}">${lib(v)}</button>`).join("")}${plus
+      ? `<button type="button" class="sa-plus" data-plus="${cle}" data-max="${max}" aria-label="Ajouter 1">+</button>` : ""}</div>`;
+  };
   const scores = [], bas = Math.max(1, t.par - 2);
   for (let s = bas; s <= t.par + 4; s++) scores.push(s);
   const nomScore = (s) => { const d = s - t.par; return `<b>${s}</b><small>${d <= -2 ? "aigle" : d === -1 ? "birdie" : d === 0 ? "par" : d === 1 ? "bogey" : d === 2 ? "double" : "+" + d}</small>`; };
@@ -188,9 +194,9 @@ function rendreSaisie() {
       <div class="sa-total"><b>${b.n ? b.score : "—"}</b><small>${b.n ? ecartPar(b.ecart) + " · " + b.n + "/" + p.nb_trous : "à toi de jouer"}</small></div></div>
     <div class="sa-trous" role="tablist" aria-label="Trous">${p.trous.map((x, k) => `<button type="button" class="${classeScore(x)}${k === etat.i ? " actif" : ""}" data-aller="${k}" aria-label="Trou ${x.t}">${x.t}<small>${x.score || ""}</small></button>`).join("")}</div>
     <div class="bloc sa-trou">
-      <div class="sa-num"><span>Trou <b>${t.t}</b></span><span class="sa-par">Par <button type="button" data-par="-1" aria-label="Par moins un">−</button><b>${t.par}</b><button type="button" data-par="1" aria-label="Par plus un">+</button></span></div>
-      <h3>Score</h3>${choix("score", scores, nomScore)}
-      <div class="sa-ligne"><div><h3>Putts</h3>${choix("putts", [0, 1, 2, 3, 4])}</div><div><h3>Pénalités</h3>${choix("pen", [0, 1, 2, 3])}</div></div>
+      <div class="sa-num"><span>Trou <b>${t.t}</b></span><span class="sa-par">Par <b>${t.par}</b></span></div>
+      <h3>Score</h3>${choix("score", scores, nomScore, true)}
+      <div class="sa-ligne"><div><h3>Putts</h3>${choix("putts", [0, 1, 2, 3, 4], undefined, true)}</div><div><h3>Pénalités</h3>${choix("pen", [0, 1, 2, 3], undefined, true)}</div></div>
       ${t.par > 3 ? `<h3>Mise en jeu (départ)</h3>${choix("fw", FAIRWAYS.map((f) => f[0]), (v) => FAIRWAYS.find((f) => f[0] === v)[1])}` : ""}
       <h3>Bunker</h3>${choix("bunker", [false, true], (v) => (v ? "Oui, joué depuis un bunker" : "Non"))}
     </div>
@@ -199,7 +205,7 @@ function rendreSaisie() {
       <span class="meta" id="sa-etat"></span>
       ${etat.i < p.trous.length - 1 ? `<button type="button" class="btn plein" data-pas="1">Trou ${p.trous[etat.i + 1].t} →</button>` : `<button type="button" class="btn plein" data-finir>Terminer la partie ✓</button>`}
     </div>
-    <p class="sa-bas"><button type="button" class="lien" data-ecran="liste">← Mes cartes</button> · <button type="button" class="lien" data-voir-carte>Voir la carte</button></p>`;
+    <p class="sa-bas"><button type="button" class="lien" data-ecran="liste">← Mes cartes</button> · <button type="button" class="lien" data-voir-carte>Voir la carte</button> · <button type="button" class="lien" data-partager>🔗 Partager en direct</button></p>`;
 }
 $("sa-contenu").addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (!b) return;
@@ -212,7 +218,12 @@ $("sa-contenu").addEventListener("click", (e) => {
     if (b.dataset.cle === "score" && t.bunker == null) t.bunker = false;
     sauver(); rendreSaisie(); return;
   }
-  if (b.dataset.par) { t.par = Math.min(6, Math.max(3, t.par + +b.dataset.par)); if (t.par === 3) delete t.fw; sauver(); rendreSaisie(); return; }
+  if (b.dataset.plus) {   // au-delà du dernier choix : +1 à chaque appui
+    const k = b.dataset.plus, max = +b.dataset.max;
+    t[k] = Math.max(typeof t[k] === "number" ? t[k] : max, max) + 1;
+    if (k === "score") { if (t.putts == null) t.putts = 2; if (t.pen == null) t.pen = 0; if (t.bunker == null) t.bunker = false; }
+    sauver(); rendreSaisie(); return;
+  }
   if (b.dataset.aller) { etat.i = +b.dataset.aller; rendreSaisie(); return; }
   if (b.dataset.pas) { etat.i += +b.dataset.pas; rendreSaisie(); window.scrollTo({ top: 0 }); return; }
   if ("finir" in b.dataset) {
@@ -240,7 +251,7 @@ function sauver(tout = false) {
 
 // ------------------------------------------------------------------ Voir : la carte de score complète
 function rendreVoir() {
-  const p = etat.partie, b = bilan(p), lecture = !!etat.vue || p.user_id !== Compte.moi.id;
+  const p = etat.partie, b = bilan(p), lecture = etat.partage || !!etat.vue || p.user_id !== Compte.moi?.id;
   const moities = p.nb_trous === 18 ? [p.trous.slice(0, 9), p.trous.slice(9)] : [p.trous];
   const somme = (T, k) => T.filter((t) => t.score).reduce((s, t) => s + (+t[k] || 0), 0);
   const tableau = (T, nom) => `<table class="vo-table"><thead><tr><th>Trou</th>${T.map((t) => `<th>${t.t}</th>`).join("")}<th>${nom}</th></tr></thead><tbody>
@@ -251,13 +262,15 @@ function rendreVoir() {
     <tr><th>Départ</th>${T.map((t) => `<td title="${esc(t.fw || "")}">${t.par === 3 ? "" : { gauche: "←", fairway: "●", droite: "→", court: "↓", long: "↑" }[t.fw] || "·"}</td>`).join("")}<td></td></tr>
     <tr><th>Bunker</th>${T.map((t) => `<td>${t.bunker ? "◆" : "·"}</td>`).join("")}<td></td></tr></tbody></table>`;
   $("vo-contenu").innerHTML = `
+    ${etat.partage ? `<div class="pt-direct ${p.terminee ? "fini" : ""}">${p.terminee ? "✓ Partie terminée" : "● En direct"}${p.prenom ? ` · la carte de <b>${esc(p.prenom)}</b>` : ""}
+      <small>${p.terminee ? "" : "mise à jour automatique · "}dernière saisie ${new Date(p.modifie_le).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</small></div>` : ""}
     <div class="s-tete"><h2>${esc(titre(p.golf_nom || p.golf))}</h2><span class="meta">${esc(p.parcours_nom || "")}${p.repere ? " · " + esc(p.repere) : ""} · ${dateLongue(p.jour)} · ${CONTEXTES[p.contexte] || ""}</span></div>
     <div class="st-tuiles">${tuileSt(b.n ? b.score : "—", "score", b.n ? ecartPar(b.ecart) + (b.n < p.nb_trous ? ` sur ${b.n} trous` : "") : "")}${tuileSt(b.putts ?? "—", "putts")}${tuileSt(b.fairways, "fairways touchés")}${tuileSt(b.gir, "greens en régulation")}${tuileSt(b.pen, "pénalités")}</div>
     <div class="bloc vo-carte">${moities.map((T, k) => `<div class="defile">${tableau(T, moities.length > 1 ? (k ? "Retour" : "Aller") : "Total")}</div>`).join("")}
       <p class="meta vo-legende"><span class="sc-birdie">birdie</span> <span class="sc-par">par</span> <span class="sc-bogey">bogey</span> <span class="sc-double">double +</span> · départ : ● fairway, ← gauche, → droite, ↓ court, ↑ long · ◆ bunker</p></div>
     ${p.note ? `<div class="bloc"><b>Note</b> <span>${esc(p.note)}</span></div>` : ""}
-    <div class="vo-actions"><button type="button" class="btn" data-ecran="liste">← ${etat.vue ? "Cartes du joueur" : "Mes cartes"}</button>
-      ${lecture ? `<span class="meta">Lecture seule</span>` : `<button type="button" class="btn" data-modifier>Modifier la saisie</button><button type="button" class="lien vo-suppr" data-supprimer>Supprimer la partie</button>`}</div>`;
+    ${etat.partage ? `<p class="meta pt-pied">Carte partagée par lien (lecture seule) · <a href="../">GolfNexus</a></p>` : `<div class="vo-actions"><button type="button" class="btn" data-ecran="liste">← ${etat.vue ? "Cartes du joueur" : "Mes cartes"}</button>
+      ${lecture ? `<span class="meta">Lecture seule</span>` : `<button type="button" class="btn plein" data-partager>🔗 Partager en direct</button><button type="button" class="btn" data-modifier>Modifier la saisie</button><button type="button" class="lien vo-suppr" data-supprimer>Supprimer la partie</button>`}</div>`}`;
 }
 $("vo-contenu").addEventListener("click", async (e) => {
   const b = e.target.closest("button"); if (!b) return;
@@ -302,5 +315,68 @@ async function entrer() {
   }
   ecran("liste");
 }
-nexusBrancherAccueil();
-if (sb) nexusDemarrer(entrer);
+// ------------------------------------------------------------------ partage en direct par lien (07/11)
+// Le joueur crée un jeton pour UNE partie (table carte_partages) ; le lien …/carte/#direct=<jeton> montre cette carte
+// seulement, sans compte (fonction carte_partagee), mise à jour toutes les 20 s tant que la partie n'est pas terminée.
+async function lienDePartage(partie) {
+  const maintenant = new Date().toISOString();
+  let { data } = await sb.from("carte_partages").select("jeton,expire_le").eq("partie_id", partie.id).gt("expire_le", maintenant).order("expire_le", { ascending: false }).limit(1);
+  let j = data?.[0];
+  if (!j) {
+    const r = await sb.from("carte_partages").insert({ partie_id: partie.id }).select("jeton,expire_le").single();
+    if (r.error) throw r.error;
+    j = r.data;
+  }
+  return { url: `${location.origin}${location.pathname}#direct=${j.jeton}`, expire: j.expire_le };
+}
+async function ouvrirPartage() {
+  const p = etat.partie; let L;
+  try { L = await lienDePartage(p); }
+  catch (e) { signaler("Partage impossible : " + (e.message || e) + (/carte_partages/.test(e.message || "") ? " (script supabase/carte-partage.sql à lancer)" : "")); return; }
+  const fin = new Date(L.expire).toLocaleString("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+  const f = document.createElement("div"); f.className = "pt-fond"; f.id = "pt-fond";
+  f.innerHTML = `<div class="pt-boite" role="dialog" aria-modal="true" aria-labelledby="pt-titre">
+    <h2 id="pt-titre">🔗 Partager en direct</h2>
+    <p>La personne qui reçoit ce lien voit <b>la carte de cette partie seulement</b>, sans compte, et la suit en direct pendant que tu saisis. Elle ne voit rien d'autre.</p>
+    <input id="pt-lien" readonly value="${esc(L.url)}" aria-label="Lien de partage">
+    <div class="pt-boutons"><button type="button" class="btn plein" id="pt-copier">Copier le lien</button>${navigator.share ? `<button type="button" class="btn" id="pt-envoyer">Envoyer…</button>` : ""}</div>
+    <p class="meta">Valable jusqu'au ${esc(fin)}. Tu peux l'arrêter à tout moment.</p>
+    <div class="pt-pied2"><button type="button" class="lien vo-suppr" id="pt-arreter">Arrêter le partage</button><button type="button" class="btn" id="pt-fermer">Fermer</button></div></div>`;
+  document.body.append(f);
+  $("pt-lien").select();
+  f.addEventListener("click", async (e) => {
+    const id = e.target.id;
+    if (id === "pt-fond" || id === "pt-fermer") { f.remove(); return; }
+    if (id === "pt-copier") { try { await navigator.clipboard.writeText(L.url); signaler("Lien copié."); } catch { $("pt-lien").select(); document.execCommand("copy"); signaler("Lien copié."); } return; }
+    if (id === "pt-envoyer") { navigator.share({ title: "Ma carte GolfNexus en direct", text: `Suis ma partie à ${titre(p.golf_nom || p.golf)} en direct`, url: L.url }).catch(() => {}); return; }
+    if (id === "pt-arreter") {
+      if (!confirm("Arrêter le partage ? Le lien ne marchera plus.")) return;
+      const { error } = await sb.from("carte_partages").delete().eq("partie_id", p.id);
+      signaler(error ? "Impossible : " + error.message : "Partage arrêté : le lien ne marche plus."); f.remove();
+    }
+  });
+}
+document.addEventListener("click", (e) => { if (e.target.closest("[data-partager]")) ouvrirPartage(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("pt-fond")?.remove(); });
+
+async function modePartage(jeton) {
+  etat.partage = true;
+  finReprise(); document.body.classList.remove("verrou"); document.body.classList.add("partage");
+  for (const k of ["liste", "nouvelle", "saisie"]) $("ecran-" + k).hidden = true;
+  $("ecran-voir").hidden = false;
+  const lire = async () => {
+    const { data, error } = await sb.rpc("carte_partagee", { j: jeton });
+    const p = Array.isArray(data) ? data[0] : data;
+    if (error || !p) {
+      $("vo-contenu").innerHTML = `<div class="bloc vide"><p><b>Ce lien de partage n'est plus valable.</b></p><p class="meta">Il a expiré ou le joueur a arrêté le partage.</p><a class="btn" href="../">GolfNexus</a></div>`;
+      return false;
+    }
+    etat.partie = p; rendreVoir();
+    return !p.terminee;
+  };
+  if (await lire()) { const minuteur = setInterval(async () => { if (!(await lire())) clearInterval(minuteur); }, 20000); }
+}
+
+const jetonPartage = new URLSearchParams(location.hash.slice(1)).get("direct");
+if (sb && jetonPartage) modePartage(jetonPartage);
+else { nexusBrancherAccueil(); if (sb) nexusDemarrer(entrer); }

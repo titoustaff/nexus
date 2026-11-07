@@ -58,7 +58,6 @@ th { color: var(--doux); font-weight: 600; font-size: 11px; text-transform: uppe
 .sa-num b { font-size: 30px; color: var(--vert); }
 .sa-par { display: flex; align-items: center; gap: 8px; font-size: 16px; color: var(--doux); }
 .sa-par b { font-size: 22px; color: var(--texte); }
-.sa-par button { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--bord); background: var(--fond); cursor: pointer; font-size: 16px; color: var(--doux); }
 .sa-choix { display: flex; flex-wrap: wrap; gap: 6px; }
 .sa-choix button { font: inherit; min-width: 52px; min-height: 52px; padding: 6px 12px; border-radius: 12px; border: 1.5px solid var(--bord); background: var(--fond); cursor: pointer;
   font-size: 16px; font-weight: 700; color: var(--texte); display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; }
@@ -101,3 +100,20 @@ th { color: var(--doux); font-weight: 600; font-size: 11px; text-transform: uppe
   background: var(--jaune); color: #2e2400; border-radius: 14px; padding: 14px 16px; margin-bottom: 10px; font-size: 16px; box-shadow: var(--ombre); }
 .li-reprendre span { font-size: 13px; opacity: .85; }
 .li-reprendre:focus-visible { outline: 2px solid var(--vert); outline-offset: 2px; }
+
+/* ---------------------------------------------------------------- partage en direct */
+.pt-fond { position: fixed; inset: 0; z-index: 3200; background: rgba(10, 25, 15, .55); display: grid; place-items: center; padding: 16px; }
+.pt-boite { background: var(--carte); color: var(--texte); width: min(480px, 100%); border-radius: 18px; padding: 22px; box-shadow: 0 20px 50px rgba(0,0,0,.3); }
+.pt-boite h2 { margin: 0 0 8px; color: var(--vert); font-size: 20px; }
+.pt-boite p { margin: 0 0 12px; line-height: 1.5; }
+#pt-lien { width: 100%; box-sizing: border-box; height: 44px; border: 1px solid var(--bord); background: var(--fond); border-radius: 10px; padding: 0 12px; font: inherit; font-size: 13px; color: var(--texte); margin-bottom: 10px; }
+.pt-boutons { display: flex; gap: 8px; margin-bottom: 12px; } .pt-boutons .btn { height: 44px; padding: 0 18px; }
+.pt-pied2 { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--bord); padding-top: 12px; }
+.pt-pied2 .vo-suppr { margin-left: 0; }
+.pt-direct { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; background: #c2410c; color: #fff; border-radius: 12px; padding: 10px 14px; margin-bottom: 12px; font-weight: 700; }
+.pt-direct.fini { background: var(--vert); }
+.pt-direct small { font-weight: 500; opacity: .9; }
+.pt-pied { text-align: center; margin: 16px 0 28px; }
+body.partage .vues, body.partage #b-compte { display: none; }
+
+.sa-choix .sa-plus { border-style: dashed; color: var(--vert-2); font-size: 22px; }
