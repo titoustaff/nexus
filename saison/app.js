@@ -845,10 +845,7 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("fiche")
 // En base, la table « saisons » permettrait plusieurs listes par année : l'écran n'en montre qu'une (choix
 // de l'utilisateur, plus simple) ; s'il en existe plusieurs, c'est la première qui est utilisée.
 // Deux stockages derrière le même objet Saison : ce navigateur (sans compte) ou Supabase (connecté).
-const SB_URL = "https://wnawfquocmmuymwptctn.supabase.co";
-const SB_CLE = "sb_publishable_74pMkWHpBVFYMgVl5lt0LA_gs2YFGKa";   // clé publique : la base filtre par compte (RLS)
-const sb = window.supabase ? window.supabase.createClient(SB_URL, SB_CLE,
-  { auth: { flowType: "pkce", detectSessionInUrl: true, persistSession: true, storageKey: "gn-auth" } }) : null;
+// SB_URL, SB_CLE et le client sb : briques communes (../commun/v1/nexus.js, chargé avant ce fichier).
 const jsonLs = (k) => { try { return JSON.parse(lsGet(k) || "null"); } catch { return null; } };
 const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : "10000000-1000-4000-8000-100000000000".replace(/[018]/g,
   (c) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)));
