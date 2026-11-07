@@ -27,8 +27,7 @@ a.lc-module:hover, a.lc-module:focus-visible { background: var(--sauge-pale); ou
 .lc-module small { font-size: 11px; color: var(--doux); line-height: 1.2; }
 .lc-ici { background: var(--sauge-pale); }
 .lc-ici small { color: var(--vert-2); font-weight: 700; }
-.lc-bientot .lc-pastille { filter: grayscale(.85); opacity: .5; }
-.lc-bientot b { color: var(--doux); }
+.lc-bientot .lc-pastille { filter: saturate(.75); }   /* comme sur la page d'accueil */
 .lc-accueil { display: block; text-align: center; margin: 8px 4px 0; padding: 8px; border-top: 1px solid var(--bord); color: var(--vert-2); font-size: 13px; font-weight: 600; text-decoration: none; }
 .lc-accueil:hover { text-decoration: underline; }
 `;
@@ -60,7 +59,8 @@ a.lc-module:hover, a.lc-module:focus-visible { background: var(--sauge-pale); ou
   async function ouvrir(oui, auClavier = false) {
     pan.hidden = !oui; btn.setAttribute("aria-expanded", String(oui));
     if (!oui) return;
-    const M = await charger(), ici = actuel();
+    // un module réservé à un rôle (ex. Admin) n'apparaît que pour ce rôle (nexus.role, posé par nexusLireProfil)
+    const M = (await charger()).filter((m) => !m.role || (typeof nexus !== "undefined" && nexus.role === m.role)), ici = actuel();
     pan.innerHTML = `<div class="lc-titre">Modules GolfNexus</div><div class="lc-grille">${M.map((m) => {
       const ouvert = m.etat === "ouvert" && m.adresse, cour = m.id === ici;
       const corps = `<span class="lc-pastille" style="--c:${e(m.couleur)}">${m.icone || ""}</span><b>${e(m.nom)}</b><small>${cour ? "ici" : ouvert ? e(m.verbe) : "Bientôt"}</small>`;

@@ -34,13 +34,18 @@ function signaler(msg) {
 // gn-data.json.gz depuis l'espace privé Supabase (lisible par les comptes connectés seulement).
 const nx$ = (id) => document.getElementById(id);
 // invite : arrivé par un lien d'invitation ; mdpConnu : connecté par mot de passe (l'assistant ne le redemande pas)
-const nexus = { invite: false, mdpConnu: false, demandeMdp: false };
+const nexus = { invite: false, mdpConnu: false, demandeMdp: false, role: null };
 async function telechargerDonnees() {
   const { data, error } = await sb.storage.from("donnees").download("gn-data.json.gz");
   if (error) throw error;
   return JSON.parse(await new Response(data.stream().pipeThrough(new DecompressionStream("gzip"))).text());
 }
-function msgAccueil(t, err = false) { const m = nx$("a-msg"); m.textContent = t; m.classList.toggle("erreur", err); }
+function msgAccueil(t, err = false) { finReprise(); const m = nx$("a-msg"); m.textContent = t; m.classList.toggle("erreur", err); }
+// Reprise de session (07/11) : la page pose body.reprise dès <body> si une session « gn-auth » existe ; on montre alors
+// un écran de chargement au lieu de l'accueil. On le retire dès qu'il faut l'accueil (pas de session, message, erreur)
+// et, par sécurité, au bout de 10 secondes.
+function finReprise() { document.body.classList.remove("reprise"); }
+setTimeout(finReprise, 10000);
 // Liens directs (#connexion=<jeton>, fonction Edge connexion-demo ; #invitation=<token_hash>), puis session :
 // connecté → entrer() ; sinon on attend la connexion depuis l'accueil.
 async function nexusDemarrer(entrer) {
@@ -68,6 +73,7 @@ async function nexusDemarrer(entrer) {
   } catch (e) { msgAccueil((jc ? "Lien de connexion refusé : " : "Invitation expirée ou déjà utilisée : ") + (e.message || e), true); }
   const { data } = await sb.auth.getSession();
   if (data.session) { entrer(); return; }
+  finReprise();   // pas (ou plus) de session : l'accueil
   sb.auth.onAuthStateChange((ev, session) => { if (session) setTimeout(entrer, 0); });
 }
 // Formulaire de l'accueil : mot de passe, ou lien par e-mail (retour sur la page qui l'a demandé).
@@ -101,6 +107,7 @@ async function nexusLireProfil(user) {
   const d = P.data || {};
   let structure = null;
   if (d.structure_id) { const S = await sb.rpc("ma_structure_detail"); structure = (S.data || [])[0] || null; }
+  nexus.role = d.role || "joueur";   // pour le lanceur (modules réservés à un rôle)
   return {
     role: d.role || "joueur", mineur: !!d.mineur, parentValide: d.parent_valide_le || null,
     clubLicence: d.club_licence || null, structure,
@@ -220,3 +227,14 @@ const NEXUS_ETAPES = {
     },
   },
 };
+
+// ------------------------------------------------------------------ invitations (fonction Edge « inviter »), repris de Saison
+// Le lien de l'e-mail mène toujours à Saison (porte d'entrée de la suite, assistant de démarrage), quel que soit
+// le module qui invite (Club, Admin…) : un joueur invité n'a rien à faire dans Club ou Admin (07/11).
+// licence : obligatoire pour un joueur (06/11), fixée à l'invitation, non modifiable par le joueur
+async function inviter(email, role, nom, licence = "") {
+  const { data, error } = await sb.functions.invoke("inviter", { body: { email, role: role === "mineur" ? "joueur" : role, mineur: role === "mineur", nom, licence: String(licence || "").replace(/\s/g, ""),
+    site: new URL("../saison/", location.href).href } });
+  const msg = error ? (await error.context?.json?.().catch(() => null))?.erreur || error.message : data?.erreur;
+  return msg || null;
+}
