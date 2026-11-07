@@ -27,6 +27,35 @@ function signaler(msg) {
   clearTimeout(toastMinuteur); toastMinuteur = setTimeout(() => { t.hidden = true; }, 6000);
 }
 
+// ------------------------------------------------------------------ outils golf (repris de Saison, communs à tous les modules)
+const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+const MOIS_COURT = ["janv", "févr", "mars", "avr", "mai", "juin", "juil", "août", "sept", "oct", "nov", "déc"];
+const AUJ = new Date().toISOString().slice(0, 10);
+function fmtDate(d) { const x = new Date(d + "T12:00:00"); return `${x.getDate()} ${MOIS_COURT[x.getMonth()]}`; }
+// Noms FFGolf en MAJUSCULES → casse normale (« GOLF DE ST DONAT » → « Golf de St Donat »).
+const PETITS = new Set(["de", "du", "des", "la", "le", "les", "et", "sur", "en", "au", "aux", "à", "d", "l", "sous"]);
+const SIGLES = new Set(["gc", "cc", "ugolf", "ucpa", "ffgolf", "pga", "paca"]);
+function titre(s) {
+  if (!s) return "";
+  if (s !== s.toUpperCase()) return s;                      // déjà en casse mixte
+  return s.toLowerCase().split(/(\s+|-|'|’|\/|\()/).map((w, i) => {
+    if (!w || /^(\s+|-|'|’|\/|\()$/.test(w)) return w;
+    if (SIGLES.has(w)) return w === "ugolf" ? "UGolf" : w.toUpperCase();
+    if (i > 0 && PETITS.has(w)) return w;
+    return w.charAt(0).toUpperCase() + w.slice(1);
+  }).join("");
+}
+// circuits ffgolf collectés (pipeline/ffgolf.py CIRCUITS) ; les données d'avant le 04/11 n'ont que des Grands Prix
+// libellés choisis par l'utilisateur (04/11) : Jeunes, Adultes, Mid-Amateurs, Seniors
+const CIRCUITS = { jeunes: "Jeunes", gp: "Adultes", mid: "Mid-Amateurs", seniors: "Seniors" };
+// précision affichée : catégorie d'âge pour les jeunes (U14…), type d'épreuve pour les seniors (Trophée Vétéran…)
+const circuitLib = (t) => { const c = circuitDe(t);
+  return CIRCUITS[c] + (c === "jeunes" && t.categorie ? " · " + t.categorie : c === "seniors" && t.type ? " · " + t.type : ""); };
+const circuitDe = (t) => t.circuit || "gp";
+const plier = (x) => (x || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+// tuile chiffrée (Mes stats, Coach)
+const tuileSt = (val, lib, sous = "") => `<div class="st-tuile"><b>${val}</b><span>${lib}</span>${sous ? `<small>${sous}</small>` : ""}</div>`;
+
 // ------------------------------------------------------------------ accueil : connexion, liens reçus, démarrage
 // Repris de Saison (« accueil et démarrage », 05/11). La page du module fournit le balisage de l'accueil
 // (#accueil, #a-form, #a-email, #a-mdp, #a-ok, #a-lien, #a-msg) et sa fonction entrer() (chargement après connexion).

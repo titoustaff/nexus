@@ -1,27 +1,11 @@
 "use strict";
+// MOIS, MOIS_COURT, AUJ, fmtDate, titre, circuits, plier, tuileSt : briques communes (../commun/v1/nexus.js).
 // Admin — module de la suite GolfNexus réservé à l'administrateur : inviter, invitations en attente, clubs
 // (structures), comptes. Code repris tel quel de Saison (via Club), où il était depuis GolfNexus.
 // S'appuie sur les briques communes (../commun/v1/nexus.js : sb, esc, signaler, accueil, profil, panneau, inviter).
 
-const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
-const MOIS_COURT = ["janv", "févr", "mars", "avr", "mai", "juin", "juil", "août", "sept", "oct", "nov", "déc"];
-const AUJ = new Date().toISOString().slice(0, 10);
 const etat = { clubs: [], ecran: "admin" };
 const $ = (id) => document.getElementById(id);
-function fmtDate(d) { const x = new Date(d + "T12:00:00"); return `${x.getDate()} ${MOIS_COURT[x.getMonth()]}`; }
-// Noms FFGolf en MAJUSCULES → casse normale (« GOLF DE ST DONAT » → « Golf de St Donat »).
-const PETITS = new Set(["de", "du", "des", "la", "le", "les", "et", "sur", "en", "au", "aux", "à", "d", "l", "sous"]);
-const SIGLES = new Set(["gc", "cc", "ugolf", "ucpa", "ffgolf", "pga", "paca"]);
-function titre(s) {
-  if (!s) return "";
-  if (s !== s.toUpperCase()) return s;                      // déjà en casse mixte
-  return s.toLowerCase().split(/(\s+|-|'|’|\/|\()/).map((w, i) => {
-    if (!w || /^(\s+|-|'|’|\/|\()$/.test(w)) return w;
-    if (SIGLES.has(w)) return w === "ugolf" ? "UGolf" : w.toUpperCase();
-    if (i > 0 && PETITS.has(w)) return w;
-    return w.charAt(0).toUpperCase() + w.slice(1);
-  }).join("");
-}
 // ------------------------------------------------------------------ compte (coach ou administrateur)
 // Profil (brique commune) ; joueurs suivis inutiles ici.
 const Compte = {

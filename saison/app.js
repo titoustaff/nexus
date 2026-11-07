@@ -1,14 +1,11 @@
 "use strict";
+// MOIS, MOIS_COURT, AUJ, fmtDate, titre, circuits, plier, tuileSt : briques communes (../commun/v1/nexus.js).
 
-const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
-const MOIS_COURT = ["janv", "févr", "mars", "avr", "mai", "juin", "juil", "août", "sept", "oct", "nov", "déc"];
-const AUJ = new Date().toISOString().slice(0, 10);
 
 const etat = { parId: new Map(), sAnnee: null, regions: new Set(), deps: new Set(), depRegion: {}, tournois: [], golfs: {}, golfInfo: {}, resultats: null, ref: null, marqueurs: new Map(), vue: "tournois", kpi: null, ecran: "tournois" };
 const $ = (id) => document.getElementById(id);
 // esc, lsGet, lsSet, jsonLs, uuid, signaler : briques communes (../commun/v1/nexus.js).
 
-function fmtDate(d) { const x = new Date(d + "T12:00:00"); return `${x.getDate()} ${MOIS_COURT[x.getMonth()]}`; }
 function fmtPar(n) { return n == null ? "—" : n === 0 ? "par" : (n > 0 ? "+" : "") + n; }
 function semaine(d) {
   const x = new Date(d + "T12:00:00"); const j = (x.getDay() + 6) % 7;
@@ -22,27 +19,7 @@ function km(a, b) {
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLon / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(h));
 }
-// Noms FFGolf en MAJUSCULES → casse normale (« GOLF DE ST DONAT » → « Golf de St Donat »).
-const PETITS = new Set(["de", "du", "des", "la", "le", "les", "et", "sur", "en", "au", "aux", "à", "d", "l", "sous"]);
-const SIGLES = new Set(["gc", "cc", "ugolf", "ucpa", "ffgolf", "pga", "paca"]);
-function titre(s) {
-  if (!s) return "";
-  if (s !== s.toUpperCase()) return s;                      // déjà en casse mixte
-  return s.toLowerCase().split(/(\s+|-|'|’|\/|\()/).map((w, i) => {
-    if (!w || /^(\s+|-|'|’|\/|\()$/.test(w)) return w;
-    if (SIGLES.has(w)) return w === "ugolf" ? "UGolf" : w.toUpperCase();
-    if (i > 0 && PETITS.has(w)) return w;
-    return w.charAt(0).toUpperCase() + w.slice(1);
-  }).join("");
-}
 const golfDe = (t) => etat.golfs[t.golf];
-// circuits ffgolf collectés (pipeline/ffgolf.py CIRCUITS) ; les données d'avant le 04/11 n'ont que des Grands Prix
-// libellés choisis par l'utilisateur (04/11) : Jeunes, Adultes, Mid-Amateurs, Seniors
-const CIRCUITS = { jeunes: "Jeunes", gp: "Adultes", mid: "Mid-Amateurs", seniors: "Seniors" };
-// précision affichée : catégorie d'âge pour les jeunes (U14…), type d'épreuve pour les seniors (Trophée Vétéran…)
-const circuitLib = (t) => { const c = circuitDe(t);
-  return CIRCUITS[c] + (c === "jeunes" && t.categorie ? " · " + t.categorie : c === "seniors" && t.type ? " · " + t.type : ""); };
-const circuitDe = (t) => t.circuit || "gp";
 // Mérites ffgolf, nommés et rangés comme les circuits (le Mérite National Amateur = circuit « Adultes »)
 const LISTES_M = { jeunes: "Jeunes", amateurs: "Adultes", midams: "Mid-Amateurs", seniors: "Seniors" };
 const LISTE_DU_CIRCUIT = { jeunes: "jeunes", gp: "amateurs", mid: "midams", seniors: "seniors" };
@@ -570,7 +547,6 @@ function rendreGolfs() {
 // ------------------------------------------------------------------ recherche dans la liste
 // Ne filtre pas : surligne les tournois / golfs dont le nom contient le texte, se positionne
 // sur le premier (le plus proche d'aujourd'hui en vue tournois) et le montre sur la carte.
-const plier = (x) => (x || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
 const rech = { trouves: [], i: 0 };
 function chercher(montrer = true) {
   const q = plier($("l-cherche").value);
@@ -1852,7 +1828,6 @@ function svgColonnes({ barres, fmt = (v) => fx(v), h = 170, W = 1040 }) {
   });
   return o + "</svg>";
 }
-const tuileSt = (val, lib, sous = "") => `<div class="st-tuile"><b>${val}</b><span>${lib}</span>${sous ? `<small>${sous}</small>` : ""}</div>`;
 const blocSt = (titre, sous, corps) => corps ? `<div class="bloc st-bloc"><h3>${titre}</h3>${sous ? `<p class="meta">${sous}</p>` : ""}${corps}</div>` : "";
 
 function rendreStats() {
@@ -2218,7 +2193,6 @@ nexusBrancherAccueil();
 // coach sans fiche au Mérite amateur (cas par défaut d'un coach, ex. pro) : pas de bloc Mérite ni d'onglet « Mes stats » ;
 // sa saison et sa licence restent (des tournois amateurs sont ouverts aux pros)
 const coachSeul = () => (Saison.role === "coach" || Saison.role === "admin") && !Saison.demo && !(Saison.fiche || {}).joueAussi;
-const STRUCTURES = { club: "club", ligue: "ligue", academie: "académie", pole: "pôle / comité", independant: "coach indépendant" };
 function selecteurVue() {
   const J = Saison.joueurs || [];
   if (!J.length || Saison.role === "joueur") return "";
@@ -2301,20 +2275,9 @@ async function clicAcces(e) {
   if (Saison.role !== "joueur") { const J = await sb.rpc("mes_joueurs"); Saison.joueurs = (J.data || []).filter((j) => j.statut === "accepte"); rendreCompte(); }
   rafraichirAcces();
 }
-async function envoiAcces(e) {
-  if (e.target.id === "p-structure") {
-    e.preventDefault();
-    const type = $("p-st-type").value, nom = $("p-st-nom").value.trim();
-    if (!type || !nom) { signaler("Choisis le type et indique le nom de ta structure."); return; }
-    const { error } = await sb.from("profils").update({ structure_type: type, structure_nom: nom }).eq("id", Saison.moi.id);
-    if (error) { signaler("Enregistrement impossible : " + error.message); return; }
-    Saison.structure = { type, nom }; signaler("Structure enregistrée : les joueurs la verront dans tes demandes."); rafraichirAcces();
-    return;
-  }
-  // demande d'accès (coach) et invitation d'un joueur : module Club
-}
+// demande d'accès (coach) et invitation d'un joueur : module Club
 const rafraichirAcces = () => rendreAcces();
-$("p-acces").addEventListener("click", clicAcces); $("p-acces").addEventListener("submit", envoiAcces);
+$("p-acces").addEventListener("click", clicAcces);
 $("p-acces").addEventListener("change", (e) => {
   if (e.target.id !== "p-joue-aussi") return;
   Saison.setFiche({ joueAussi: e.target.checked }); rendreCompte(); rendreProfil();
@@ -2393,7 +2356,7 @@ $("bienvenue").addEventListener("click", (e) => {
 
 // ------------------------------------------------------------------ assistant de démarrage (05/11)
 // À la première connexion, un écran par étape. Obligatoires : mot de passe (si arrivé par un lien), validation
-// parentale (moins de 18 ans), fiche Mérite (ou « je ne suis pas au Mérite »), structure (coach). Les autres
+// parentale (moins de 18 ans), fiche Mérite (ou « je ne suis pas au Mérite »). Les autres
 // (licence, code postal) proposent « Plus tard » et restent ensuite dans l'encadré d'accueil.
 const asst = { etapes: [], i: 0, res: null };
 function etapesAssistant() {
@@ -2406,7 +2369,7 @@ function etapesAssistant() {
   }
   return E;
 }
-const OBLIG = new Set(["mdp", "parent", "structure", "merite"]);
+const OBLIG = new Set(["mdp", "parent", "merite"]);
 function ouvrirAssistant() {
   if (nexus.mdpConnu && !(Saison.fiche || {}).mdpChoisi) Saison.setFiche({ mdpChoisi: true });
   const E = etapesAssistant();
@@ -2428,9 +2391,6 @@ function rendreAssistant() {
   const C = {
     mdp: NEXUS_ETAPES.mdp.html(pied("Enregistrer")),
     parent: NEXUS_ETAPES.parent.html(pied("Valider")),
-    structure: `<h2>Ta structure</h2><p>Les joueurs et les parents la verront dans tes demandes d'accès : ils doivent savoir qui tu représentes.</p>
-      <select id="as-st-type" required><option value="">Type…</option>${Object.entries(STRUCTURES).map(([v, l]) => `<option value="${v}">${l}</option>`).join("")}</select>
-      <input id="as-st-nom" maxlength="80" required placeholder="ex. Golf de Massane, Ligue Occitanie…">${pied("Enregistrer")}`,
     merite: `<h2>Trouve ta fiche Mérite</h2><p>GolfNexus y lit ton index et ta moyenne par rapport au SSS : c'est ce qui sert à <b>estimer ta place</b> sur chaque tournoi et à remplir <b>« Mes stats »</b>.
       Même <b>non classé</b>, tu as une fiche dès que tu as joué des compétitions : cherche ton nom.</p>
       <div class="as-ligne"><select id="as-sexe"><option value="H">Messieurs</option><option value="D" ${f.sexe === "D" ? "selected" : ""}>Dames</option></select>
@@ -2463,10 +2423,6 @@ $("assistant").addEventListener("submit", async (e) => {
   try {
     if (NEXUS_ETAPES[k]) {   // étapes communes (mot de passe, accord parental)
       await NEXUS_ETAPES[k].valider(Saison);
-    } else if (k === "structure") {
-      const type = $("as-st-type").value, nom = $("as-st-nom").value.trim();
-      const { error } = await sb.from("profils").update({ structure_type: type, structure_nom: nom }).eq("id", Saison.moi.id); if (error) throw error;
-      Saison.structure = { type, nom };
     } else if (k === "merite") {   // « Chercher » : la liste du Mérite du mois (lue une fois par session)
       const sexe = $("as-sexe").value, mots = plier($("as-nom").value).split(" ").filter(Boolean);
       asst.res = "…"; rendreAssistant(); $("as-nom").value = mots.join(" "); $("as-sexe").value = sexe;

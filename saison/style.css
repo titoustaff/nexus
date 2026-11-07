@@ -177,7 +177,6 @@ details.autres summary { cursor: pointer; color: var(--vert-2); font-size: 12px;
 .lien-t { cursor: pointer; }
 .lien-t:hover { background: var(--sauge-pale); }
 
-
 /* ---------------------------------------------------------------- Ma saison : statuts */
 :root { --s-envisage: #9caf88; --s-inscrit: #1f7a45; --s-joue: #f0b400; --s-conflit: #c2410c; }
 .puce-statut { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: 0; background: var(--s-envisage); }
@@ -208,7 +207,7 @@ details.autres summary { cursor: pointer; color: var(--vert-2); font-size: 12px;
 .ms-ligne { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
 
 /* ---------------------------------------------------------------- Ma saison : écran */
-.ecran-saison[hidden], .ecran-profil[hidden], .ecran-stats[hidden], .ecran-admin[hidden], #ecran-coach[hidden], #ecran-tournois[hidden] { display: none; }
+.ecran-saison[hidden], .ecran-profil[hidden], .ecran-stats[hidden], #ecran-tournois[hidden] { display: none; }
 .s-tete { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
 .s-tete h2 { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -.02em; color: var(--vert); display: flex; align-items: center; gap: 10px; }
 .s-tete select { font: inherit; font-size: 18px; font-weight: 700; color: var(--vert); border: 1px solid var(--bord); background: var(--carte); border-radius: 8px; padding: 2px 6px; }
@@ -327,10 +326,7 @@ details.autres summary { cursor: pointer; color: var(--vert-2); font-size: 12px;
 .p-res span { font-size: 12px; color: var(--doux); }
 .p-carte .p-nom { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: 18px; color: var(--vert); }
 .p-carte .p-nom span { font-size: 13px; color: var(--doux); }
-.p-chiffres { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin: 10px 0; }
-.p-chiffres div { background: var(--sauge-pale); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; }
-.p-chiffres b { font-size: 20px; color: var(--vert); }
-.p-chiffres span { font-size: 12px; color: var(--doux); }
+
 .place-prob.ok { box-shadow: inset 4px 0 0 var(--vert-2); }
 .place-prob.ko { box-shadow: inset 4px 0 0 var(--jaune-trait); }
 .place-prob p { margin: 0 0 8px; }
@@ -363,9 +359,9 @@ details.autres summary { cursor: pointer; color: var(--vert-2); font-size: 12px;
 .ecran-stats { max-width: 1440px; margin: 0 auto; padding: 0 0 24px; }
 .ecran-stats h2 .seg { margin-left: 10px; vertical-align: middle; }
 .st-tuiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-bottom: 14px; }
-.st-tuiles.petites { margin: 0 0 12px; }
+
 .st-tuile { background: var(--carte); border-radius: 12px; box-shadow: var(--ombre); padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; }
-.st-tuiles.petites .st-tuile { box-shadow: none; background: var(--sauge-pale); }
+
 .st-tuile b { font-size: 24px; color: var(--vert); line-height: 1.1; } .st-tuile b small { font-size: 13px; }
 .st-tuile span { font-size: 12.5px; color: var(--doux); } .st-tuile small { font-size: 12px; color: var(--doux); }
 .st-tuile .mieux, .st-liste .mieux { color: var(--vert-2); font-weight: 700; } .st-tuile .moins { color: #b45309; font-weight: 700; }
@@ -403,14 +399,9 @@ details.autres summary { cursor: pointer; color: var(--vert-2); font-size: 12px;
 .st-liste.st-gros { font-size: 14.5px; line-height: 1.7; margin-bottom: 10px; }
 .b-demo { cursor: default; gap: 6px; } .b-demo small { opacity: .75; font-weight: 500; }
 
-
 /* ---------------------------------------------------------------- Admin, accès coach */
-.ecran-admin { max-width: 1440px; margin: 0 auto; padding-bottom: 24px; } .ecran-admin .bloc { margin-bottom: 14px; }
-.ad-champs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; align-items: end; }
-.ad-champs label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--doux); }
-.ad-champs input, .ad-champs select { height: 38px; border: 1px solid var(--bord); border-radius: 8px; background: var(--fond); padding: 0 10px; }
-.ad-champs .btn { height: 38px; }
-.ad-role { height: 32px; border: 1px solid var(--bord); border-radius: 8px; background: var(--fond); }
+ 
+
 .acces-ligne { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 0; border-bottom: 1px solid var(--bord); }
 .acces-ligne:last-child { border-bottom: 0; } .acces-ligne .qui { flex: 1; min-width: 180px; } .acces-ligne .qui small { color: var(--doux); display: block; }
 .acces-ligne .btn { height: 32px; padding: 0 12px; }
@@ -421,60 +412,39 @@ details.autres summary { cursor: pointer; color: var(--vert-2); font-size: 12px;
 .c-vue option { color: var(--texte); background: var(--carte); }
 .vue-bandeau { background: var(--jaune); color: #2e2400; text-align: center; padding: 6px 10px; font-size: 13px; font-weight: 600; }
 .vue-bandeau button { margin-left: 8px; }
-.p-inv-mineur { display: flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap; } #p-inviter { flex-wrap: wrap; margin-top: 8px; }
+ 
 .acces-ligne .structure { font-size: 13px; color: var(--texte); } .acces-ligne .structure i { color: var(--doux); font-style: normal; }
-#p-inviter .p-inv-mineur input { width: auto; height: auto; flex: none; min-width: 0; margin: 0; }
+
 /* vue coach (lecture seule) : pas de boutons de modification ; les notes du joueur restent lisibles */
 body.lecture-seule .s-ctrl, body.lecture-seule #s-parcourir, body.lecture-seule .etoile, body.lecture-seule #s-dom-f,
 body.lecture-seule #fiche-saison .seg, body.lecture-seule #fiche-saison [data-retirer], body.lecture-seule #fiche-saison [data-ajouter] + .doux,
 body.lecture-seule #fiche-saison [data-ajouter], body.lecture-seule .note[value=""] { display: none !important; }
 body.lecture-seule .note { pointer-events: none; background: transparent; border-color: transparent; font-style: italic; }
 /* ---------------------------------------------------------------- Coach : onglets, équipes, calendrier d'équipe */
-.co-onglets { margin: 0 0 14px; }
-.co-equipe .co-eq-tete { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; } .co-eq-tete h3 { margin: 0; flex: 1; }
-.co-eq-tete h3 small { font-weight: 500; color: var(--doux); font-size: 13px; }
-.co-puces { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
-.co-puce { display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px 4px 10px; border-radius: 999px; background: var(--sauge-pale); font-size: 13px; font-weight: 600; }
-.co-puce small { font-weight: 500; color: var(--doux); }
-.co-puce button { border: 0; background: none; cursor: pointer; font-size: 15px; line-height: 1; color: var(--doux); padding: 0 4px; }
-.co-puce.s-envisage { background: #edf1e8; box-shadow: inset 3px 0 0 var(--s-envisage); padding-right: 10px; }
-.co-puce.s-inscrit { background: #dcefe2; box-shadow: inset 3px 0 0 var(--s-inscrit); padding-right: 10px; }
-.co-puce.s-joue { background: #fbf0cc; box-shadow: inset 3px 0 0 var(--s-joue); padding-right: 10px; }
-.co-ajout { margin-top: 8px; } .co-ajout select { max-width: 280px; }
-.co-filtres { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
-.co-filtres label { display: flex; gap: 8px; align-items: center; font-size: 13px; font-weight: 600; color: var(--doux); }
-.co-filtres select { height: 34px; border: 1px solid var(--bord); border-radius: 8px; background: var(--fond); }
+
+ 
+
+ 
+
 .st-legende i.lg { width: 10px; height: 10px; border-radius: 3px; } .st-legende i.lg.s-envisage { background: var(--s-envisage); }
 .st-legende i.lg.s-inscrit { background: var(--s-inscrit); } .st-legende i.lg.s-joue { background: var(--s-joue); }
-.co-cal { list-style: none; margin: 0 0 6px; padding: 0; }
-.co-cal li { display: grid; grid-template-columns: 52px 1fr; gap: 12px; padding: 10px 6px; border-bottom: 1px solid var(--bord); }
-.co-cal li.commun { background: linear-gradient(90deg, rgba(240,180,0,.10), transparent 60%); border-radius: 8px; }
-.co-cal li.passe .date { opacity: .6; }
-.co-cal .date { display: flex; flex-direction: column; align-items: center; background: var(--sauge-pale); border-radius: 10px; padding: 4px 0; height: fit-content; }
-.co-cal .date b { font-size: 18px; color: var(--vert); } .co-cal .date span { font-size: 11px; color: var(--doux); text-transform: uppercase; }
-.co-onglets button[aria-pressed=true], #st-listes button[aria-pressed=true] { background: var(--vert); color: #fff; }
-.co-ajout { margin-top: 10px; } .co-cherche { width: 100%; max-width: 420px; height: 36px; border: 1px solid var(--bord); border-radius: 8px; background: var(--fond); padding: 0 10px; }
-.co-props { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; max-height: 160px; overflow-y: auto; }
-.co-prop { border: 1px dashed var(--vert-2); background: none; color: var(--vert); border-radius: 999px; padding: 4px 10px; cursor: pointer; font-size: 13px; font-weight: 600; }
-.co-prop:hover { background: var(--sauge-pale); } .co-prop small { font-weight: 500; color: var(--doux); } .co-prop[hidden] { display: none; }
-.co-eq-onglets { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; align-items: center; }
-.co-eq-onglets button { border: 1px solid var(--bord); background: var(--carte); border-radius: 999px; padding: 6px 12px; cursor: pointer; font-weight: 600; font-size: 13px; color: var(--texte); }
-.co-eq-onglets button small { margin-left: 4px; font-weight: 600; color: var(--doux); background: var(--sauge-pale); border-radius: 999px; padding: 0 6px; }
-.co-eq-onglets button[aria-selected=true] { background: var(--vert); color: #fff; border-color: var(--vert); } .co-eq-onglets button[aria-selected=true] small { background: rgba(255,255,255,.2); color: #fff; }
-.co-eq-onglets button.nouvelle { border-style: dashed; color: var(--vert-2); } .co-eq-onglets button.nouvelle[aria-selected=true] { color: #fff; }
-.co-eq-onglets select { height: 36px; min-width: 260px; border: 1px solid var(--bord); border-radius: 8px; background: var(--carte); font-weight: 600; }
-.co-deux { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px 24px; margin-top: 10px; }
-.co-deux h4 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--doux); }
-.co-deux h4 small { background: var(--sauge-pale); border-radius: 999px; padding: 0 7px; margin-left: 4px; color: var(--texte); }
-.co-ligne { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border: 1px solid var(--bord); border-radius: 10px; margin-bottom: 6px; }
-.co-ligne small { display: block; color: var(--doux); font-size: 12px; } .co-ligne .btn { height: 32px; padding: 0 14px; flex: none; }
-.co-ligne.co-prop { border: 1px solid var(--bord); background: none; border-radius: 10px; padding: 8px 10px; font-size: 14px; font-weight: 400; color: var(--texte); cursor: default; }
-.co-cherche { margin-bottom: 8px; }
+
+ 
+#st-listes button[aria-pressed=true] { background: var(--vert); color: #fff; }
+ 
+
+  
+
+ 
+ 
+
+ 
+
 .p-champs label[hidden], #p-merite-bloc[hidden], .vues button[hidden] { display: none !important; }
 .p-coche { display: flex; align-items: center; gap: 10px; font-size: 15px; cursor: pointer; } .p-coche input { width: 18px; height: 18px; } #p-form > .meta[hidden] { display: none; }
-.acces-ligne.au-dela { display: none; } .filtre-actif .acces-ligne.au-dela:not([hidden]) { display: flex; }
-.acces-ligne[hidden], .co-ligne[hidden] { display: none !important; }
-.co-defile { max-height: 420px; overflow-y: auto; } .co-plus { margin-top: 8px; }
+ 
+.acces-ligne[hidden] { display: none !important; }
+ 
 
 /* ---------------------------------------------------------------- téléphone : bandeau sans débordement (comptes coach / admin) */
 @media (max-width: 860px) {
@@ -491,11 +461,11 @@ body.lecture-seule .note { pointer-events: none; background: transparent; border
 @media (max-width: 560px) {
   .devise { display: none; }
   .bandeau-in .vues button { font-size: 13px; padding: 7px 10px; }
-  .co-onglets, .co-eq-onglets { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
-  .co-onglets button, .co-eq-onglets button { flex: none; white-space: nowrap; }
+  
+  
   .acces-ligne .btn { height: 30px; padding: 0 10px; font-size: 13px; }
-  .co-ligne { flex-wrap: wrap; }
-  .ad-champs { grid-template-columns: 1fr; }
+  
+  
   .st-table table { font-size: 12px; }
 }
 html, body { overflow-x: clip; }   /* filet de sécurité : jamais de défilement horizontal de la page */
@@ -509,39 +479,25 @@ html, body { overflow-x: clip; }   /* filet de sécurité : jamais de défilemen
 /* onglets qui défilent : léger fondu à droite pour signaler la suite */
 @media (max-width: 860px) { .bandeau-in .vues { mask-image: linear-gradient(90deg, #000 88%, transparent); -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); } }
 /* onglet Joueurs : tableau compact */
-.co-barre { margin: 10px 0; } .co-barre .co-cherche { flex: 1; min-width: 180px; max-width: 320px; margin: 0; }
-.co-barre select { height: 36px; border: 1px solid var(--bord); border-radius: 8px; background: var(--fond); }
-.co-selbarre { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; } .co-selbarre:not(:empty) { padding: 8px 10px; margin-bottom: 8px; background: #fbf0cc; border-radius: 10px; }
-.co-selbarre select { height: 32px; border: 1px solid var(--bord); border-radius: 8px; } .co-selbarre .btn { height: 32px; }
-.co-table table { width: 100%; } .co-table td { vertical-align: middle; }
-.co-table td:nth-child(2) { white-space: nowrap; } .co-table .s-nom { font-size: 14px; }
-.co-lic { display: block; color: var(--doux); font-size: 11.5px; }
-.co-mini { display: inline-block; font-size: 11.5px; background: var(--sauge-pale); border-radius: 999px; padding: 1px 8px; margin: 1px 0; white-space: nowrap; }
-.co-ajout-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin: 10px 0 14px; }
-.co-ajout-bloc { border: 1px solid var(--bord); border-radius: 12px; padding: 12px; } .co-ajout-bloc h4 { margin: 0 0 4px; } .co-ajout-bloc .meta { margin: 0 0 8px; }
-.co-ajout-bloc textarea { width: 100%; box-sizing: border-box; border: 1px solid var(--bord); border-radius: 8px; background: var(--fond); padding: 8px; font: inherit; font-size: 13px; margin-bottom: 8px; }
-#co-ajout-pan[hidden] { display: none; }
-@media (max-width: 560px) { .co-table th:nth-child(4), .co-table td:nth-child(4), .co-table th:nth-child(6), .co-table td:nth-child(6) { display: none; } }
+ 
+
+ 
+ 
+ 
+ 
+
+  
+
 /* bandeau « vue d'un joueur » (coach) : visible partout, téléphone compris */
 .vue-bandeau { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 10px; position: sticky; top: 0; z-index: 900; box-shadow: 0 2px 6px rgba(0,0,0,.12); }
 .vue-bandeau[hidden] { display: none; }
 .vue-bandeau button { border: 1px solid rgba(46,36,0,.35); background: rgba(255,255,255,.55); color: #2e2400; border-radius: 999px; padding: 4px 12px; font-weight: 700; font-size: 13px; cursor: pointer; }
 .vue-bandeau button[aria-pressed=true] { background: #2e2400; color: #fff; }
-.co-actions { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; } .co-actions .btn { height: 30px; padding: 0 10px; font-size: 13px; }
-.co-table td.co-td-actions { white-space: nowrap; text-align: right; }
-@media (max-width: 560px) { .co-table th:nth-child(3), .co-table td:nth-child(3) { display: none; } }
+ 
+
 @media (max-width: 560px) { .b-compte .b-demo { display: none; } }
 /* téléphone : le tableau des joueurs devient une pile de fiches (rien de coupé à droite) */
-@media (max-width: 560px) {
-  .co-table { overflow: visible; } .co-table table, .co-table tbody { display: block; } .co-table thead { display: none; }
-  .co-table tr { display: grid; grid-template-columns: 26px 1fr; gap: 4px 8px; padding: 10px 0; border-bottom: 1px solid var(--bord); }
-  .co-table td { display: block; border: 0 !important; padding: 0 !important; white-space: normal !important; }
-  .co-table td:nth-child(1) { grid-row: 1 / span 4; padding-top: 2px !important; }
-  .co-table td:nth-child(3) { display: block !important; font-size: 12px; color: var(--doux); }
-  .co-table td:nth-child(4), .co-table td:nth-child(6) { display: none !important; }
-  .co-table td.co-td-actions { grid-column: 2; margin-top: 4px; text-align: left; }
-  .co-ligne .co-actions { width: 100%; }
-}
+
 .st-tour { stroke: var(--carte); stroke-width: 1.5; fill-opacity: .55; } .st-tour.c2 { fill: var(--st2); } .st-tour.c1 { fill: var(--st1); }
 .st-legende i.pt { width: 9px; height: 9px; border-radius: 50%; } .st-legende i.pt.c2 { background: var(--st2); }
 /* ligne « vue joueur » dans l'en-tête (à la place de l'avancée de la saison) */
@@ -587,8 +543,7 @@ html, body { overflow-x: clip; }   /* filet de sécurité : jamais de défilemen
 .p-rappels-jours.eteint { opacity: .45; }
 
 /* Mon Mérite : une section par Mérite (Jeunes, Adultes, Mid-Am, Seniors) — 06/11 */
-.p-merite-titre { margin: 14px 0 6px; font-size: 14px; color: var(--texte); }
-.p-merite-titre small { color: var(--doux); font-weight: 500; margin-left: 6px; }
+
 /* circuit d'un tournoi dans « Tous les tournois comptés » : jeunes et seniors repérables d'un coup d'œil (06/11) */
 .st-table .tag.circ-jeunes { background: #fff3c4; color: #6b4e00; border-color: #e8c24a; }
 .st-table .tag.circ-seniors, .st-table .tag.circ-mid { background: #e3eefc; color: #1f4b85; border-color: #9dbbe6; }
@@ -700,32 +655,17 @@ html, body { overflow-x: clip; }   /* filet de sécurité : jamais de défilemen
 @media (max-width: 640px) { .cs-comptes { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 12px; } }
 .st-tours { white-space: nowrap; }
 /* espace coach : onglet Invitations (06/11) */
-.co-onglets .nb { background: #c2410c; color: #fff; }
-.co-inv-d { margin-top: 8px; }
-.co-suivi-t { margin: 14px 0 6px; font-size: 13px; color: var(--texte); }
-.co-act { text-align: right; white-space: nowrap; }
-.tag.ok-att { background: var(--jaune); color: var(--jaune-texte); }
-.ecran-admin .bloc h3 small { font-weight: 500; font-size: 12px; color: var(--doux); margin-left: 8px; }
-#p-st-nom { width: min(420px, 100%); }
+
 /* clubs (structures) — 06/11 */
-.ad-st-form { margin-top: 12px; flex-wrap: wrap; gap: 8px; align-items: center; }
-.ad-st-form input, .ad-st-form select { min-width: 180px; }
-.co-club { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px 24px; margin: 8px 0; }
-.co-club h4 { margin: 0 0 4px; }
+
 /* petits écrans (06/11, retour utilisateur « pas responsive ») : les menus passent à la ligne au lieu de défiler
    sans qu'on le devine ; la liste des équipes devient une liste déroulante */
-.co-eq-mobile { display: none; }
+
 @media (max-width: 860px) {
   .bandeau-in .vues { overflow-x: visible; flex-wrap: wrap; justify-content: center; border-radius: 16px; }
   .bandeau-in .vues button { flex: 1 1 auto; justify-content: center; }
 }
-@media (max-width: 760px) {
-  .co-onglets { display: flex; flex-wrap: wrap; overflow: visible; border-radius: 12px; }
-  .co-onglets button { flex: 1 1 auto; white-space: nowrap; }
-  .co-eq-onglets.co-eq-pastilles { display: none; }
-  .co-eq-onglets.co-eq-mobile { display: flex; }
-  .co-eq-mobile select { width: 100%; min-width: 0; }
-}
+
 /* bandeau : la grille ne s'élargit plus pour les onglets → ils passent à la ligne */
 @media (max-width: 860px) {
   .bandeau-in { grid-template-columns: minmax(0, 1fr) auto; }
