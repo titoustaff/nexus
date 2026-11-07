@@ -1191,7 +1191,7 @@ $("b-pan").addEventListener("submit", async (e) => {
     }
     const email = $("c-email").value.trim().toLowerCase(); compte.email = email;
     if (f.id === "c-form-mdp") {
-      etat.mdpConnu = true;
+      nexus.mdpConnu = true;
       const { error } = await sb.auth.signInWithPassword({ email, password: $("c-mdp-in").value });
       if (error) throw error;
       compte.ouvert = false;   // la suite (chargement du compte) passe par onAuthStateChange
@@ -1256,7 +1256,7 @@ function initCompte() {
   }
   sb.auth.onAuthStateChange((ev, session) => setTimeout(async () => {   // pas d'appel Supabase dans le rappel lui-même
     // arrivé par un lien (invitation, lien de connexion) : l'assistant demandera un mot de passe
-    if ((venuDuLien || etat.invite) && session && ev === "INITIAL_SESSION") etat.demandeMdp = true;
+    if ((venuDuLien || nexus.invite) && session && ev === "INITIAL_SESSION") etat.demandeMdp = true;
     await majSession(session);
     if (session && Saison.mode === "compte" && !Saison.demo) ouvrirAssistant();
     if (venuDuLien) { const q = new URLSearchParams(location.search); q.delete("code");
@@ -2266,14 +2266,7 @@ $("st-listes").addEventListener("click", (e) => { const b = e.target.closest("[d
 
 
 // ------------------------------------------------------------------ accueil et démarrage (05/11)
-// Plus de mot de passe de page : la page publique n'a aucune donnée ; après connexion, on télécharge
-// gn-data.json.gz depuis l'espace privé Supabase (lisible par les comptes connectés seulement).
-async function telechargerDonnees() {
-  const { data, error } = await sb.storage.from("donnees").download("gn-data.json.gz");
-  if (error) throw error;
-  return JSON.parse(await new Response(data.stream().pipeThrough(new DecompressionStream("gzip"))).text());
-}
-function msgAccueil(t, err = false) { const m = $("a-msg"); m.textContent = t; m.classList.toggle("erreur", err); }
+// Connexion, liens reçus et données publiées : briques communes (../commun/v1/nexus.js).
 let demarre = false;
 async function entrer() {
   if (demarre) return;
@@ -2286,50 +2279,9 @@ async function entrer() {
 }
 async function demarrage() {
   if (D || !sb) { document.body.classList.remove("verrou"); charger(); return; }   // test local : données intégrées
-  const h = new URLSearchParams(location.hash.slice(1));
-  // lien de connexion directe (#connexion=<jeton>, fonction Edge connexion-demo) ou invitation (#invitation=<token_hash>)
-  const jc = h.get("connexion"), inv = h.get("invitation");
-  if (jc || inv || h.has("cle")) {
-    for (const k of ["connexion", "invitation", "cle"]) h.delete(k);   // cle : reste des anciens liens (mot de passe de page)
-    history.replaceState(null, "", location.pathname + location.search + (h.toString() ? "#" + h : ""));
-  }
-  try {
-    if (jc) {
-      msgAccueil("Connexion…");
-      const d = await fetch(`${SB_URL}/functions/v1/connexion-demo`, { method: "POST", headers: { "Content-Type": "application/json", apikey: SB_CLE },
-        body: JSON.stringify({ jeton: jc }) }).then((r) => r.json());
-      if (!d.token_hash) throw new Error(d.erreur || "refusé");
-      const { error } = await sb.auth.verifyOtp({ token_hash: d.token_hash, type: "magiclink" });
-      if (error) throw error;
-    } else if (inv) {
-      msgAccueil("Ouverture de ton invitation…");
-      const { error } = await sb.auth.verifyOtp({ token_hash: inv, type: "invite" });
-      if (error) throw error;
-      etat.invite = true;
-    }
-  } catch (e) { msgAccueil((jc ? "Lien de connexion refusé : " : "Invitation expirée ou déjà utilisée : ") + (e.message || e), true); }
-  const { data } = await sb.auth.getSession();
-  if (data.session) { entrer(); return; }
-  sb.auth.onAuthStateChange((ev, session) => { if (session) setTimeout(entrer, 0); });
+  await nexusDemarrer(entrer);
 }
-$("a-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const email = $("a-email").value.trim().toLowerCase(), mdp = $("a-mdp").value;
-  if (!mdp) { msgAccueil("Saisis ton mot de passe, ou reçois un lien par e-mail.", true); $("a-mdp").focus(); return; }
-  $("a-ok").disabled = true; msgAccueil("Connexion…");
-  etat.mdpConnu = true;
-  const { error } = await sb.auth.signInWithPassword({ email, password: mdp });
-  $("a-ok").disabled = false;
-  if (error) msgAccueil(/invalid login/i.test(error.message) ? "E-mail ou mot de passe incorrect." : "Connexion impossible : " + error.message, true);
-});
-$("a-lien").addEventListener("click", async () => {
-  const email = $("a-email").value.trim().toLowerCase();
-  if (!email) { $("a-email").focus(); msgAccueil("Saisis d'abord ton e-mail.", true); return; }
-  const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: location.origin + location.pathname } });
-  if (!error) { msgAccueil(`Lien envoyé à ${email} : ouvre-le dans ce navigateur (valable 24 heures, une seule fois).`); return; }
-  msgAccueil(/security purposes/i.test(error.message) ? "Un lien vient déjà d'être envoyé : regarde ta boîte (et les spams)."
-    : /signups not allowed|not found|otp_disabled/i.test(error.message) ? "Cette adresse n'est pas invitée." : "Envoi impossible : " + error.message, true);
-});
+nexusBrancherAccueil();
 
 // ------------------------------------------------------------------ coachs, joueurs, administration (05/11)
 // Coach : DEMANDE l'accès à un joueur par sa licence ; le joueur (ou son parent pour un mineur) ACCEPTE.
@@ -3020,7 +2972,7 @@ function etapesAssistant() {
 }
 const OBLIG = new Set(["mdp", "parent", "structure", "merite"]);
 function ouvrirAssistant() {
-  if (etat.mdpConnu && !(Saison.fiche || {}).mdpChoisi) Saison.setFiche({ mdpChoisi: true });
+  if (nexus.mdpConnu && !(Saison.fiche || {}).mdpChoisi) Saison.setFiche({ mdpChoisi: true });
   const E = etapesAssistant();
   if (!E.length) { if (!(Saison.fiche || {}).assistantFait) Saison.setFiche({ assistantFait: true }); return; }
   Object.assign(asst, { etapes: [...E, "fin"], i: 0, res: null });
