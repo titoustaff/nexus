@@ -95,3 +95,9 @@ th { color: var(--doux); font-weight: 600; font-size: 11px; text-transform: uppe
 .vo-table { table-layout: fixed; min-width: 560px; }
 .vo-table th:first-child { width: 72px; }
 .vo-table th:last-child, .vo-table td:last-child { width: 64px; }
+
+/* bandeau « reprendre la partie en cours » (Mes cartes) */
+.li-reprendre { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; width: 100%;
+  background: var(--jaune); color: #2e2400; border-radius: 14px; padding: 14px 16px; margin-bottom: 10px; font-size: 16px; box-shadow: var(--ombre); }
+.li-reprendre span { font-size: 13px; opacity: .85; }
+.li-reprendre:focus-visible { outline: 2px solid var(--vert); outline-offset: 2px; }

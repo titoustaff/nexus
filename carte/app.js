@@ -95,7 +95,9 @@ async function rendreListe() {
       : `<div class="bloc vide"><p>Aucune partie pour l'instant.</p><button type="button" class="btn plein" data-ecran="nouvelle">+ Noter ma première partie</button></div>`;
     return;
   }
-  box.innerHTML = `<div class="li-cartes">${etat.parties.map((p) => {
+  const enCours = !etat.vue && etat.parties.find((p) => !p.terminee);
+  box.innerHTML = `${enCours ? `<button type="button" class="li-reprendre" data-partie="${esc(enCours.id)}">▶ <b>Reprendre la partie en cours</b>
+      <span>${esc(titre(enCours.golf_nom || enCours.golf))} · ${bilan(enCours).n}/${enCours.nb_trous} trous saisis</span></button>` : ""}<div class="li-cartes">${etat.parties.map((p) => {
     const b = bilan(p);
     return `<button type="button" class="li-carte" data-partie="${esc(p.id)}">
       <span class="li-score ${b.n ? (b.ecart <= 0 ? "bon" : "") : "vide"}"><b>${b.n ? b.score : "—"}</b><small>${b.n ? ecartPar(b.ecart) : ""}</small></span>
@@ -107,7 +109,9 @@ async function rendreListe() {
 document.addEventListener("change", (e) => { if (e.target.id === "li-qui") { etat.vue = e.target.value; ecran("liste"); } });
 $("li-contenu").addEventListener("click", (e) => {
   const b = e.target.closest("[data-partie]"); if (!b) return;
-  etat.partie = etat.parties.find((p) => p.id === b.dataset.partie); etat.i = 0;
+  etat.partie = etat.parties.find((p) => p.id === b.dataset.partie);
+  const m = jsonLs("carte-en-cours");   // reprendre au trou où l'on s'était arrêté, sinon au premier trou sans score
+  etat.i = m?.id === etat.partie.id ? Math.min(m.i, etat.partie.trous.length - 1) : Math.max(0, etat.partie.trous.findIndex((t) => !t.score));
   ecran(!etat.vue && !etat.partie.terminee ? "saisie" : "voir");
 });
 
@@ -167,8 +171,13 @@ $("nv-form").addEventListener("submit", async (e) => {
 });
 
 // ------------------------------------------------------------------ Saisie : un trou par écran, gros boutons
+// partie en cours mémorisée dans ce navigateur (id + trou affiché) : déconnecté, page fermée, réseau coupé…
+// au retour, Carte rouvre la saisie sur ce trou (07/11, demande de l'utilisateur)
+const memoriserEnCours = () => lsSet("carte-en-cours", JSON.stringify({ id: etat.partie.id, i: etat.i, user: etat.partie.user_id }));
+const oublierEnCours = (id) => { const m = jsonLs("carte-en-cours"); if (!id || m?.id === id) try { localStorage.removeItem("carte-en-cours"); } catch { /* */ } };
 function rendreSaisie() {
   const p = etat.partie, t = p.trous[etat.i], b = bilan(p);
+  memoriserEnCours();
   const choix = (cle, valeurs, lib = (v) => v) => `<div class="sa-choix" role="group">${valeurs.map((v) =>
     `<button type="button" data-cle="${cle}" data-val="${v}" aria-pressed="${t[cle] === v}">${lib(v)}</button>`).join("")}</div>`;
   const scores = [], bas = Math.max(1, t.par - 2);
@@ -209,7 +218,7 @@ $("sa-contenu").addEventListener("click", (e) => {
   if ("finir" in b.dataset) {
     const manque = p.trous.filter((x) => !x.score).length;
     if (manque && !confirm(`${manque} trou${manque > 1 ? "s" : ""} sans score. Terminer quand même ?`)) return;
-    p.terminee = true; sauver(true); ecran("voir"); return;
+    p.terminee = true; sauver(true); oublierEnCours(p.id); ecran("voir"); return;
   }
   if ("voirCarte" in b.dataset) { ecran("voir"); }
 });
@@ -257,7 +266,7 @@ $("vo-contenu").addEventListener("click", async (e) => {
     if (!confirm("Supprimer définitivement cette partie ?")) return;
     const { error } = await sb.from("carte_parties").delete().eq("id", etat.partie.id);
     if (error) { signaler("Suppression impossible : " + error.message); return; }
-    signaler("Partie supprimée."); ecran("liste");
+    oublierEnCours(etat.partie.id); signaler("Partie supprimée."); ecran("liste");
   }
 });
 
@@ -278,6 +287,19 @@ async function entrer() {
   // une saisie non enregistrée (coupure réseau) : on la renvoie
   const br = jsonLs("carte-brouillon");
   if (br && br.id && br.user_id === Compte.moi.id) { etat.partie = br; sauver(true); }
+  // une partie en cours (déconnecté, page fermée…) : on rouvre la saisie sur le trou où l'on s'était arrêté
+  const m = jsonLs("carte-en-cours");
+  if (m?.id && m.user === Compte.moi.id) {
+    if (!etat.partie || etat.partie.id !== m.id) {
+      const { data: p } = await sb.from("carte_parties").select("*").eq("id", m.id).maybeSingle();
+      etat.partie = p || null;
+    }
+    if (etat.partie && !etat.partie.terminee) {
+      etat.i = Math.min(m.i || 0, etat.partie.trous.length - 1);
+      ecran("saisie"); signaler("Reprise de ta partie en cours."); return;
+    }
+    oublierEnCours();
+  }
   ecran("liste");
 }
 nexusBrancherAccueil();
