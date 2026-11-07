@@ -7,7 +7,16 @@
 const etat = { golfs: {}, tournois: [], ecran: "liste", vue: "", parties: [], partie: null, i: 0 };
 const $ = (id) => document.getElementById(id);
 const CONTEXTES = { libre: "Partie libre", entrainement: "Entraînement", rencontre: "Rencontre", tournoi: "Tournoi ffgolf" };
-const FAIRWAYS = [["gauche", "← Gauche"], ["fairway", "Fairway"], ["droite", "Droite →"], ["court", "Court"], ["long", "Long"]];
+const FAIRWAYS = [["gauche", "Gauche"], ["fairway", "Fairway"], ["droite", "Droite"], ["court", "Court"], ["long", "Long"]];
+// mise en jeu : un fairway vu de dessus (rough à gauche et à droite, long au-dessus, court en dessous) ; la balle se pose
+// dans la zone touchée. Second appui sur la même zone : on efface.
+function terrainFw(val) {
+  const z = (v, lib) => `<button type="button" class="fw-zone fw-${v}" data-cle="fw" data-val="${v}" aria-pressed="${val === v}" aria-label="${lib}"><span>${lib}</span>${val === v ? '<i class="fw-balle" aria-hidden="true"></i>' : ""}</button>`;
+  return `<div class="fw-terrain" role="group" aria-label="Où a fini la mise en jeu">${z("long", "Long")}${z("gauche", "Gauche")}${z("fairway", "Fairway")}${z("droite", "Droite")}${z("court", "Court")}<span class="fw-depart" aria-hidden="true">▲ départ</span></div>`;
+}
+// mini-fairway de la carte de score : la balle à sa place
+const POS_FW = { gauche: [4, 13], fairway: [10, 13], droite: [16, 13], court: [10, 23], long: [10, 3] };
+const miniFw = (v) => `<svg class="fw-mini" viewBox="0 0 20 26" aria-hidden="true"><rect x="0" y="0" width="20" height="26" rx="4" class="r"/><rect x="6" y="5" width="8" height="16" rx="3" class="f"/>${POS_FW[v] ? `<circle cx="${POS_FW[v][0]}" cy="${POS_FW[v][1]}" r="2.6" class="b"/>` : ""}</svg>`;
 
 // ------------------------------------------------------------------ compte (comme Club : profil + joueurs suivis)
 const Compte = {
@@ -48,6 +57,9 @@ const total = (p, k = "score") => joues(p).reduce((s, t) => s + (+t[k] || 0), 0)
 const parJoue = (p) => joues(p).reduce((s, t) => s + (+t.par || 0), 0);
 const ecartPar = (n) => (n === 0 ? "par" : (n > 0 ? "+" : "") + n);
 const classeScore = (t) => { if (!t.score) return ""; const d = t.score - t.par; return d <= -2 ? "sc-aigle" : d === -1 ? "sc-birdie" : d === 0 ? "sc-par" : d === 1 ? "sc-bogey" : "sc-double"; };
+// notation des cartes de golf : rond = birdie, double rond = eagle ou mieux, carré = bogey, double carré = double bogey ou pire
+const notation = (t) => { if (!t.score) return ""; const d = t.score - t.par; return d <= -2 ? "nt-aigle" : d === -1 ? "nt-birdie" : d === 0 ? "nt-par" : d === 1 ? "nt-bogey" : "nt-double"; };
+const SABLE = `<svg class="ic-sable" viewBox="0 0 24 16" aria-hidden="true"><path d="M2 12c2-6 6-9 10-9s8 3 10 9c-3 2-17 2-20 0z"/></svg>`;
 const gir = (t) => t.score && t.putts != null && t.score - t.putts <= t.par - 2;
 function bilan(p) {
   const J = joues(p), avecPutts = J.filter((t) => t.putts != null), fw = J.filter((t) => t.par > 3 && t.fw);
@@ -197,7 +209,7 @@ function rendreSaisie() {
       <div class="sa-num"><span>Trou <b>${t.t}</b></span><span class="sa-par">Par <b>${t.par}</b></span></div>
       <h3>Score</h3>${choix("score", scores, nomScore, true)}
       <div class="sa-ligne"><div><h3>Putts</h3>${choix("putts", [0, 1, 2, 3, 4], undefined, true)}</div><div><h3>Pénalités</h3>${choix("pen", [0, 1, 2, 3], undefined, true)}</div></div>
-      ${t.par > 3 ? `<h3>Mise en jeu (départ)</h3>${choix("fw", FAIRWAYS.map((f) => f[0]), (v) => FAIRWAYS.find((f) => f[0] === v)[1])}` : ""}
+      ${t.par > 3 ? `<h3>Mise en jeu : où a fini ton départ ?</h3>${terrainFw(t.fw)}` : ""}
       <h3>Bunker</h3>${choix("bunker", [false, true], (v) => (v ? "Oui, joué depuis un bunker" : "Non"))}
     </div>
     <div class="sa-nav">
@@ -262,18 +274,18 @@ function rendreVoir() {
   const somme = (T, k) => T.filter((t) => t.score).reduce((s, t) => s + (+t[k] || 0), 0);
   const tableau = (T, nom) => `<table class="vo-table"><thead><tr><th>Trou</th>${T.map((t) => `<th>${t.t}</th>`).join("")}<th>${nom}</th></tr></thead><tbody>
     <tr><th>Par</th>${T.map((t) => `<td>${t.par}</td>`).join("")}<td><b>${T.reduce((s, t) => s + t.par, 0)}</b></td></tr>
-    <tr class="vo-score"><th>Score</th>${T.map((t) => `<td><span class="${classeScore(t)}">${t.score || "·"}</span></td>`).join("")}<td><b>${somme(T, "score") || "—"}</b></td></tr>
-    <tr><th>Putts</th>${T.map((t) => `<td>${t.putts ?? "·"}</td>`).join("")}<td>${somme(T, "putts") || "—"}</td></tr>
-    <tr><th>Pén.</th>${T.map((t) => `<td>${t.pen ? t.pen : "·"}</td>`).join("")}<td>${somme(T, "pen") || "—"}</td></tr>
-    <tr><th>Départ</th>${T.map((t) => `<td title="${esc(t.fw || "")}">${t.par === 3 ? "" : { gauche: "←", fairway: "●", droite: "→", court: "↓", long: "↑" }[t.fw] || "·"}</td>`).join("")}<td></td></tr>
-    <tr><th>Bunker</th>${T.map((t) => `<td>${t.bunker ? "◆" : "·"}</td>`).join("")}<td></td></tr></tbody></table>`;
+    <tr class="vo-score"><th>Score</th>${T.map((t) => `<td><span class="nt ${notation(t)}">${t.score || "·"}</span></td>`).join("")}<td><b>${somme(T, "score") || "—"}</b></td></tr>
+    <tr><th>Putts</th>${T.map((t) => `<td class="${t.putts >= 3 ? "pt-mal" : t.putts === 1 ? "pt-bon" : ""}">${t.putts ?? "·"}</td>`).join("")}<td>${somme(T, "putts") || "—"}</td></tr>
+    <tr><th>Pén.</th>${T.map((t) => `<td>${t.pen ? `<span class="pen">${t.pen}</span>` : "·"}</td>`).join("")}<td>${somme(T, "pen") || "—"}</td></tr>
+    <tr><th>Départ</th>${T.map((t) => `<td title="${esc(t.fw || "")}">${t.par === 3 ? "" : t.fw ? miniFw(t.fw) : "·"}</td>`).join("")}<td></td></tr>
+    <tr><th>Bunker</th>${T.map((t) => `<td>${t.bunker ? SABLE : "·"}</td>`).join("")}<td></td></tr></tbody></table>`;
   $("vo-contenu").innerHTML = `
-    ${etat.partage ? `<div class="pt-direct ${p.terminee ? "fini" : ""}">${p.terminee ? "✓ Partie terminée" : "● En direct"}${p.prenom ? ` · la carte de <b>${esc(p.prenom)}</b>` : ""}
+    ${etat.partage ? `<div class="pt-direct ${p.terminee ? "fini" : ""}"><span>${p.terminee ? "✓ Partie terminée" : "● En direct"}${p.prenom ? ` · la carte de <b>${esc(p.prenom)}</b>` : ""}</span>
       <small>${p.terminee ? "" : "mise à jour automatique · "}dernière saisie ${new Date(p.modifie_le).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</small></div>` : ""}
     <div class="s-tete"><h2>${esc(titre(p.golf_nom || p.golf))}</h2><span class="meta">${esc(p.parcours_nom || "")}${p.repere ? " · " + esc(p.repere) : ""} · ${dateLongue(p.jour)} · ${CONTEXTES[p.contexte] || ""}</span></div>
     <div class="st-tuiles">${tuileSt(b.n ? b.score : "—", "score", b.n ? ecartPar(b.ecart) + (b.n < p.nb_trous ? ` sur ${b.n} trous` : "") : "")}${tuileSt(b.putts ?? "—", "putts")}${tuileSt(b.fairways, "fairways touchés")}${tuileSt(b.gir, "greens en régulation")}${tuileSt(b.pen, "pénalités")}</div>
     <div class="bloc vo-carte">${moities.map((T, k) => `<div class="defile">${tableau(T, moities.length > 1 ? (k ? "Retour" : "Aller") : "Total")}</div>`).join("")}
-      <p class="meta vo-legende"><span class="sc-birdie">birdie</span> <span class="sc-par">par</span> <span class="sc-bogey">bogey</span> <span class="sc-double">double +</span> · départ : ● fairway, ← gauche, → droite, ↓ court, ↑ long · ◆ bunker</p></div>
+      <p class="meta vo-legende"><span class="nt nt-aigle">2</span> eagle <span class="nt nt-birdie">3</span> birdie <span class="nt nt-par">4</span> par <span class="nt nt-bogey">5</span> bogey <span class="nt nt-double">6</span> double + · départ ${miniFw("fairway")} · ${SABLE} bunker</p></div>
     ${p.note ? `<div class="bloc"><b>Note</b> <span>${esc(p.note)}</span></div>` : ""}
     ${etat.partage ? `<p class="meta pt-pied">Carte partagée par lien (lecture seule) · <a href="../">GolfNexus</a></p>` : `<div class="vo-actions"><button type="button" class="btn" data-ecran="liste">← ${etat.vue ? "Cartes du joueur" : "Mes cartes"}</button>
       ${lecture ? `<span class="meta">Lecture seule</span>` : `<button type="button" class="btn plein" data-partager>🔗 Partager en direct</button><button type="button" class="btn" data-modifier>Modifier la saisie</button><button type="button" class="lien vo-suppr" data-supprimer>Supprimer la partie</button>`}</div>`}`;

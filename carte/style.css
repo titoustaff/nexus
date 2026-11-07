@@ -117,3 +117,37 @@ th { color: var(--doux); font-weight: 600; font-size: 11px; text-transform: uppe
 body.partage .vues, body.partage #b-compte { display: none; }
 
 .sa-choix .sa-plus { border-style: dashed; color: var(--vert-2); font-size: 22px; }
+
+/* ---------------------------------------------------------------- mise en jeu : fairway vu de dessus */
+.fw-terrain { position: relative; display: grid; grid-template-columns: 1fr 1.6fr 1fr; grid-template-rows: 52px 120px 52px 22px; gap: 0;
+  max-width: 380px; margin: 4px auto 0; border-radius: 18px; overflow: hidden; background: #3f6e35; box-shadow: inset 0 0 0 1px rgba(0,0,0,.06); }
+.fw-zone { all: unset; position: relative; cursor: pointer; display: grid; place-items: center; font-size: 14px; font-weight: 700; color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,.35); transition: filter .15s; }
+.fw-zone:hover { filter: brightness(1.08); }
+.fw-zone:focus-visible { outline: 3px solid var(--jaune); outline-offset: -3px; }
+.fw-long { grid-column: 1 / -1; background: #6f9a5b; }
+.fw-gauche, .fw-droite { background: #3f6e35; }
+.fw-fairway { background: repeating-linear-gradient(180deg, #8cc06e 0 20px, #7fb562 20px 40px); border-radius: 40px / 22px; margin: 0 -6px; z-index: 1; color: #1d3a12; text-shadow: none; }
+.fw-court { grid-column: 1 / -1; background: #6f9a5b; }
+.fw-depart { grid-column: 1 / -1; display: grid; place-items: center; background: #5a8549; color: #e9f3e3; font-size: 11px; font-weight: 700; letter-spacing: .05em; }
+.fw-zone[aria-pressed="true"] { box-shadow: inset 0 0 0 3px var(--jaune); }
+.fw-zone[aria-pressed="true"] span { opacity: .9; }
+.fw-balle { position: absolute; width: 18px; height: 18px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff 0 45%, #dfe3e0 100%);
+  box-shadow: 0 2px 4px rgba(0,0,0,.4); top: 50%; left: 50%; transform: translate(-50%, 30%); }
+/* mini-fairway (carte de score) */
+.fw-mini { width: 16px; height: 21px; vertical-align: middle; }
+.fw-mini .r { fill: #3f6e35; } .fw-mini .f { fill: #8cc06e; } .fw-mini .b { fill: #fff; stroke: #1c2a20; stroke-width: .8; }
+
+/* ---------------------------------------------------------------- carte de score : notation classique */
+.vo-table tbody tr:nth-child(even) td, .vo-table tbody tr:nth-child(even) th { background: color-mix(in srgb, var(--sauge-pale) 45%, transparent); }
+.vo-table tbody tr.vo-score td, .vo-table tbody tr.vo-score th { padding: 9px 4px; }
+.nt { display: inline-grid; place-items: center; width: 26px; height: 26px; font-weight: 800; font-size: 14px; line-height: 1; color: var(--texte); box-sizing: border-box; }
+.nt-birdie { border: 2px solid #c2410c; border-radius: 50%; color: #c2410c; }
+.nt-aigle { border: 2px solid #b8860b; border-radius: 50%; color: #8a6400; box-shadow: 0 0 0 2px var(--carte), 0 0 0 4px #b8860b; }
+.nt-bogey { border: 2px solid #1e3a8a; border-radius: 3px; color: #1e3a8a; }
+.nt-double { border: 2px solid #1e3a8a; border-radius: 3px; color: #fff; background: #1e3a8a; box-shadow: 0 0 0 2px var(--carte), 0 0 0 4px #1e3a8a; }
+.pt-mal { color: #b42318; font-weight: 800; } .pt-bon { color: var(--vert-2); font-weight: 800; }
+.pen { display: inline-grid; place-items: center; min-width: 20px; height: 20px; border-radius: 999px; background: #b42318; color: #fff; font-size: 12px; font-weight: 800; }
+.ic-sable { width: 22px; height: 15px; vertical-align: middle; } .ic-sable path { fill: #e6c98a; stroke: #b9965a; stroke-width: 1; }
+.fw-mini { width: 18px; height: 24px; }
+.vo-legende .nt { width: 22px; height: 22px; font-size: 12px; margin-left: 6px; }
