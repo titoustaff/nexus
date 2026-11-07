@@ -1104,8 +1104,7 @@ function rendreCompte() {
   const b = $("b-compte"), pan = $("b-pan"), c = $("s-compte"), connecte = Saison.mode === "compte" && !!sb;
   $("v-profil").hidden = !connecte; $("v-stats").hidden = !connecte || coachSeul();
   if (connecte && coachSeul() && etat.ecran === "stats") setTimeout(() => ecran("saison"), 0);
-  $("v-admin").hidden = !(connecte && Saison.role === "admin" && !Saison.demo);
-  $("v-coach").hidden = !(connecte && (Saison.role === "coach" || Saison.role === "admin") && (!Saison.demo || Saison.demo.coach));
+  // Coach et Admin : module Club, ouvert par le lanceur (drapeau du bandeau)
   document.body.classList.toggle("lecture-seule", !!Saison.demo);   // vue coach : boutons de modification masqués
   if (!connecte && ["profil", "stats", "admin", "coach"].includes(etat.ecran)) ecran("tournois");
   pan.hidden = !compte.ouvert;
