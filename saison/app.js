@@ -1198,7 +1198,7 @@ function initCompte() {
 
 // ---- navigation entre écrans
 function ecran(nom) {
-  if (nom === "coach" || nom === "admin") { location.href = "../club/#" + nom; return; }   // module Club
+  if (nom === "coach" || nom === "admin") { location.href = nom === "admin" ? "../admin/" : "../club/"; return; }   // modules Club et Admin
   etat.ecran = nom;
   $("ecran-tournois").hidden = nom !== "tournois";
   $("ecran-saison").hidden = nom !== "saison";
