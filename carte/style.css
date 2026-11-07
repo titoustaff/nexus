@@ -1,0 +1,97 @@
+/* Carte : styles du module. Charte commune : ../commun/v1/charte.css (chargée avant). */
+/* bases reprises de Saison (même aspect dans toute la suite) */
+.tag { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--sauge-pale); color: var(--vert); margin: 2px 4px 0 0; }
+.vide { color: var(--doux); padding: 20px 14px; }
+.bloc { background: var(--carte); border-radius: 12px; padding: 12px 14px; box-shadow: var(--ombre); margin-bottom: 10px; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--bord); font-size: 13px; }
+th { color: var(--doux); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+.defile { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.s-tete { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.s-tete h2 { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -.02em; color: var(--vert); display: flex; align-items: center; gap: 10px; }
+.s-tete select { font: inherit; font-size: 18px; font-weight: 700; color: var(--vert); border: 1px solid var(--bord); background: var(--carte); border-radius: 8px; padding: 2px 6px; }
+.pied { color: var(--doux); font-size: 12px; padding: 14px 0 24px; }
+.st-tuiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.st-tuile { background: var(--carte); border-radius: 12px; box-shadow: var(--ombre); padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; }
+.st-tuile b { font-size: 24px; color: var(--vert); line-height: 1.1; } .st-tuile b small { font-size: 13px; }
+.st-tuile span { font-size: 12.5px; color: var(--doux); } .st-tuile small { font-size: 12px; color: var(--doux); }
+.meta { color: var(--doux); font-size: 13px; margin: 0; }
+.carte-ecrans { max-width: 980px; margin: 0 auto; }
+.bloc.vide { text-align: center; } .bloc.vide p { margin: 0 0 12px; }
+
+/* ---------------------------------------------------------------- Mes cartes */
+#li-vue select { font: inherit; font-size: 14px; border: 1px solid var(--bord); background: var(--carte); border-radius: 8px; padding: 6px 8px; }
+.li-cartes { display: grid; gap: 8px; }
+.li-carte { all: unset; box-sizing: border-box; cursor: pointer; display: grid; grid-template-columns: 64px 1fr auto; gap: 14px; align-items: center;
+  background: var(--carte); border-radius: 14px; box-shadow: var(--ombre); padding: 12px 14px; border: 1px solid transparent; }
+.li-carte:hover, .li-carte:focus-visible { border-color: var(--sauge); }
+.li-score { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 14px; background: var(--sauge-pale); color: var(--vert); line-height: 1; }
+.li-score b { font-size: 24px; font-weight: 800; } .li-score small { font-size: 12px; font-weight: 700; }
+.li-score.bon { background: var(--vert); color: var(--fond); }
+.li-quoi { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.li-quoi b { font-size: 16px; } .li-quoi small { color: var(--doux); font-size: 12.5px; }
+.li-chiffres { display: flex; flex-direction: column; gap: 2px; text-align: right; font-size: 12.5px; color: var(--doux); }
+.li-chiffres b { color: var(--texte); }
+.tag.en-cours { background: var(--jaune); color: #2e2400; font-weight: 700; }
+@media (max-width: 560px) { .li-carte { grid-template-columns: 56px 1fr; } .li-score { width: 56px; height: 56px; } .li-chiffres { grid-column: 2; flex-direction: row; gap: 12px; text-align: left; } }
+
+/* ---------------------------------------------------------------- Nouvelle partie */
+.nv-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px 16px; padding: 18px; }
+.nv-form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600; color: var(--doux); }
+.nv-form input, .nv-form select { font: inherit; font-size: 15px; color: var(--texte); height: 44px; border: 1px solid var(--bord); background: var(--fond); border-radius: 10px; padding: 0 12px; }
+.nv-form input:focus-visible, .nv-form select:focus-visible { outline: 2px solid var(--vert-2); outline-offset: 1px; }
+.nv-large { grid-column: 1 / -1; }
+.nv-pied { display: flex; justify-content: flex-end; align-items: center; gap: 16px; }
+.nv-pied .btn { height: 46px; padding: 0 22px; font-size: 15px; }
+
+/* ---------------------------------------------------------------- Saisie : un trou par écran */
+.sa-tete { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
+.sa-tete h2 { margin: 0; font-size: 22px; color: var(--vert); }
+.sa-total { text-align: right; line-height: 1.1; } .sa-total b { font-size: 28px; font-weight: 800; color: var(--vert); display: block; } .sa-total small { font-size: 12px; color: var(--doux); }
+.sa-trous { display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; margin-bottom: 10px; }
+.sa-trous button { font: inherit; border: 1px solid var(--bord); background: var(--carte); border-radius: 9px; padding: 4px 0; cursor: pointer; font-size: 12px; font-weight: 700; color: var(--doux); display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
+.sa-trous button small { font-size: 14px; color: var(--texte); min-height: 17px; }
+.sa-trous button.actif { outline: 2px solid var(--vert); outline-offset: 1px; color: var(--vert); }
+.sa-trou { padding: 16px; }
+.sa-trou h3 { margin: 14px 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--doux); }
+.sa-num { display: flex; justify-content: space-between; align-items: center; font-size: 20px; }
+.sa-num b { font-size: 30px; color: var(--vert); }
+.sa-par { display: flex; align-items: center; gap: 8px; font-size: 16px; color: var(--doux); }
+.sa-par b { font-size: 22px; color: var(--texte); }
+.sa-par button { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--bord); background: var(--fond); cursor: pointer; font-size: 16px; color: var(--doux); }
+.sa-choix { display: flex; flex-wrap: wrap; gap: 6px; }
+.sa-choix button { font: inherit; min-width: 52px; min-height: 52px; padding: 6px 12px; border-radius: 12px; border: 1.5px solid var(--bord); background: var(--fond); cursor: pointer;
+  font-size: 16px; font-weight: 700; color: var(--texte); display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; }
+.sa-choix button small { font-size: 11px; font-weight: 600; color: var(--doux); }
+.sa-choix button[aria-pressed="true"] { background: var(--vert); border-color: var(--vert); color: var(--fond); }
+.sa-choix button[aria-pressed="true"] small { color: var(--fond); opacity: .85; }
+.sa-choix button:focus-visible { outline: 2px solid var(--jaune); outline-offset: 2px; }
+.sa-ligne { display: flex; flex-wrap: wrap; gap: 0 28px; }
+.sa-nav { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 12px 0 6px; }
+.sa-nav .btn { height: 50px; padding: 0 20px; font-size: 16px; }
+.sa-bas { text-align: center; margin: 10px 0 24px; font-size: 13px; color: var(--doux); }
+@media (max-width: 560px) { .sa-choix button { min-width: 46px; min-height: 48px; padding: 4px 8px; font-size: 15px; } .sa-nav .btn { padding: 0 14px; font-size: 15px; } }
+
+/* couleurs des scores (carte et pastilles des trous) */
+.sc-aigle, .sc-birdie, .sc-par, .sc-bogey, .sc-double { display: inline-grid; place-items: center; min-width: 24px; height: 24px; padding: 0 4px; border-radius: 6px; font-weight: 700; }
+.sc-aigle { background: #f0b400; color: #2e2400; border-radius: 50%; }
+.sc-birdie { background: #c2410c; color: #fff; border-radius: 50%; }
+.sc-par { background: transparent; color: var(--texte); }
+.sc-bogey { background: #dbeafe; color: #1e3a8a; }
+.sc-double { background: #1e3a8a; color: #fff; }
+.sa-trous button.sc-aigle, .sa-trous button.sc-birdie, .sa-trous button.sc-par, .sa-trous button.sc-bogey, .sa-trous button.sc-double { display: flex; height: auto; min-width: 0; padding: 4px 0; border-radius: 9px; }
+.sa-trous button.sc-aigle small, .sa-trous button.sc-birdie small, .sa-trous button.sc-double small { color: inherit; }
+
+/* ---------------------------------------------------------------- Voir : carte de score */
+.vo-carte .defile + .defile { margin-top: 10px; }
+.vo-table th, .vo-table td { text-align: center; padding: 6px 4px; font-size: 13px; white-space: nowrap; }
+.vo-table thead th { background: var(--vert); color: var(--fond); }
+.vo-table tbody th { text-align: left; }
+.vo-table td:last-child, .vo-table th:last-child { background: var(--sauge-pale); }
+.vo-table thead th:last-child { background: var(--vert-2); }
+.vo-legende { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.vo-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 14px 0 24px; }
+.vo-suppr { color: #b42318; margin-left: auto; }
+.vo-table { table-layout: fixed; min-width: 560px; }
+.vo-table th:first-child { width: 72px; }
+.vo-table th:last-child, .vo-table td:last-child { width: 64px; }

@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <title>GolfNexus · Carte</title>
+  <link rel="icon" type="image/svg+xml" href="../saison/favicon.svg">
+  <meta name="description" content="GolfNexus Carte — note tes parties trou par trou.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="../commun/v1/charte.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="verrou">
+  <script>try { if (localStorage.getItem("gn-auth")) document.body.classList.add("reprise"); } catch { /* */ }</script>   <!-- déjà connecté : écran de chargement (charte.css, nexus.js) -->
+  <!-- Carte (module n° 3) : même accueil que Saison (connexion obligatoire, sur invitation) -->
+  <section id="accueil" class="accueil" aria-labelledby="a-titre">
+    <div class="a-haut">
+      <div class="a-marque">
+        <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#f4f7f2"/><ellipse cx="30" cy="52" rx="20" ry="5" fill="#cfe3d3"/><path d="M22 10v41" stroke="#14532d" stroke-width="4.5" stroke-linecap="round"/><path d="M24 10l22 8-22 8z" fill="#f0b400"/><circle cx="43" cy="45" r="7" fill="#fff" stroke="#14532d" stroke-width="2"/></svg>
+        <span class="nom">Golf<b>Nexus</b></span>
+      </div>
+      <div class="a-grille">
+        <div class="a-texte">
+          <h1 id="a-titre">Carte : note tes parties, trou par trou.</h1>
+          <p class="a-sous">Score, putts, pénalités, fairways, bunkers : saisis vite, sur le parcours ou après. Tes cartes restent à toi, et à ton coach si tu l'as accepté.</p>
+          <ul class="a-points">
+            <li><b>Tous les golfs ffgolf</b> : parcours, par de chaque trou et repères déjà prêts.</li>
+            <li><b>Saisie rapide</b> : de gros boutons, un trou par écran, enregistrement automatique.</li>
+            <li><b>Mes cartes</b> : la carte de score complète, tes putts, tes fairways, tes greens en régulation.</li>
+          </ul>
+        </div>
+        <div class="a-carte" id="a-connexion">
+          <h2>Connexion</h2>
+          <form id="a-form" class="c-form c-col">
+            <input id="a-email" type="email" autocomplete="username" placeholder="ton e-mail" aria-label="Adresse e-mail" required>
+            <input id="a-mdp" type="password" autocomplete="current-password" placeholder="mot de passe" aria-label="Mot de passe">
+            <button type="submit" class="btn plein" id="a-ok">Se connecter</button>
+          </form>
+          <button type="button" class="lien" id="a-lien">Pas de mot de passe ou oublié ? Recevoir un lien par e-mail</button>
+          <p class="a-msg" id="a-msg" aria-live="polite"></p>
+          <p class="a-note">Accès sur invitation. Ton coach ou l'administrateur t'envoie un lien par e-mail.</p>
+        </div>
+      </div>
+    </div>
+    <p class="a-pied">Données publiques ffgolf.org · résultats des autres joueurs anonymisés · tes données ne sont vues que par toi et ceux que tu acceptes · <a class="a-rgpd" href="../saison/#v=rgpd">Tes données personnelles</a></p>
+  </section>
+
+  <header class="bandeau">
+    <svg class="decor" aria-hidden="true" viewBox="0 0 1200 120" preserveAspectRatio="xMidYMid slice">
+      <g fill="none" stroke="currentColor" stroke-width="1.1">
+        <path d="M-20 100 C180 60 320 120 520 80 S860 10 1060 50 S1220 40 1240 30"/>
+        <path d="M-20 118 C190 80 330 138 530 100 S870 32 1070 72 S1220 62 1240 54"/>
+        <path d="M-20 136 C200 100 340 156 540 120 S880 54 1080 94 S1220 84 1240 78"/>
+        <path d="M560 -10 C640 20 700 40 820 30 S1000 -6 1100 10"/>
+        <path d="M600 -24 C680 8 740 22 860 14 S1020 -20 1120 -6"/>
+      </g>
+    </svg>
+    <div class="bandeau-in">
+      <div class="marque">
+        <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#f4f7f2"/><ellipse cx="30" cy="52" rx="20" ry="5" fill="#cfe3d3"/><path d="M22 10v41" stroke="#14532d" stroke-width="4.5" stroke-linecap="round"/><path d="M24 10l22 8-22 8z" fill="#f0b400"/><circle cx="43" cy="45" r="7" fill="#fff" stroke="#14532d" stroke-width="2"/></svg>
+        <div>
+          <div class="nom">Golf<span>Nexus</span> · Carte</div>
+          <p class="devise">Note tes parties trou par trou</p>
+        </div>
+      </div>
+      <nav class="vues" aria-label="Écrans">
+        <button type="button" data-ecran="liste" aria-current="page">Mes cartes</button>
+        <button type="button" data-ecran="nouvelle" id="v-nouvelle">+ Nouvelle partie</button>
+      </nav>
+      <div class="b-compte" id="b-compte" aria-live="polite"></div>
+    </div>
+  </header>
+  <div class="b-pan-ancre"><div class="b-pan" id="b-pan" hidden></div></div>
+
+  <main class="carte-ecrans">
+    <section id="ecran-liste" aria-labelledby="li-titre">
+      <div class="s-tete"><h2 id="li-titre">Mes cartes</h2><span id="li-vue"></span></div>
+      <div id="li-contenu"><p class="meta">Chargement…</p></div>
+    </section>
+    <section id="ecran-nouvelle" hidden aria-labelledby="nv-titre">
+      <div class="s-tete"><h2 id="nv-titre">Nouvelle partie</h2></div>
+      <form id="nv-form" class="bloc nv-form" autocomplete="off">
+        <label>Date <input type="date" id="nv-jour" required></label>
+        <label>Golf <input id="nv-golf" list="nv-golfs" required placeholder="Tape le nom ou la ville du golf"><datalist id="nv-golfs"></datalist></label>
+        <label>Parcours <select id="nv-parcours" required></select></label>
+        <label>Repères <select id="nv-repere"></select></label>
+        <label>Trous <select id="nv-trous"><option value="18-1">18 trous</option><option value="9-1">9 trous (1 à 9)</option><option value="9-10">9 trous (10 à 18)</option></select></label>
+        <label>Contexte <select id="nv-contexte"><option value="libre">Partie libre</option><option value="entrainement">Entraînement</option><option value="rencontre">Rencontre</option><option value="tournoi">Tournoi ffgolf</option></select></label>
+        <label id="nv-tournoi-l" hidden>Tournoi <select id="nv-tournoi"></select></label>
+        <label class="nv-large">Note <input id="nv-note" maxlength="500" placeholder="météo, ressenti, avec qui… (facultatif)"></label>
+        <div class="nv-large nv-pied"><button type="button" class="lien" data-ecran="liste">Annuler</button><button type="submit" class="btn plein" id="nv-ok">Commencer la saisie</button></div>
+      </form>
+    </section>
+    <section id="ecran-saisie" hidden aria-labelledby="sa-titre"><div id="sa-contenu"></div></section>
+    <section id="ecran-voir" hidden><div id="vo-contenu"></div></section>
+  </main>
+
+  <footer class="pied">Golfs et parcours : ffgolf.org · <a href="../saison/#v=rgpd">Tes données personnelles</a> · <a href="../">GolfNexus</a></footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.js"></script>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <script src="../commun/v1/nexus.js"></script>
+  <script src="../commun/v1/lanceur.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
