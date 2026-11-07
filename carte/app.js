@@ -6,7 +6,9 @@
 
 const etat = { golfs: {}, tournois: [], ecran: "liste", vue: "", parties: [], partie: null, i: 0 };
 const $ = (id) => document.getElementById(id);
-const CONTEXTES = { libre: "Partie libre", entrainement: "Entraînement", rencontre: "Rencontre", tournoi: "Tournoi ffgolf" };
+// date du jour EN HEURE LOCALE (AUJ, commun, est en heure universelle : entre minuit et 1–2 h, il donne encore la veille)
+const JOUR = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })();
+const CONTEXTES = { libre: "Partie libre", entrainement: "Entraînement", rencontre: "Rencontre", competition: "Compétition hors Mérite", tournoi: "Tournoi ffgolf" };
 const FAIRWAYS = [["gauche", "Gauche"], ["fairway", "Fairway"], ["droite", "Droite"], ["court", "Court"], ["long", "Long"]];
 // mise en jeu : un fairway vu de dessus (rough à gauche et à droite, long au-dessus, court en dessous) ; la balle se pose
 // dans la zone touchée. Second appui sur la même zone : on efface.
@@ -102,13 +104,18 @@ async function rendreListe() {
   const { data, error } = await sb.from("carte_parties").select("*").eq("user_id", etat.vue || Compte.moi.id).order("jour", { ascending: false }).order("cree_le", { ascending: false });
   if (error) { box.innerHTML = `<div class="bloc vide">Lecture impossible : ${esc(error.message)}${/carte_parties/.test(error.message) ? "<br>La table de Carte n'est pas encore créée dans la base (script supabase/carte-v1.sql)." : ""}</div>`; return; }
   etat.parties = data || [];
+  const enCours = !etat.vue && etat.parties.find((p) => !p.terminee);
+  const attend = etat.vue ? [] : (etat.agenda || []).map((a) => ({ ...a, carte: etat.parties.find((p) => p.tournoi_id === a.t.id && (p.tour || 1) === a.tour) }))
+    .filter((a) => !a.carte || !a.carte.terminee);
+  const htmlAttend = attend.map((a) => `<div class="li-attend"><span>⛳ <b>Aujourd'hui : ${esc(titre(a.t.nom))}</b>${(a.t.nb_tours || 1) > 1 ? ` · tour ${a.tour}` : ""}
+      <small>${esc(titre(a.t.golf_nom || a.t.golf))} · dans ta saison (${esc({ envisage: "envisagé", inscrit: "inscrit", joue: "joué" }[a.statut] || a.statut)})</small></span>
+      ${a.carte ? `<button type="button" class="btn plein" data-partie="${esc(a.carte.id)}">Reprendre ma carte</button>` : `<button type="button" class="btn plein" data-attend="${esc(a.t.id)}">Ta carte t'attend · commencer</button>`}</div>`).join("");
   if (!etat.parties.length) {
     box.innerHTML = etat.vue ? `<div class="bloc vide">Aucune carte pour ce joueur.</div>`
-      : `<div class="bloc vide"><p>Aucune partie pour l'instant.</p><button type="button" class="btn plein" data-ecran="nouvelle">+ Noter ma première partie</button></div>`;
+      : `${htmlAttend}<div class="bloc vide"><p>Aucune partie pour l'instant.</p><button type="button" class="btn plein" data-ecran="nouvelle">+ Noter ma première partie</button></div>`;
     return;
   }
-  const enCours = !etat.vue && etat.parties.find((p) => !p.terminee);
-  box.innerHTML = `${enCours ? `<button type="button" class="li-reprendre" data-partie="${esc(enCours.id)}">▶ <b>Reprendre la partie en cours</b>
+  box.innerHTML = `${htmlAttend}${enCours && !attend.some((a) => a.carte?.id === enCours.id) ? `<button type="button" class="li-reprendre" data-partie="${esc(enCours.id)}">▶ <b>Reprendre la partie en cours</b>
       <span>${esc(titre(enCours.golf_nom || enCours.golf))} · ${bilan(enCours).n}/${enCours.nb_trous} trous saisis</span></button>` : ""}<div class="li-cartes">${etat.parties.map((p) => {
     const b = bilan(p);
     return `<button type="button" class="li-carte" data-partie="${esc(p.id)}">
@@ -120,6 +127,7 @@ async function rendreListe() {
 }
 document.addEventListener("change", (e) => { if (e.target.id === "li-qui") { etat.vue = e.target.value; ecran("liste"); } });
 $("li-contenu").addEventListener("click", (e) => {
+  const at = e.target.closest("[data-attend]"); if (at) { preremplir(at.dataset.attend); return; }
   const b = e.target.closest("[data-partie]"); if (!b) return;
   etat.partie = etat.parties.find((p) => p.id === b.dataset.partie);
   const m = jsonLs("carte-en-cours");   // reprendre au trou où l'on s'était arrêté, sinon au premier trou sans score
@@ -127,11 +135,35 @@ $("li-contenu").addEventListener("click", (e) => {
   ecran(!etat.vue && !etat.partie.terminee ? "saisie" : "voir");
 });
 
+// ------------------------------------------------------------------ « Ta carte t'attend » : compétitions du jour dans Ma saison (Saison)
+// Les tournois de mes saisons (Envisagé / Inscrit / Joué) qui se jouent aujourd'hui : la carte est proposée, pré-remplie ;
+// rien n'est créé tant que le joueur ne l'active pas (08/11, demande de l'utilisateur).
+async function chargerAgenda() {
+  etat.agenda = [];
+  const L = await sb.from("saisons").select("id").eq("user_id", Compte.moi.id);
+  const ids = (L.data || []).map((x) => x.id); if (!ids.length) return;
+  const I = await sb.from("saison_tournois").select("tournoi_id,statut").in("saison_id", ids);
+  for (const r of I.data || []) {
+    const t = etat.tournois.find((x) => x.id === r.tournoi_id);
+    if (t?.debut && t.debut <= JOUR && JOUR <= (t.fin || t.debut)) etat.agenda.push({ t, statut: r.statut, tour: tourDuJour(t, JOUR) });
+  }
+}
+function preremplir(id) {
+  const a = etat.agenda.find((x) => x.t.id === id); if (!a) return;
+  const g = etat.golfs[a.t.golf];
+  ecran("nouvelle");
+  $("nv-jour").value = JOUR;
+  if (g) { $("nv-golf").value = libGolf(g); majParcours(); }
+  $("nv-contexte").value = "tournoi"; majTournois();
+  $("nv-tournoi").value = a.t.id; majTours(); $("nv-tour").value = String(a.tour);
+  signaler("Carte pré-remplie : vérifie le parcours et les repères, puis commence la saisie.");
+}
+
 // ------------------------------------------------------------------ Nouvelle partie
 const golfDuChamp = () => { const v = $("nv-golf").value.trim().toLowerCase(); return Object.values(etat.golfs).find((g) => libGolf(g).toLowerCase() === v || g.nom.toLowerCase() === v) || null; };
 const libGolf = (g) => `${titre(g.nom)}${g.ville ? " (" + titre(g.ville) + ")" : ""}`;
 function preparerNouvelle() {
-  if (!$("nv-jour").value) $("nv-jour").value = AUJ;
+  if (!$("nv-jour").value) $("nv-jour").value = JOUR;
   if (!$("nv-golfs").children.length) $("nv-golfs").innerHTML = Object.values(etat.golfs).sort((a, b) => a.nom.localeCompare(b.nom, "fr")).map((g) => `<option value="${esc(libGolf(g))}">`).join("");
   majParcours();
 }
@@ -156,9 +188,23 @@ function majTournois() {
   const avant = $("nv-tournoi").value;
   $("nv-tournoi").innerHTML = T.length ? T.map((t) => `<option value="${esc(t.id)}" ${t.id === avant ? "selected" : ""}>${esc(fmtDate(t.debut))} ${t.annee || ""} · ${esc(t.nom)}</option>`).join("")
     : `<option value="">${g ? "Aucun tournoi ffgolf sur ce golf" : "Choisis d'abord le golf"}</option>`;
+  majTours();
 }
-// choisir un tournoi règle la date de la partie sur son premier jour
-$("nv-tournoi").addEventListener("change", () => { const t = etat.tournois.find((x) => x.id === $("nv-tournoi").value); if (t?.debut) $("nv-jour").value = t.debut; });
+// tour d'un tournoi : par défaut celui du jour (1er jour = tour 1)
+const tourDuJour = (t, jour) => Math.min(Math.max(1, Math.round((new Date(jour + "T12:00:00") - new Date(t.debut + "T12:00:00")) / 864e5) + 1), t.nb_tours || 1);
+function majTours() {
+  const t = etat.tournois.find((x) => x.id === $("nv-tournoi").value), ctx = $("nv-contexte").value === "tournoi";
+  $("nv-tour-l").hidden = !ctx || !t || (t.nb_tours || 1) < 2;
+  if (!t) return;
+  const n = t.nb_tours || 1, d = tourDuJour(t, $("nv-jour").value);
+  $("nv-tour").innerHTML = Array.from({ length: n }, (_, k) => `<option value="${k + 1}" ${k + 1 === d ? "selected" : ""}>Tour ${k + 1}</option>`).join("");
+}
+// choisir un tournoi règle la date de la partie sur son premier jour (sauf si la date tombe déjà pendant le tournoi)
+$("nv-tournoi").addEventListener("change", () => {
+  const t = etat.tournois.find((x) => x.id === $("nv-tournoi").value);
+  if (t?.debut && !($("nv-jour").value >= t.debut && $("nv-jour").value <= (t.fin || t.debut))) $("nv-jour").value = t.debut;
+  majTours();
+});
 $("nv-golf").addEventListener("change", majParcours);
 $("nv-golf").addEventListener("input", () => { if (golfDuChamp()) majParcours(); });
 $("nv-parcours").addEventListener("change", majReperes);
@@ -174,11 +220,22 @@ $("nv-form").addEventListener("submit", async (e) => {
   const ligne = { jour: $("nv-jour").value, golf: g.slug, golf_nom: g.nom, parcours: p?.code || null, parcours_nom: p?.nom || null,
     repere: $("nv-repere").value || null, nb_trous: nb, premier, contexte: $("nv-contexte").value,
     tournoi_id: $("nv-contexte").value === "tournoi" ? ($("nv-tournoi").value || null) : null, trous, note: $("nv-note").value.trim() || null };
+  if (ligne.tournoi_id) {
+    ligne.tour = +$("nv-tour").value || 1;
+    // déjà une carte pour ce tournoi et ce tour : on l'ouvre plutôt que d'en créer une deuxième
+    const deja = etat.parties.find((x) => x.tournoi_id === ligne.tournoi_id && (x.tour || 1) === ligne.tour);
+    if (deja) { signaler("Ta carte de ce tour existe déjà : on la rouvre."); etat.partie = deja; etat.i = Math.max(0, deja.trous.findIndex((t) => !t.score)); ecran(deja.terminee ? "voir" : "saisie"); return; }
+  }
   $("nv-ok").disabled = true;
-  const { data, error } = await sb.from("carte_parties").insert(ligne).select("*").single();
+  let { data, error } = await sb.from("carte_parties").insert(ligne).select("*").single();
+  if (error && /tour|contexte_check/.test(error.message)) {   // script carte-v1-tour.sql pas encore lancé
+    delete ligne.tour; if (ligne.contexte === "competition") ligne.contexte = "rencontre";
+    ({ data, error } = await sb.from("carte_parties").insert(ligne).select("*").single());
+    if (!error) signaler("Carte créée (le tour et le contexte « compétition hors Mérite » attendent le script carte-v1-tour.sql).");
+  }
   $("nv-ok").disabled = false;
   if (error) { signaler("Création impossible : " + error.message); return; }
-  $("nv-form").reset(); $("nv-jour").value = AUJ;
+  $("nv-form").reset(); $("nv-jour").value = JOUR;
   etat.partie = data; etat.i = 0; ecran("saisie");
 });
 
@@ -255,7 +312,7 @@ function sauver(tout = false) {
     // .select : on vérifie qu'une ligne a vraiment été écrite (session expirée → 0 ligne, sans erreur : faux « enregistré »)
     let { data, error } = await sb.from("carte_parties").update({ trous: p.trous, terminee: p.terminee, modifie_le: p.modifie_le }).eq("id", p.id).select("id");
     if (!error && !data?.length) {   // session à rafraîchir, puis un nouvel essai
-      await sb.auth.refreshSession().catch(() => {});
+      try { await sb.auth.refreshSession?.(); } catch { /* */ }
       ({ data, error } = await sb.from("carte_parties").update({ trous: p.trous, terminee: p.terminee, modifie_le: p.modifie_le }).eq("id", p.id).select("id"));
       if (!error && !data?.length) error = { message: "session expirée : reconnecte-toi (tes saisies sont gardées et repartiront)" };
     }
@@ -269,7 +326,8 @@ function sauver(tout = false) {
 }
 
 // ------------------------------------------------------------------ Voir : la carte de score complète
-function rendreVoir() {
+function rendreVoir() { rendreVoir0(); controleFfgolf().catch(() => {}); }
+function rendreVoir0() {
   const p = etat.partie, b = bilan(p), lecture = etat.partage || !!etat.vue || p.user_id !== Compte.moi?.id;
   const moities = p.nb_trous === 18 ? [p.trous.slice(0, 9), p.trous.slice(9)] : [p.trous];
   const somme = (T, k) => T.filter((t) => t.score).reduce((s, t) => s + (+t[k] || 0), 0);
@@ -287,12 +345,38 @@ function rendreVoir() {
     <div class="st-tuiles">${tuileSt(b.n ? b.score : "—", "score", b.n ? ecartPar(b.ecart) + (b.n < p.nb_trous ? ` sur ${b.n} trous` : "") : "")}${tuileSt(b.putts ?? "—", "putts")}${tuileSt(b.fairways, "fairways touchés")}${tuileSt(b.gir, "greens en régulation")}${tuileSt(b.pen, "pénalités")}</div>
     <div class="bloc vo-carte">${moities.map((T, k) => `<div class="defile">${tableau(T, moities.length > 1 ? (k ? "Retour" : "Aller") : "Total")}</div>`).join("")}
       <p class="meta vo-legende"><span class="nt nt-albatros">2</span> albatros <span class="nt nt-aigle">3</span> eagle <span class="nt nt-birdie">4</span> birdie <span class="nt nt-par">5</span> par <span class="nt nt-bogey">6</span> bogey <span class="nt nt-double">7</span> double + · départ ${miniFw("fairway")} · ${SABLE} bunker</p></div>
+    ${p.contexte === "tournoi" && p.tournoi_id && !etat.partage ? `<div id="vo-ffgolf"></div>` : ""}
     ${p.note ? `<div class="bloc"><b>Note</b> <span>${esc(p.note)}</span></div>` : ""}
     ${etat.partage ? `<p class="meta pt-pied">Carte partagée par lien (lecture seule) · <a href="../">GolfNexus</a></p>` : `<div class="vo-actions"><button type="button" class="btn" data-ecran="liste">← ${etat.vue ? "Cartes du joueur" : "Mes cartes"}</button>
       ${lecture ? `<span class="meta">Lecture seule</span>` : `<button type="button" class="btn plein" data-partager>🔗 Partager en direct</button><button type="button" class="btn" data-modifier>Modifier la saisie</button><button type="button" class="lien vo-suppr" data-supprimer>Supprimer la partie</button>`}</div>`}`;
 }
+// Contrôle ffgolf : le trou par trou relevé par la ffgolf (resultats_perso, après le tournoi) comparé à la carte.
+// La saisie reste la source immédiate (le joueur a besoin de ses chiffres entre deux tours) ; ici on signale seulement
+// les écarts, et le joueur choisit de reprendre les scores officiels (ses détails — putts, départ… — restent).
+async function controleFfgolf() {
+  const p = etat.partie, box = $("vo-ffgolf"); if (!box) return;
+  const { data: r } = await sb.from("resultats_perso").select("trous,pars,tours").eq("user_id", p.user_id).eq("tournoi_id", p.tournoi_id).maybeSingle();
+  const t = etat.tournois.find((x) => x.id === p.tournoi_id), tour = p.tour || (t ? tourDuJour(t, p.jour) : 1);
+  const off = r?.trous?.[tour - 1];
+  if (!off?.length) { box.innerHTML = `<p class="meta ff-attente">Scores ffgolf pas encore relevés pour ce tour : ils seront comparés à ta carte dès leur arrivée (relevé du lundi).</p>`; return; }
+  const tous = p.trous.map((h, k) => ({ h, o: off[off.length >= h.t ? h.t - 1 : k] })).filter((x) => x.o && x.h.score !== x.o);   // 18 trous ffgolf : par numéro ; 9 trous : par rang
+  const ecarts = tous.filter((x) => x.h.score), manquants = tous.filter((x) => !x.h.score);
+  const lecture = !!etat.vue || p.user_id !== Compte.moi?.id;
+  box.innerHTML = !tous.length ? `<div class="ff-ok">✓ Conforme aux scores ffgolf (tour ${tour})</div>`
+    : `<div class="ff-ecart">${ecarts.length ? `<b>⚠ ${ecarts.length} trou${ecarts.length > 1 ? "s" : ""} diffère${ecarts.length > 1 ? "nt" : ""} des scores ffgolf (tour ${tour}) :</b>
+      ${ecarts.map((x) => `trou ${x.h.t} : ffgolf <b>${x.o}</b>, ta carte <b>${x.h.score}</b>`).join(" · ")}` : `<b>✓ Tes scores saisis sont conformes à la ffgolf (tour ${tour}).</b>`}
+      ${manquants.length ? `<br>${manquants.length} trou${manquants.length > 1 ? "s" : ""} sans score sur ta carte : la ffgolf peut ${manquants.length > 1 ? "les" : "le"} compléter.` : ""}
+      ${lecture ? "" : `<button type="button" class="btn" data-reprendre-ffgolf>${ecarts.length ? "Reprendre les scores ffgolf" : "Compléter avec la ffgolf"}</button>`}</div>`;
+  box.dataset.ecarts = JSON.stringify(tous.map((x) => [x.h.t, x.o]));
+}
 $("vo-contenu").addEventListener("click", async (e) => {
   const b = e.target.closest("button"); if (!b) return;
+  if ("reprendreFfgolf" in b.dataset) {
+    const E = JSON.parse($("vo-ffgolf").dataset.ecarts || "[]");
+    if (!confirm(`Remplacer ${E.length} score${E.length > 1 ? "s" : ""} par ceux de la ffgolf ? Tes putts, départs, bunkers et pénalités restent.`)) return;
+    for (const [t, o] of E) { const h = etat.partie.trous.find((x) => x.t === t); if (h) h.score = o; }
+    sauver(true); rendreVoir(); signaler("Scores ffgolf repris."); return;
+  }
   if ("modifier" in b.dataset) { const p = etat.partie; p.terminee = false; etat.i = Math.max(0, p.trous.findIndex((t) => !t.score)); ecran("saisie"); return; }
   if ("supprimer" in b.dataset) {
     if (!confirm("Supprimer définitivement cette partie ?")) return;
@@ -317,6 +401,7 @@ async function entrer() {
   try { await Compte.connecter(data.session.user); } catch (e) { signaler("Lecture du compte impossible : " + (e.message || e)); }
   document.body.classList.remove("verrou");
   // une saisie non enregistrée (coupure réseau) : on la renvoie
+  try { await chargerAgenda(); } catch { etat.agenda = []; }
   const br = jsonLs("carte-brouillon");
   if (br && br.id && br.user_id === Compte.moi.id) { etat.partie = br; sauver(true); }
   // une partie en cours (déconnecté, page fermée…) : on rouvre la saisie sur le trou où l'on s'était arrêté

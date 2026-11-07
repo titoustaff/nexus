@@ -158,3 +158,12 @@ body.partage .vues, body.partage #b-compte { display: none; }
 .vo-legende .nt-albatros, .vo-legende .nt-aigle, .vo-legende .nt-double { margin: 0 4px 0 10px; }
 
 .sa-alerte { margin: 10px 0 0; padding: 10px 12px; border-radius: 10px; background: #fef3c7; color: #7a4b00; font-size: 13.5px; font-weight: 600; }
+
+/* « ta carte t'attend » et contrôle ffgolf */
+.li-attend { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; background: var(--vert); color: var(--fond); border-radius: 14px; padding: 14px 16px; margin-bottom: 10px; box-shadow: var(--ombre); }
+.li-attend span { display: flex; flex-direction: column; gap: 2px; } .li-attend small { opacity: .85; }
+.li-attend .btn.plein { background: var(--jaune); border-color: var(--jaune); color: #2e2400; height: 44px; padding: 0 18px; font-weight: 700; }
+.ff-ok { background: #dcfce7; color: #14532d; border-radius: 12px; padding: 10px 14px; margin-bottom: 10px; font-weight: 700; }
+.ff-ecart { background: #fef3c7; color: #7a4b00; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; line-height: 1.6; }
+.ff-ecart .btn { margin-left: 8px; height: 34px; padding: 0 12px; }
+.ff-attente { margin: 0 0 10px; }
