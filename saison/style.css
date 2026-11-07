@@ -1,61 +1,4 @@
-:root {
-  --vert: #14532d;
-  --vert-2: #1f7a45;
-  --sauge: #9caf88;
-  --sauge-pale: #eaf0e4;
-  --jaune: #f0b400;
-  --jaune-trait: #7a5600;
-  --jaune-texte: #2e2400;
-  --fond: #f4f4ee;
-  --carte: #ffffff;
-  --texte: #1c2a20;
-  --doux: #5b6b5f;
-  --bord: #e1e6dc;
-  --passe: #b3bcb5;
-  --ombre: 0 1px 2px rgba(20, 40, 25, .06), 0 6px 20px rgba(20, 40, 25, .06);
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --vert: #86c79a; --vert-2: #5fb27b; --sauge: #6f8562; --sauge-pale: #1f2b22; --jaune: #f2c230; --jaune-trait: #f9e39a; --jaune-texte: #1d1700;
-    --fond: #0f1712; --carte: #17221b; --texte: #e6ede7; --doux: #a3b2a7;
-    --bord: #2a3a2f; --passe: #55635a; --ombre: 0 1px 3px rgba(0,0,0,.4);
-  }
-}
-:root[data-theme="dark"] {
-  --vert: #86c79a; --vert-2: #5fb27b; --sauge: #6f8562; --sauge-pale: #1f2b22; --jaune: #f2c230; --jaune-trait: #f9e39a; --jaune-texte: #1d1700;
-  --fond: #0f1712; --carte: #17221b; --texte: #e6ede7; --doux: #a3b2a7;
-  --bord: #2a3a2f; --passe: #55635a; --ombre: 0 1px 3px rgba(0,0,0,.4);
-}
-
-* { box-sizing: border-box; }
-html, body { margin: 0; }
-html { overflow-x: clip; }
-body {
-  background: var(--fond); color: var(--texte);
-  font: 14px/1.5 "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  max-width: 1440px; margin: 0 auto; padding: 0 16px;
-}
-button, input, select { font: inherit; color: inherit; }
-a { color: var(--vert-2); }
-
-/* ---------------------------------------------------------------- en-tête */
-.bandeau {
-  position: relative; overflow: hidden; color: #eef5ef; margin: 0 0 16px;
-  width: 100vw; margin-left: calc(50% - 50vw);   /* pleine largeur hors du conteneur */
-  background: linear-gradient(115deg, #0b2f1a 0%, #14532d 55%, #1c6a3c 100%);
-}
-.bandeau .decor { position: absolute; inset: 0; width: 100%; height: 100%; color: #7fbf92; opacity: .28; pointer-events: none; }
-.bandeau-in { position: relative; max-width: 1440px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 10px 24px; flex-wrap: wrap; padding: 18px 16px 20px; }
-.marque { display: flex; align-items: center; gap: 13px; }
-.logo { width: 44px; height: 44px; flex: none; filter: drop-shadow(0 2px 6px rgba(0,0,0,.25)); }
-.nom { font-weight: 800; font-size: 26px; line-height: 1.05; letter-spacing: -.025em; color: #fff; }
-.nom span { color: var(--jaune); }
-.devise { margin: 2px 0 0; font-size: 13px; color: #b9d3c0; }
-.bandeau .saison { margin: 0; font-size: 13px; color: #d6e6da; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14);
-  border-radius: 999px; padding: 6px 14px; backdrop-filter: blur(2px); }
-.bandeau .saison b { color: #fff; }
-@media (max-width: 480px) { .nom { font-size: 22px; } .logo { width: 38px; height: 38px; } .bandeau .saison { border-radius: 10px; } }
-
+/* Couleurs, police, bandeau, boutons, fenêtre, compte, accueil, assistant, RGPD : ../commun/v1/charte.css (chargée avant). */
 /* ---------------------------------------------------------------- haut : prochain tournoi + tuiles */
 .haut { display: grid; grid-template-columns: minmax(300px, 1.3fr) 3fr; gap: 12px; margin-bottom: 12px; }
 .prochain {
@@ -203,14 +146,6 @@ a { color: var(--vert-2); }
 .leaflet-control-attribution { background: color-mix(in srgb, var(--carte) 80%, transparent) !important; color: var(--doux); }
 .leaflet-control-attribution a { color: var(--vert-2); }
 
-/* ---------------------------------------------------------------- fiche */
-.fiche { position: fixed; inset: 0; background: rgba(10, 20, 14, .45); z-index: 1000; display: flex; justify-content: flex-end; }
-.fiche[hidden] { display: none; }
-.fiche-boite { background: var(--fond); width: min(780px, 100%); height: 100%; overflow-y: auto; padding: 24px 22px 40px; position: relative; }
-.fermer { position: absolute; top: 10px; right: 14px; border: 0; background: none; font-size: 28px; cursor: pointer; color: var(--doux); }
-.fiche h2 { margin: 0 0 4px; color: var(--vert); font-size: 24px; font-weight: 800; letter-spacing: -.02em; padding-right: 30px; }
-.fiche h3 { margin: 24px 0 8px; font-size: 15px; }
-.fiche .sous { color: var(--doux); margin-bottom: 12px; }
 .bloc { background: var(--carte); border-radius: 12px; padding: 12px 14px; box-shadow: var(--ombre); margin-bottom: 10px; }
 .grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 16px; }
 .grille div { min-width: 0; overflow-wrap: anywhere; }
@@ -242,15 +177,6 @@ details.autres summary { cursor: pointer; color: var(--vert-2); font-size: 12px;
 .lien-t { cursor: pointer; }
 .lien-t:hover { background: var(--sauge-pale); }
 
-/* ---------------------------------------------------------------- onglets d'écran (bandeau) */
-.vues { display: flex; gap: 4px; background: rgba(0,0,0,.18); border-radius: 999px; padding: 4px; margin-right: auto; margin-left: 12px; }
-.vues button { border: 0; background: none; color: #d6e6da; font-weight: 600; font-size: 14px; padding: 6px 14px; border-radius: 999px; cursor: pointer;
-  display: inline-flex; align-items: center; gap: 6px; }
-.vues button:hover { color: #fff; }
-.vues button[aria-current] { background: #f4f7f2; color: #14532d; }
-.vues button:focus-visible { outline: 2px solid var(--jaune); outline-offset: 2px; }
-.vues .nb { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--jaune); color: #2e2400; font-size: 11px; display: grid; place-items: center; }
-.vues .nb[hidden] { display: none; }
 
 /* ---------------------------------------------------------------- Ma saison : statuts */
 :root { --s-envisage: #9caf88; --s-inscrit: #1f7a45; --s-joue: #f0b400; --s-conflit: #c2410c; }
@@ -274,11 +200,6 @@ details.autres summary { cursor: pointer; color: var(--vert-2); font-size: 12px;
 .seg button[aria-pressed=true][data-statut=inscrit] { background: var(--s-inscrit); color: #fff; }
 .seg button[aria-pressed=true][data-statut=joue] { background: var(--s-joue); color: #2e2400; }
 .seg button:focus-visible { outline: 2px solid var(--vert-2); outline-offset: -2px; }
-.lien { border: 0; background: none; padding: 0; color: var(--vert-2); cursor: pointer; font: inherit; text-decoration: underline; text-underline-offset: 2px; }
-.btn { border: 1px solid var(--bord); background: var(--carte); color: var(--vert); border-radius: 999px; padding: 7px 14px; font-weight: 600; cursor: pointer; }
-.btn:hover { border-color: var(--sauge); }
-.btn.plein { background: var(--vert); border-color: var(--vert); color: var(--fond); }
-.btn:disabled { opacity: .45; cursor: not-allowed; }
 .doux { color: var(--doux); font-size: 13px; }
 .note { width: 100%; margin-top: 8px; border: 1px solid var(--bord); background: var(--fond); border-radius: 8px; padding: 6px 9px; font-size: 13px; }
 .note:focus-visible { outline: 2px solid var(--vert-2); outline-offset: 1px; }
@@ -361,12 +282,6 @@ details.autres summary { cursor: pointer; color: var(--vert-2); font-size: 12px;
   border-radius: 12px; box-shadow: var(--ombre); padding: 10px 14px; margin-bottom: 12px; font-size: 13px; color: var(--doux); }
 .s-compte p { margin: 0; flex: 1 1 280px; }
 .s-compte b { color: var(--texte); }
-.c-form { display: flex; gap: 6px; flex-wrap: wrap; }
-.c-form input { border: 1px solid var(--bord); background: var(--fond); border-radius: 8px; padding: 6px 10px; font-size: 13px; width: 230px; max-width: 60vw; color: var(--texte); }
-.c-form input:focus-visible { outline: 2px solid var(--vert-2); outline-offset: 1px; }
-.toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 2000; max-width: min(560px, calc(100vw - 32px));
-  background: var(--vert); color: var(--fond); padding: 10px 16px; border-radius: 10px; box-shadow: var(--ombre); font-size: 13px; }
-.toast[hidden] { display: none; }
 @media (max-width: 1100px) { .s-corps { grid-template-columns: 1fr; grid-template-areas: "carte" "cal" "liste"; grid-template-rows: none; } }
 @media (max-width: 860px) { .s-cal { grid-template-columns: repeat(3, minmax(0, 1fr)); } .vues { margin-left: 0; } }
 @media (max-width: 560px) {
@@ -425,66 +340,6 @@ details.autres summary { cursor: pointer; color: var(--vert-2); font-size: 12px;
 .tag.place.bon { background: #dcfce7; color: #14532d; }
 .tag.place.mal { background: #fee2e2; color: #991b1b; }
 .liste-ligne .bascules { display: inline-flex; gap: 14px; flex-wrap: wrap; }
-/* compte dans le bandeau (connexion / déconnexion) */
-.vues button[hidden] { display: none; }
-.b-compte { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #d6e6da; }
-.b-compte:empty { display: none; }
-.b-qui { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.b-btn { border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.08); color: #fff; font: inherit; font-weight: 600;
-  border-radius: 999px; padding: 5px 12px; cursor: pointer; white-space: nowrap; }
-.b-btn:hover { background: rgba(255,255,255,.18); }
-.b-btn:focus-visible { outline: 2px solid var(--jaune); outline-offset: 2px; }
-.b-pan-ancre { position: relative; max-width: 1440px; margin: -10px auto 0; height: 0; z-index: 1500; }
-.b-pan { position: absolute; right: 16px; top: 0; width: min(360px, calc(100vw - 32px)); background: var(--carte); color: var(--doux);
-  border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.22); padding: 12px 14px; font-size: 13px; display: grid; gap: 10px; }
-.b-pan[hidden] { display: none; }
-.b-pan p { margin: 0; }
-.b-pan b { color: var(--texte); }
-.b-pan .c-form input { flex: 1; width: auto; }
-@media (max-width: 480px) { .b-pan { right: 16px; } }
-/* bandeau en grille : le compte reste toujours en haut à droite */
-.bandeau-in { display: grid; grid-template-columns: auto auto 1fr auto; grid-template-areas: "marque vues saison compte"; align-items: center; }
-.bandeau-in .marque { grid-area: marque; }
-.bandeau-in .vues { grid-area: vues; justify-self: start; margin: 0 0 0 12px; }
-.bandeau-in .saison { grid-area: saison; justify-self: end; }
-.bandeau-in .b-compte { grid-area: compte; justify-self: end; }
-@media (max-width: 1300px) {
-  .bandeau-in { grid-template-columns: auto 1fr auto; grid-template-areas: "marque vues compte" "saison saison saison"; }
-  .bandeau-in .saison { justify-self: start; }
-}
-@media (max-width: 860px) {
-  .bandeau-in { grid-template-columns: 1fr auto; grid-template-areas: "marque compte" "saison saison" "vues vues"; }
-  .bandeau-in .vues { margin: 0; width: 100%; }
-  .bandeau-in .b-compte { align-self: start; }
-  .b-qui { display: none; }
-}
-/* menu du compte */
-.b-moi { display: inline-flex; align-items: center; gap: 8px; padding: 3px 12px 3px 3px; }
-.b-moi.actif { background: #f4f7f2; color: #14532d; border-color: #f4f7f2; }
-.b-init { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--jaune); color: #2e2400; font-weight: 800; font-size: 13px; }
-.b-pan .b-mel { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.b-menu { display: grid; gap: 2px; }
-.b-item { text-align: left; border: 0; background: none; font: inherit; font-size: 14px; font-weight: 600; color: var(--texte); padding: 8px 10px; border-radius: 8px; cursor: pointer; }
-.b-item:hover, .b-item:focus-visible { background: var(--sauge-pale); outline: none; }
-.b-pan:has(.b-menu) { width: 240px; }
-/* compte en haut à droite, onglets juste en dessous */
-.bandeau-in { grid-template-columns: auto 1fr auto; grid-template-areas: "marque saison compte" "marque saison vues"; row-gap: 10px; }
-.bandeau-in .vues { margin: 0; justify-self: end; }
-.bandeau-in .saison { justify-self: center; }
-@media (max-width: 1100px) {
-  .bandeau-in { grid-template-columns: 1fr auto; grid-template-areas: "marque compte" "marque vues" "saison saison"; }
-  .bandeau-in .saison { justify-self: start; }
-}
-@media (max-width: 860px) {
-  .bandeau-in { grid-template-columns: 1fr auto; grid-template-areas: "marque compte" "saison saison" "vues vues"; }
-  .bandeau-in .vues { width: 100%; justify-self: stretch; }
-}
-.b-pan, .b-pan:has(.b-menu) { width: min(340px, calc(100vw - 32px)); }
-.b-pan:has(#c-sortir) { width: min(280px, calc(100vw - 32px)); }
-.b-pan .b-regles { font-size: 12px; }
-.b-bas { border-top: 1px solid var(--bord); padding-top: 6px; display: grid; gap: 8px; }
-.c-form.c-col { flex-direction: column; align-items: stretch; }
-.c-form.c-col input { width: 100%; max-width: none; }
 .s-compte[hidden] { display: none; }
 .tag.circuit { font-weight: 600; }
 .tag.c-jeunes { background: #e0f2fe; color: #075985; }
@@ -548,31 +403,6 @@ details.autres summary { cursor: pointer; color: var(--vert-2); font-size: 12px;
 .st-liste.st-gros { font-size: 14.5px; line-height: 1.7; margin-bottom: 10px; }
 .b-demo { cursor: default; gap: 6px; } .b-demo small { opacity: .75; font-weight: 500; }
 
-/* ---------------------------------------------------------------- Accueil (connexion obligatoire) */
-body.verrou > :not(#accueil):not(#toast):not(#rgpd):not(script) { display: none !important; }   /* #rgpd : lisible avant connexion */
-body:not(.verrou) #accueil { display: none; }
-.accueil { position: fixed; inset: 0; overflow-y: auto; z-index: 3000; display: flex; flex-direction: column; background: linear-gradient(160deg, #14532d 0%, #1f7a45 55%, #2f8a55 100%); color: #f4f7f2; }
-.a-haut { flex: 1; max-width: 1100px; width: 100%; margin: 0 auto; padding: 28px 20px 20px; box-sizing: border-box; }
-.a-marque { display: flex; align-items: center; gap: 12px; margin-bottom: 36px; }
-.a-marque .logo { width: 44px; height: 44px; }
-.a-marque .nom { font-size: 26px; font-weight: 800; color: #fff; } .a-marque .nom b { color: var(--jaune); }
-.a-grille { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(300px, 1fr); gap: 36px; align-items: start; }
-.accueil h1 { font-size: clamp(28px, 4vw, 42px); line-height: 1.15; margin: 0 0 14px; color: #fff; }
-.a-sous { font-size: 17px; line-height: 1.55; color: #dfeadf; margin: 0 0 20px; max-width: 560px; }
-.a-points { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
-.a-points li { background: rgba(255,255,255,.08); border-radius: 12px; padding: 11px 14px; font-size: 14.5px; line-height: 1.5; color: #e6efe6; }
-.a-points b { color: var(--jaune); }
-.a-carte { background: var(--carte); color: var(--texte); border-radius: 16px; padding: 22px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
-.a-carte h2 { margin: 0 0 14px; font-size: 20px; color: var(--vert); }
-.a-carte .c-form input { height: 42px; font-size: 15px; }
-.a-carte .btn.plein { height: 42px; font-size: 15px; }
-.a-carte .lien { margin-top: 10px; font-size: 13px; }
-.a-msg { min-height: 1em; margin: 10px 0 0; font-size: 13.5px; color: var(--texte); }
-.a-msg.erreur { color: #b42318; }
-.a-note { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--bord); font-size: 12.5px; color: var(--doux); }
-.a-pied { text-align: center; font-size: 12px; color: #cfe0d2; margin: 0; padding: 14px; }
-.accueil.chargement .a-carte::after { content: "Chargement des tournois…"; display: block; margin-top: 12px; font-size: 13px; color: var(--doux); }
-@media (max-width: 820px) { .a-grille { grid-template-columns: 1fr; } .a-carte { order: -1; } .a-marque { margin-bottom: 20px; } }
 
 /* ---------------------------------------------------------------- Admin, accès coach */
 .ecran-admin { max-width: 1440px; margin: 0 auto; padding-bottom: 24px; } .ecran-admin .bloc { margin-bottom: 14px; }
@@ -745,18 +575,6 @@ html, body { overflow-x: clip; }   /* filet de sécurité : jamais de défilemen
 .bv-etapes li.ok .bv-coche { background: var(--vert-2); color: #fff; }
 .bv-etapes .btn { height: 32px; padding: 0 12px; flex: none; }
 .bienvenue > .meta { margin: 10px 0 0; }
-/* ---------------------------------------------------------------- assistant de démarrage (plein écran, étapes) */
-.assistant { position: fixed; inset: 0; z-index: 4000; background: rgba(20, 40, 28, .72); display: grid; place-items: center; padding: 16px; overflow-y: auto; }
-.assistant[hidden] { display: none; }
-body.assistant-ouvert { overflow: hidden; }
-.as-carte { background: var(--carte); color: var(--texte); width: min(520px, 100%); border-radius: 18px; padding: 22px; box-shadow: 0 20px 50px rgba(0,0,0,.35); }
-.as-etape { font-size: 12px; font-weight: 700; color: var(--doux); text-transform: uppercase; letter-spacing: .05em; }
-.as-carte .bv-barre { margin: 6px 0 16px; }
-.as-carte h2 { margin: 0 0 8px; font-size: 21px; color: var(--vert); } .as-carte p { margin: 0 0 12px; line-height: 1.5; }
-.as-carte form > input, .as-carte form > select, .as-ligne input, .as-ligne select { width: 100%; box-sizing: border-box; height: 44px; border: 1px solid var(--bord); border-radius: 10px; background: var(--fond); padding: 0 12px; font-size: 15px; margin-bottom: 10px; }
-.as-ligne { display: flex; gap: 8px; } .as-ligne select { width: 130px; flex: none; }
-.as-coche { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.5; margin: 6px 0 14px; } .as-coche input { width: 20px; height: 20px; flex: none; margin-top: 2px; }
-.as-pied { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 8px; } .as-pied .btn { height: 42px; padding: 0 20px; font-size: 15px; }
 #as-res { display: grid; gap: 6px; max-height: 260px; overflow-y: auto; margin-bottom: 6px; }
 #as-res .p-res { text-align: left; }
 
@@ -913,17 +731,4 @@ body.assistant-ouvert { overflow: hidden; }
   .bandeau-in { grid-template-columns: minmax(0, 1fr) auto; }
   .bandeau-in .vues { min-width: 0; max-width: 100%; }
 }
-/* page « Tes données personnelles » (RGPD) : par-dessus l'accueil */
-.fiche.rgpd { z-index: 3500; }
-.rgpd ul { margin: 0 0 8px 18px; padding: 0; } .rgpd li { margin: 3px 0; }
-.rgpd p { margin: 0 0 8px; }
-.rgpd-t { width: 100%; border-collapse: collapse; font-size: 13px; margin: 4px 0 10px; }
-.rgpd-t th, .rgpd-t td { text-align: left; vertical-align: top; padding: 6px 8px; border-bottom: 1px solid var(--bord); }
-.rgpd-t thead th { background: var(--sauge-pale); font-size: 12px; color: var(--vert); }
-.a-pied .a-rgpd { color: #fff; text-decoration: underline; font: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
-.rgpd-t { table-layout: fixed; }
-.rgpd-t th:nth-child(1), .rgpd-t td:nth-child(1) { width: 40%; }
-.rgpd-t td { overflow-wrap: anywhere; }
-@media (max-width: 560px) { .rgpd-t { font-size: 12px; } .rgpd-t th, .rgpd-t td { padding: 5px 4px; } }
-.rgpd .rgpd-t th, .rgpd .rgpd-t td { white-space: normal !important; }
 /* la page RGPD doit rester lisible avant la connexion (le verrou masque tout le reste) */
