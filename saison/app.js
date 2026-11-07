@@ -6,9 +6,7 @@ const AUJ = new Date().toISOString().slice(0, 10);
 
 const etat = { parId: new Map(), sAnnee: null, regions: new Set(), deps: new Set(), depRegion: {}, tournois: [], golfs: {}, golfInfo: {}, resultats: null, ref: null, marqueurs: new Map(), vue: "tournois", kpi: null, ecran: "tournois" };
 const $ = (id) => document.getElementById(id);
-const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
-const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch { /* navigation privée */ } };
+// esc, lsGet, lsSet, jsonLs, uuid, signaler : briques communes (../commun/v1/nexus.js).
 
 function fmtDate(d) { const x = new Date(d + "T12:00:00"); return `${x.getDate()} ${MOIS_COURT[x.getMonth()]}`; }
 function fmtPar(n) { return n == null ? "—" : n === 0 ? "par" : (n > 0 ? "+" : "") + n; }
@@ -846,9 +844,6 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("fiche")
 // de l'utilisateur, plus simple) ; s'il en existe plusieurs, c'est la première qui est utilisée.
 // Deux stockages derrière le même objet Saison : ce navigateur (sans compte) ou Supabase (connecté).
 // SB_URL, SB_CLE et le client sb : briques communes (../commun/v1/nexus.js, chargé avant ce fichier).
-const jsonLs = (k) => { try { return JSON.parse(lsGet(k) || "null"); } catch { return null; } };
-const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : "10000000-1000-4000-8000-100000000000".replace(/[018]/g,
-  (c) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)));
 
 const Saison = {
   mode: "local", user: null,
@@ -967,17 +962,13 @@ const Saison = {
     const L = await sb.from("saisons").select("id,nom,annee").eq("user_id", user.id);
     const ids = (L.data || []).map((l) => l.id);
     const [I, P] = await Promise.all([ids.length ? sb.from("saison_tournois").select("saison_id,tournoi_id,statut,note,ajoute_le").in("saison_id", ids) : { data: [] },
-      sb.from("profils").select("domicile_nom,lat,lon,fiche,licence,licence_le,licence_verif,role,mineur,parent_valide_le,structure_id,club_licence").eq("id", user.id).maybeSingle()]);
-    const err = L.error || I.error || P.error; if (err) throw err;
-    this.role = P.data?.role || "joueur"; this.mineur = !!P.data?.mineur; this.parentValide = P.data?.parent_valide_le || null;
-    // structure (06/11) = le club du coach (rattaché par l'admin) : nom, club ffgolf, coach principal, coachs de l'académie
-    this.clubLicence = P.data?.club_licence || null;
-    this.structure = null;
-    if (P.data?.structure_id) { const S = await sb.rpc("ma_structure_detail"); this.structure = (S.data || [])[0] || null; }
+      nexusLireProfil(user)]);   // profil : brique commune (../commun/v1/nexus.js)
+    const err = L.error || I.error; if (err) throw err;
+    Object.assign(this, { role: P.role, mineur: P.mineur, parentValide: P.parentValide, clubLicence: P.clubLicence, structure: P.structure });
     // places obtenues : rangées par la collecte du lundi (pipeline/perso.py), seulement la ligne du joueur
     const RP = await sb.from("resultats_perso").select("tournoi_id,place,classes,inscrits,tours,total,par,serie,lu_le,trous,pars,parcours").eq("user_id", user.id);
     this.resultats = Object.fromEntries((RP.data || []).map((r) => [r.tournoi_id, r]));
-    this.licence = { num: P.data?.licence || "", le: P.data?.licence_le || null, verif: P.data?.licence_verif || null };
+    this.licence = P.licence;
     // Mes stats : historique Mérite mensuel et tournois comptés (pipeline/merite_perso.py)
     const [MM, MT] = await Promise.all([sb.from("merite_mois").select("*").eq("user_id", user.id).order("mois"),
       sb.from("merite_tournois").select("*").eq("user_id", user.id).order("date")]);
@@ -988,7 +979,7 @@ const Saison = {
     let listes = L.data, items = {};
     for (const l of listes) items[l.id] = {};
     for (const r of I.data) (items[r.saison_id] ||= {})[r.tournoi_id] = { statut: r.statut, note: r.note, ajoute: r.ajoute_le };
-    let dom = P.data && P.data.lat != null ? { lat: P.data.lat, lon: P.data.lon, nom: P.data.domicile_nom } : null;
+    let dom = P.dom;
     const local = this.mode === "local" ? this : null;
     if (local && !listes.length && local.listes.some((l) => Object.keys(local.items[l.id] || {}).length)) {
       const map = {}, nl = local.listes.map((l) => ({ id: (map[l.id] = uuid()), nom: l.nom, annee: l.annee }));
@@ -1002,7 +993,7 @@ const Saison = {
       for (const an of Object.keys(local.actives)) if (map[local.actives[an]]) local.actives[an] = map[local.actives[an]];
       signaler(`Ta saison de ce navigateur a été recopiée dans ton compte (${lignes.length} tournoi${lignes.length > 1 ? "s" : ""}).`);
     }
-    let fiche = (P.data && P.data.fiche) || {};
+    let fiche = P.fiche;
     if (!Object.keys(fiche).length && local && Object.keys(local.fiche || {}).length) {   // 1re connexion : fiche du navigateur
       fiche = local.fiche;
       this.base(sb.from("profils").update({ fiche }).eq("id", user.id), "profil");
@@ -1023,11 +1014,6 @@ const LIB = Object.fromEntries(STATUTS);
 const tournoiDe = (id) => etat.parId.get(id);
 const pad = (n) => String(n).padStart(2, "0");
 const isoLocal = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-let toastMinuteur;
-function signaler(msg) {
-  const t = $("toast"); t.textContent = msg; t.hidden = false;
-  clearTimeout(toastMinuteur); toastMinuteur = setTimeout(() => { t.hidden = true; }, 6000);
-}
 // navigateur déjà utilisé avec un compte, mais déconnecté : la saison est dans le compte, pas ici
 const horsCompte = () => Saison.mode === "local" && lsGet("gn-a-compte") === "1";
 const nomListeDe = (t) => "Ma saison " + t.annee;
