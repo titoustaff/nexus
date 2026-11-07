@@ -1,6 +1,6 @@
 "use strict";
 // Club — module n° 2 de la suite GolfNexus : espace coach (joueurs, équipes de l'AS, calendrier d'équipe,
-// invitations, mon club) et administration. Code repris tel quel de Saison (app.js), où il était depuis GolfNexus.
+// invitations, mon club). L'administration est dans le module Admin (../admin/). Code repris tel quel de Saison (app.js), où il était depuis GolfNexus.
 // S'appuie sur les briques communes (../commun/v1/nexus.js : sb, esc, signaler, accueil, profil, panneau du compte).
 // Ce qui affiche une saison ou un tournoi renvoie vers Saison (../saison/#vue=<joueur>, ../saison/#t=<tournoi>).
 
@@ -58,7 +58,6 @@ const estCoach = () => Compte.role === "coach" || Compte.role === "admin";
 // ---- bandeau : compte en haut à droite, onglets Coach / Admin
 function rendreCompte() {
   const b = $("b-compte"), pan = $("b-pan");
-  $("v-admin").hidden = Compte.role !== "admin";
   pan.hidden = !compte.ouvert;
   if (!Compte.user) { b.innerHTML = ""; pan.innerHTML = nexusPanneauConnexion(); return; }
   const mel = Compte.user.email || "", nom = Compte.fiche.nom || mel;
@@ -75,20 +74,14 @@ document.addEventListener("click", (e) => {
 });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && compte.ouvert) { compte.ouvert = false; rendreCompte(); } });
 
-// ---- navigation entre écrans (#coach, #admin)
-function ecran(nom) {
-  if (nom === "admin" && Compte.role !== "admin") nom = "coach";
-  etat.ecran = nom;
-  $("ecran-coach").hidden = nom !== "coach";
-  $("ecran-admin").hidden = nom !== "admin";
-  for (const b of document.querySelectorAll(".vues button[data-ecran]"))
-    if (b.dataset.ecran === nom) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
-  history.replaceState(null, "", location.pathname + location.search + "#" + nom);
-  rendreCompte();
-  if (nom === "admin") rendreAdmin(); else rendreCoach();
+// ---- un seul écran : Coach (l'ancien lien #admin mène au module Admin)
+if (location.hash === "#admin") location.replace("../admin/");
+function ecran() {
+  etat.ecran = "coach";
+  $("ecran-coach").hidden = false;
+  rendreCompte(); rendreCoach();
   window.scrollTo({ top: 0 });
 }
-document.querySelector(".vues").addEventListener("click", (e) => { const b = e.target.closest("[data-ecran]"); if (b) ecran(b.dataset.ecran); });
 
 // ---- accès aux joueurs, côté coach (repris de Saison : clicAcces / envoiAcces, partie coach)
 // « Voir » un joueur : sa saison et ses stats s'affichent dans Saison, en lecture seule.
@@ -513,91 +506,10 @@ $("co-contenu").addEventListener("submit", async (e) => {
   rendreCoach();
 });
 
-// ---- Administration : invitations et comptes
-async function rendreAdmin() {
-  if (Compte.role !== "admin") { $("ad-membres").innerHTML = "<p class='meta'>Réservé à l'administrateur.</p>"; return; }
-  const [M, I] = await Promise.all([sb.rpc("admin_membres"), sb.rpc("admin_invitations")]);
-  const roles = { admin: "Administrateur", coach: "Coach", joueur: "Joueur" };
-  $("ad-invits").innerHTML = (I.data || []).length ? (I.data || []).map((i) => `<div class="acces-ligne"><div class="qui"><b>${esc(i.email)}</b><small>${esc(i.nom || "")} · ${roles[i.role]}${i.mineur ? " (moins de 18 ans)" : ""}${i.licence ? " · licence " + esc(i.licence) : ""} · invité le ${fmtDate(String(i.cree_le).slice(0, 10))}</small></div>
-    <button type="button" class="btn" data-reinviter="${esc(i.email)}" data-role="${i.mineur ? "mineur" : i.role}" data-nom="${esc(i.nom || "")}" data-licence="${esc(i.licence || "")}">Renvoyer</button></div>`).join("") : "<p class='meta'>Aucune invitation en attente.</p>";
-  if (M.error) { $("ad-membres").innerHTML = `<p class="meta">${esc(M.error.message)}</p>`; return; }
-  // clubs (06/11) : créer / modifier une structure, choisir son coach principal ; rattacher les coachs (colonne « Club »)
-  const S = await sb.from("structures").select("id,type,nom,club,coach_principal").order("nom"), structs = S.data || [];
-  const coachsDe = (sid) => (M.data || []).filter((m) => m.structure_id === sid);
-  const ed = ad.edition ? structs.find((x) => x.id === ad.edition) : null;
-  $("ad-structures").innerHTML = `${structs.length ? `<div class="st-table"><table><thead><tr><th>Nom</th><th>Club ffgolf</th><th>Coach principal</th><th>Coachs (académie)</th><th></th></tr></thead><tbody>
-    ${structs.map((x) => `<tr><td><b>${esc(x.nom)}</b>${x.type === "independant" ? ' <span class="tag">indépendant</span>' : ""}</td><td>${x.club ? esc(titre(x.club)) : "—"}</td>
-      <td>${esc((coachsDe(x.id).find((m) => m.id === x.coach_principal) || {}).nom || "—")}</td><td>${coachsDe(x.id).map((m) => esc(m.nom || m.email)).join(", ") || "—"}</td>
-      <td><button type="button" class="lien" data-ad-edit="${esc(x.id)}">Modifier</button></td></tr>`).join("")}</tbody></table></div>` : `<p class="meta">Aucun club pour l'instant.</p>`}
-    <form id="ad-st-form" class="c-form ad-st-form" autocomplete="off"><b>${ed ? "Modifier « " + esc(ed.nom) + " »" : "Nouveau club"}</b>
-      <select id="ad-st-type" aria-label="Type"><option value="club" ${ed?.type !== "independant" ? "selected" : ""}>Club (académie + AS)</option><option value="independant" ${ed?.type === "independant" ? "selected" : ""}>Coach indépendant</option></select>
-      <input id="ad-st-nom" required maxlength="80" placeholder="Nom affiché (ex. Pic Saint-Loup)" value="${esc(ed?.nom || "")}" aria-label="Nom">
-      <input id="ad-st-club" list="ad-clubs-liste" placeholder="Club ffgolf (liste du Mérite)" value="${esc(ed?.club || "")}" aria-label="Club ffgolf">
-      <datalist id="ad-clubs-liste">${(etat.clubs || []).map((c) => `<option value="${esc(c.nom)}">`).join("")}</datalist>
-      ${ed ? `<select id="ad-st-principal" aria-label="Coach principal"><option value="">Coach principal…</option>${coachsDe(ed.id).map((m) => `<option value="${esc(m.id)}" ${m.id === ed.coach_principal ? "selected" : ""}>${esc(m.nom || m.email)}</option>`).join("")}</select>` : ""}
-      <button type="submit" class="btn plein">${ed ? "Enregistrer" : "Créer le club"}</button>${ed ? ' <button type="button" class="lien" data-ad-edit="">Annuler</button>' : ""}</form>
-    <p class="meta">Le club ffgolf s'écrit comme dans le Mérite (ex. « PIC SAINT-LOUP ») : c'est lui qui reconnaît les Joueurs AS (club de licence).</p>`;
-  ad.structs = structs;
-  $("ad-membres").innerHTML = `<table><thead><tr><th>Compte</th><th>Nom</th><th>Rôle</th><th>Moins de 18 ans</th><th>Licence</th><th>Club (coach)</th><th>Parent validé</th><th>Dernière connexion</th></tr></thead><tbody>
-    ${(M.data || []).map((m) => `<tr><td>${esc(m.email)}</td><td>${esc(m.nom || "")}</td>
-      <td><select class="ad-role" data-membre="${esc(m.id)}">${Object.entries(roles).map(([k, v]) => `<option value="${k}" ${k === m.role ? "selected" : ""}>${v}</option>`).join("")}</select></td>
-      <td><input type="checkbox" class="ad-mineur" data-membre="${esc(m.id)}" ${m.mineur ? "checked" : ""}></td>
-      <td>${esc(m.licence || "—")} <button type="button" class="lien" data-corriger-lic="${esc(m.id)}" data-lic="${esc(m.licence || "")}" data-email="${esc(m.email)}">corriger</button></td><td>${m.role !== "joueur" ? `<select data-rattacher="${esc(m.id)}" aria-label="Club du coach"><option value="">—</option>${structs.map((x) => `<option value="${esc(x.id)}" ${x.id === m.structure_id ? "selected" : ""}>${esc(x.nom)}</option>`).join("")}</select>` : (m.club_licence ? `<span class="meta">licence : ${esc(titre(m.club_licence))}</span>` : "")}</td><td>${m.mineur ? (m.parent_valide_le ? "✓ " + fmtDate(String(m.parent_valide_le).slice(0, 10)) : "en attente") : "—"}</td>
-      <td>${m.derniere_connexion ? fmtDate(String(m.derniere_connexion).slice(0, 10)) : "jamais"}</td></tr>`).join("")}</tbody></table>`;
-}
-// licence : obligatoire pour un joueur (06/11), fixée à l'invitation, non modifiable par le joueur
-async function inviter(email, role, nom, licence = "") {
-  const { data, error } = await sb.functions.invoke("inviter", { body: { email, role: role === "mineur" ? "joueur" : role, mineur: role === "mineur", nom, licence: String(licence || "").replace(/\s/g, ""),
-    site: location.origin + location.pathname } });
-  const msg = error ? (await error.context?.json?.().catch(() => null))?.erreur || error.message : data?.erreur;
-  return msg || null;
-}
-$("ad-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const m = $("ad-msg"), btn = $("ad-ok"); btn.disabled = true; m.textContent = "Envoi…"; m.classList.remove("erreur");
-  const err = await inviter($("ad-email").value.trim().toLowerCase(), $("ad-role").value, $("ad-nom").value.trim(), $("ad-lic").value);
-  btn.disabled = false;
-  if (err) { m.textContent = "Invitation impossible : " + err; m.classList.add("erreur"); return; }
-  m.textContent = `Invitation envoyée à ${$("ad-email").value.trim()}.`; $("ad-form").reset(); rendreAdmin();
-});
-const ad = { edition: null, structs: [] };
-$("ecran-admin").addEventListener("submit", async (e) => {
-  if (e.target.id !== "ad-st-form") return;
-  e.preventDefault();
-  const { error } = await sb.rpc("admin_structure", { sid: ad.edition || null, t: $("ad-st-type").value, n: $("ad-st-nom").value.trim(),
-    c: $("ad-st-club").value.trim(), principal: $("ad-st-principal")?.value || null });
-  signaler(error ? (/structures_club|duplicate/i.test(error.message) ? "Ce club ffgolf a déjà sa structure." : "Enregistrement impossible : " + error.message) : "Club enregistré.");
-  if (!error) ad.edition = null; rendreAdmin();
-});
-$("ecran-admin").addEventListener("click", async (e) => {
-  const ed = e.target.closest("[data-ad-edit]"); if (ed) { ad.edition = ed.dataset.adEdit || null; rendreAdmin(); return; }
-  const c = e.target.closest("[data-corriger-lic]");
-  if (c) {   // licence fixée : seul l'administrateur la corrige
-    const n = prompt(`Nouvelle licence pour ${c.dataset.email} (vide = aucune) :`, c.dataset.lic || ""); if (n == null) return;
-    if (n.trim() && !/^\d{6,12}$/.test(n.replace(/\s/g, ""))) { signaler("Licence : 6 à 12 chiffres."); return; }
-    const { error } = await sb.rpc("admin_licence", { uid: c.dataset.corrigerLic, lic: n });
-    signaler(error ? (error.code === "23505" ? "Cette licence est déjà celle d'un autre compte." : "Correction impossible : " + error.message) : "Licence corrigée (ses places seront relevées à nouveau).");
-    rendreAdmin(); return;
-  }
-  const b = e.target.closest("[data-reinviter]"); if (!b) return;
-  const err = await inviter(b.dataset.reinviter, b.dataset.role, b.dataset.nom, b.dataset.licence);
-  signaler(err ? "Renvoi impossible : " + err : "Invitation renvoyée.");
-});
-$("ecran-admin").addEventListener("change", async (e) => {
-  if (e.target.dataset.rattacher !== undefined) {
-    const { error } = await sb.rpc("admin_rattacher", { uid: e.target.dataset.rattacher, sid: e.target.value || null });
-    signaler(error ? "Rattachement impossible : " + error.message : e.target.value ? "Coach rattaché au club." : "Coach détaché de son club (ses Joueurs AS restent au club).");
-    rendreAdmin(); return;
-  }
-  const id = e.target.dataset.membre; if (!id) return;
-  const ligne = e.target.closest("tr"), role = ligne.querySelector(".ad-role").value, mineur = ligne.querySelector(".ad-mineur").checked;
-  const { error } = await sb.rpc("admin_role", { uid: id, r: role, m: mineur });
-  signaler(error ? "Modification impossible : " + error.message : "Compte mis à jour.");
-  rendreAdmin();
-});
+// ---- Administration : module Admin (../admin/), depuis le 07/11
 
 // ------------------------------------------------------------------ démarrage
-// Après connexion : données publiées (tournois pour le calendrier d'équipe, clubs ffgolf pour l'admin), puis le compte.
+// Après connexion : données publiées (tournois pour le calendrier d'équipe), puis le compte.
 let demarre = false;
 async function entrer() {
   if (demarre) return;
@@ -611,7 +523,7 @@ async function entrer() {
   try { await Compte.connecter(data.session.user); } catch (e) { signaler("Lecture du compte impossible : " + (e.message || e)); }
   document.body.classList.remove("verrou");
   if (!estCoach()) { $("ecran-coach").hidden = false; $("co-contenu").innerHTML = `<div class="bloc vide">Club est réservé aux coachs et à l'administrateur. <a href="../saison/">Retour à Saison</a></div>`; rendreCompte(); return; }
-  ecran(location.hash.slice(1) === "admin" ? "admin" : "coach");
+  ecran();
 }
 nexusBrancherAccueil();
 if (sb) nexusDemarrer(entrer);

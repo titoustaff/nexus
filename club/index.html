@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex, nofollow, noarchive">
   <title>GolfNexus · Club</title>
   <link rel="icon" type="image/svg+xml" href="../saison/favicon.svg">
-  <meta name="description" content="GolfNexus Club — coachs, équipes, invitations, administration.">
+  <meta name="description" content="GolfNexus Club — coachs, équipes, invitations.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="verrou">
+  <script>try { if (localStorage.getItem("gn-auth")) document.body.classList.add("reprise"); } catch { /* */ }</script>   <!-- déjà connecté : écran de chargement (charte.css, nexus.js) -->
   <!-- Club (module n° 2) : même accueil que Saison (connexion obligatoire, sur invitation) -->
   <section id="accueil" class="accueil" aria-labelledby="a-titre">
     <div class="a-haut">
@@ -24,7 +25,7 @@
       <div class="a-grille">
         <div class="a-texte">
           <h1 id="a-titre">Club : l'espace des coachs.</h1>
-          <p class="a-sous">Les joueurs que tu suis, les équipes de ton AS, leur calendrier commun, les invitations. Et pour l'administrateur : les comptes et les clubs.</p>
+          <p class="a-sous">Les joueurs que tu suis, les équipes de ton AS, leur calendrier commun, les invitations.</p>
           <ul class="a-points">
             <li><b>Joueurs</b> : ton club, filtrable, et la saison ou les stats de chacun en un clic.</li>
             <li><b>Équipes de l'AS</b> et <b>calendrier d'équipe</b> : qui joue quel tournoi, avec quelle place.</li>
@@ -68,7 +69,6 @@
       <nav class="vues" aria-label="Écrans">
         <a class="vers-module" href="../saison/">← Saison</a>
         <button type="button" data-ecran="coach" aria-current="page">Coach</button>
-        <button type="button" data-ecran="admin" id="v-admin" hidden>Admin</button>
       </nav>
       <div class="b-compte" id="b-compte" aria-live="polite"></div>
     </div>
@@ -80,29 +80,6 @@
     <div id="co-contenu"></div>
   </section>
 
-  <section id="ecran-admin" class="ecran-admin" hidden aria-labelledby="ad-titre">
-    <div class="s-tete"><h2 id="ad-titre">Administration</h2></div>
-    <form class="bloc" id="ad-form" autocomplete="off">
-      <h3>Inviter quelqu'un</h3>
-      <p class="meta">La personne reçoit un e-mail GolfNexus avec un lien (24 heures, une seule fois) ; elle choisit ensuite son mot de passe. La licence d'un joueur est fixée ici : il ne pourra pas la changer (seul l'administrateur la corrige).</p>
-      <div class="ad-champs">
-        <label>E-mail <input id="ad-email" type="email" required placeholder="prenom.nom@exemple.fr"></label>
-        <label>Nom affiché <input id="ad-nom" type="text" maxlength="60" placeholder="ex. Léo Martin"></label>
-        <label>Licence ffgolf <input id="ad-lic" type="text" inputmode="numeric" maxlength="12" pattern="[0-9 ]{6,14}" placeholder="obligatoire pour un joueur"></label>
-        <label>Rôle <select id="ad-role">
-          <option value="joueur">Joueur (18 ans et +)</option>
-          <option value="mineur">Joueur de moins de 18 ans (e-mail du parent)</option>
-          <option value="coach">Coach</option>
-          <option value="admin">Administrateur</option>
-        </select></label>
-        <button type="submit" class="btn plein" id="ad-ok">Envoyer l'invitation</button>
-      </div>
-      <p class="a-msg" id="ad-msg" aria-live="polite"></p>
-    </form>
-    <div class="bloc"><h3>Invitations en attente</h3><div id="ad-invits"></div></div>
-    <div class="bloc"><h3>Clubs <small>structures : un club ffgolf (son académie, les équipes de son AS) ou un coach indépendant</small></h3><div id="ad-structures"></div></div>
-    <div class="bloc"><h3>Comptes</h3><div id="ad-membres" class="st-table"></div></div>
-  </section>
 
   <footer class="pied">Source : ffgolf.org · <a href="../saison/">Saison</a> · <a href="../">GolfNexus</a></footer>
 
