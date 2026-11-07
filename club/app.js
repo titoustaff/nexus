@@ -74,13 +74,24 @@ document.addEventListener("click", (e) => {
 });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && compte.ouvert) { compte.ouvert = false; rendreCompte(); } });
 
-// ---- un seul écran : Coach (l'ancien lien #admin mène au module Admin)
+// ---- deux entrées dans le bandeau : Coach (joueurs, équipes, calendrier, invitations) et Mon club (administration du club)
+// (l'ancien lien #admin mène au module Admin)
 if (location.hash === "#admin") location.replace("../admin/");
-function ecran() {
+function ecran(nom = "coach") {
   etat.ecran = "coach";
+  if (nom === "club") co.onglet = "structure"; else if (co.onglet === "structure") co.onglet = "joueurs";
   $("ecran-coach").hidden = false;
   rendreCompte(); rendreCoach();
   window.scrollTo({ top: 0 });
+}
+document.querySelector(".vues").addEventListener("click", (e) => { const b = e.target.closest("[data-ecran]"); if (b) ecran(b.dataset.ecran); });
+// bandeau et adresse suivent l'onglet affiché (« Mon club » peut aussi s'ouvrir seul : coach pas encore rattaché)
+function majBandeau(stOk) {
+  const club = co.onglet === "structure";
+  for (const b of document.querySelectorAll(".vues button[data-ecran]"))
+    if ((b.dataset.ecran === "club") === club) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+  $("v-club").innerHTML = "Mon club" + (stOk ? "" : ' <span class="nb" title="pas encore rattaché">!</span>');
+  history.replaceState(null, "", location.pathname + location.search + (club ? "#club" : "#coach"));
 }
 
 // ---- accès aux joueurs, côté coach (repris de Saison : clicAcces / envoiAcces, partie coach)
@@ -126,8 +137,10 @@ async function rendreCoach() {
   // « Ma structure » obligatoire pour un coach (06/11) : tant qu'elle manque, on y ouvre et les autres onglets y renvoient
   const stOk = !!Compte.structure?.id;
   if (!stOk && !co.vuStructure) { co.onglet = "structure"; co.vuStructure = true; }
-  box.innerHTML = `<div class="seg co-onglets" role="group" aria-label="Espace coach">${[["joueurs", "Joueurs"], ["equipes", "Équipes de l'AS"], ["calendrier", "Calendrier d'équipe"], ["invitations", "Invitations"], ["structure", "Mon club"]]
-    .map(([k, v]) => `<button type="button" data-co-onglet="${k}" aria-pressed="${co.onglet === k}">${v}${k === "structure" && !stOk ? ' <span class="nb" title="pas encore rattaché">!</span>' : ""}</button>`).join("")}</div><div id="co-corps"><p class="meta">Chargement…</p></div>`;
+  majBandeau(stOk);   // « Mon club » est dans le bandeau, à côté de Coach (07/11)
+  $("co-titre").textContent = co.onglet === "structure" ? "Mon club" : "Coach";
+  box.innerHTML = `${co.onglet === "structure" ? "" : `<div class="seg co-onglets" role="group" aria-label="Espace coach">${[["joueurs", "Joueurs"], ["equipes", "Équipes de l'AS"], ["calendrier", "Calendrier d'équipe"], ["invitations", "Invitations"]]
+    .map(([k, v]) => `<button type="button" data-co-onglet="${k}" aria-pressed="${co.onglet === k}">${v}</button>`).join("")}</div>`}<div id="co-corps"><p class="meta">Chargement…</p></div>`;
   const corps = $("co-corps");
   try {
     if (co.onglet === "structure") corps.innerHTML = htmlStructure();
@@ -523,7 +536,7 @@ async function entrer() {
   try { await Compte.connecter(data.session.user); } catch (e) { signaler("Lecture du compte impossible : " + (e.message || e)); }
   document.body.classList.remove("verrou");
   if (!estCoach()) { $("ecran-coach").hidden = false; $("co-contenu").innerHTML = `<div class="bloc vide">Club est réservé aux coachs et à l'administrateur. <a href="../saison/">Retour à Saison</a></div>`; rendreCompte(); return; }
-  ecran();
+  ecran(location.hash === "#club" ? "club" : "coach");
 }
 nexusBrancherAccueil();
 if (sb) nexusDemarrer(entrer);
