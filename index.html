@@ -156,7 +156,7 @@
   <footer>Données ffgolf.org · Saison est ouvert, les autres modules arrivent.</footer>
 
 <script>
-  // Les modules, dans l'ordre de développement (galaxy/MD_DOC/PLAN.md) : Saison → Carte → Stats → Entraînement → Rencontres → Club.
+  // Les modules, dans l'ordre de développement (galaxy/MD_DOC/PLAN.md) : Saison → Club → Carte → Stats → Entraînement → Rencontres.
   const ICONES = {
     saison: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M10 13v6" /><path d="M10.5 13l4 1.5-4 1.5z" fill="currentColor"/></svg>',
     rencontres: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V4"/><path d="M6 4l6 2.5L6 9z" fill="currentColor"/><path d="M18 21V4"/><path d="M18 4l-6 2.5L18 9z" fill="currentColor"/><path d="M3 21h18"/><path d="M10 14h4"/></svg>',
@@ -168,6 +168,8 @@
   const MODULES = [
     { id: "saison", nom: "Saison", verbe: "Planifier", c: "#1f7a45", url: "saison/",
       f: ["Tournois ffgolf", "Carte & filtres", "Ma saison", "Place probable", "Mérite", "Calendrier ICS"] },
+    { id: "club", nom: "Club", verbe: "Accompagner", c: "#14532d",
+      f: ["Équipes", "Coachs", "Invitations", "Rappels", "Suivi des joueurs"] },
     { id: "carte", nom: "Carte", verbe: "Noter ses tours", c: "#0e7490",
       f: ["Score trou par trou", "Putts", "Fairways", "Pénalités", "Sans réseau", "Avec ou sans GPS"] },
     { id: "stats", nom: "Stats", verbe: "Analyser", c: "#6d28d9",
@@ -176,8 +178,6 @@
       f: ["Séances", "Exercices mesurés", "Ateliers putting", "Objectifs par secteur", "Suivi du coach"] },
     { id: "rencontres", nom: "Rencontres", verbe: "Jouer en équipe", c: "#c2410c",
       f: ["Formats de jeu", "Convocations", "Scores en direct", "Résultats", "Calendrier d'équipe"] },
-    { id: "club", nom: "Club", verbe: "Accompagner", c: "#14532d",
-      f: ["Équipes", "Coachs", "Invitations", "Rappels", "Suivi des joueurs"] },
   ];
 
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
