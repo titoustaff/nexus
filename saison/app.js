@@ -1212,6 +1212,26 @@ $("s-dom-f").addEventListener("submit", async (e) => {
 $("s-dom").addEventListener("input", () => $("s-dom").setCustomValidity(""));
 
 // ---- rendu de l'écran
+// ---- événements organisés par le coach (module Club : club_evenements), auxquels le joueur affiché est inscrit (08/11)
+// Ils s'affichent dans Ma saison ; le jour J, la carte attend le joueur dans Carte.
+const TYPES_EV = { competition: "Événement hors Mérite", rencontre: "Rencontre inter-clubs", interne: "Partie interne" };
+const evCache = {};
+async function rendreEvenements(an) {
+  const bloc = $("s-ev-bloc"), id = Saison.demo?.coach ? Saison.demo.id : (Saison.mode === "compte" && !Saison.demo ? Saison.moi?.id : null);
+  if (!id || !sb) { bloc.hidden = true; return; }
+  if (!evCache[id]) {
+    const { data, error } = await sb.from("club_evenement_joueurs").select("evenement:club_evenements(id,type,nom,golf_nom,debut,fin,categorie)").eq("joueur_id", id);
+    evCache[id] = error ? [] : (data || []).map((r) => r.evenement).filter(Boolean);
+  }
+  const L = evCache[id].filter((e) => +e.debut.slice(0, 4) === an).sort((a, b) => a.debut.localeCompare(b.debut));
+  bloc.hidden = !L.length;
+  if (!L.length) return;
+  const jour = isoLocal(new Date());
+  $("s-evenements").innerHTML = `<ol class="s-ev">${L.map((e) => `<li class="${(e.fin || e.debut) < jour ? "passe" : ""}">
+    <span class="s-ev-date"><b>${esc(fmtDate(e.debut))}</b>${e.fin && e.fin !== e.debut ? `<small>→ ${esc(fmtDate(e.fin))}</small>` : ""}</span>
+    <span class="s-ev-quoi"><b>${esc(e.nom)}</b><small>${esc(TYPES_EV[e.type] || "")}${e.golf_nom ? " · " + esc(titre(e.golf_nom)) : ""}${e.categorie ? " · " + esc(e.categorie) : ""}</small></span>
+    ${e.debut <= jour && !Saison.demo ? `<a class="btn" href="../carte/">Ma carte →</a>` : ""}</li>`).join("")}</ol>`;
+}
 function rendreSaison() {
   const an0 = new Date().getFullYear();
   // toutes les années connues : on peut construire une saison passée (pour s'entraîner) ou la suivante
@@ -1239,6 +1259,7 @@ function rendreSaison() {
   $("s-legende").innerHTML = STATUTS.map(([k, l]) => `<span><i class="puce-statut s-${k}"></i>${l}</span>`).join("") +
     `<span><i class="puce-statut conflit"></i>chevauchement</span>`;
   $("s-cal").innerHTML = calendrier(an, liste);
+  rendreEvenements(an);
   $("s-ics").disabled = !liste.some((x) => x.e.statut === "inscrit");
   carteSaison(liste);
 

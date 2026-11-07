@@ -672,3 +672,12 @@ html, body { overflow-x: clip; }   /* filet de sécurité : jamais de défilemen
   .bandeau-in .vues { min-width: 0; max-width: 100%; }
 }
 /* la page RGPD doit rester lisible avant la connexion (le verrou masque tout le reste) */
+
+/* ---------------------------------------------------------------- événements du coach (Ma saison, 08/11) */
+.s-ev-bloc h3 small { font-weight: 500; color: var(--doux); font-size: 12px; margin-left: 6px; }
+.s-ev { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.s-ev li { display: grid; grid-template-columns: 70px 1fr auto; gap: 12px; align-items: center; padding: 8px 10px; border-radius: 10px; background: var(--sauge-pale); }
+.s-ev li.passe { opacity: .6; }
+.s-ev-date { display: flex; flex-direction: column; } .s-ev-date b { color: var(--vert); } .s-ev-date small, .s-ev-quoi small { color: var(--doux); font-size: 12px; }
+.s-ev-quoi { display: flex; flex-direction: column; min-width: 0; }
+.s-ev .btn { height: 34px; padding: 0 12px; display: inline-flex; align-items: center; text-decoration: none; }
