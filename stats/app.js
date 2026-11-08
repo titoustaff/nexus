@@ -329,6 +329,7 @@ document.addEventListener("click", (e) => {
   const c = e.target.closest("[data-ctx]");
   if (c) { const k = c.dataset.ctx; if (etat.contextes.has(k) && etat.contextes.size > 1) etat.contextes.delete(k); else etat.contextes.add(k); rendre(); }
 });
+document.addEventListener("change", (e) => { if (e.target.id === "st-joueur") nexusJoueurVu.ecrire(Compte.moi?.id, e.target.value); });
 document.addEventListener("change", (e) => { if (e.target.id === "st-joueur") location.hash = e.target.value ? `joueur=${encodeURIComponent(e.target.value)}` : ""; });
 
 // ------------------------------------------------------------------ données et démarrage
@@ -349,10 +350,12 @@ async function chargerNoms() {
 }
 // lien direct : #partie=<id> · #tournoi=<ref> · &joueur=<id> (coach : stats d'un joueur suivi)
 async function lireLien() {
-  const h = new URLSearchParams(location.hash.slice(1)), j = h.get("joueur") || "";
+  // sans « joueur » dans le lien : le joueur regardé dans un autre module (Saison, Carte)
+  const h = new URLSearchParams(location.hash.slice(1)), j = h.has("joueur") ? h.get("joueur") : nexusJoueurVu.lire(Compte.moi?.id);
   etat.cadre = h.get("cadre") === "1"; document.body.classList.toggle("cadre", etat.cadre);
   const vue = Compte.joueurs.some((x) => x.joueur_id === j) ? j : "";
   if (vue !== etat.vue) { etat.vue = vue; await charger(); }
+  nexusJoueurVu.ecrire(Compte.moi?.id, vue);
   etat.focus = h.get("partie") ? { type: "partie", id: h.get("partie") } : h.get("tournoi") ? { type: "tournoi", ref: h.get("tournoi") } : null;
   rendre(); window.scrollTo(0, 0);
 }
