@@ -127,7 +127,7 @@ async function rendreListe() {
       <span class="li-chiffres">${b.putts != null ? `<span><b>${b.putts}</b> putts</span>` : ""}<span><b>${b.fairways}</b> fairways</span></span>
     </button>`; }).join("")}</div>`;
 }
-document.addEventListener("change", (e) => { if (e.target.id === "li-qui") { etat.vue = e.target.value; nexusJoueurVu.ecrire(Compte.moi?.id, etat.vue); ecran("liste"); } });
+document.addEventListener("change", (e) => { if (e.target.id === "li-qui") { etat.vue = e.target.value; nexusJoueurVu.ecrire(Compte.moi?.id, etat.vue, Compte.joueurs.find((j) => j.joueur_id === etat.vue)?.nom); ecran("liste"); } });
 $("li-contenu").addEventListener("click", (e) => {
   const at = e.target.closest("[data-attend]"); if (at) { preremplir(at.dataset.attend); return; }
   const b = e.target.closest("[data-partie]"); if (!b) return;
