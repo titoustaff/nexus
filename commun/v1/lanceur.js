@@ -60,8 +60,9 @@ a.lc-module:hover, a.lc-module:focus-visible { background: var(--sauge-pale); ou
   async function ouvrir(oui, auClavier = false) {
     pan.hidden = !oui; btn.setAttribute("aria-expanded", String(oui));
     if (!oui) return;
-    // un module réservé à un rôle (ex. Admin) n'apparaît que pour ce rôle (nexus.role, posé par nexusLireProfil)
-    const M = (await charger()).filter((m) => !m.role || (typeof nexus !== "undefined" && nexus.role === m.role)), ici = actuel();
+    // un module réservé à un rôle (Admin : admin ; Club : coach ou admin) n'apparaît que pour ce rôle (nexus.role, posé par nexusLireProfil)
+    const role = typeof nexus !== "undefined" ? nexus.role : null;
+    const M = (await charger()).filter((m) => !m.role || [].concat(m.role).includes(role)), ici = actuel();
     pan.innerHTML = `<div class="lc-titre">Modules GolfNexus</div><div class="lc-grille">${M.map((m) => {
       const ouvert = m.etat === "ouvert" && m.adresse, cour = m.id === ici;
       const corps = `<span class="lc-pastille" style="--c:${e(m.couleur)}">${m.icone || ""}</span><b>${e(m.nom)}</b><small>${cour ? "ici" : ouvert ? e(m.verbe) : "Bientôt"}</small>`;

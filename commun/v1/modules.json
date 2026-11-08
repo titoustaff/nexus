@@ -1,5 +1,5 @@
 {
- "_note": "Modules de la suite GolfNexus, dans l'ordre de développement. adresse : relative à https://titoustaff.github.io/nexus/ ; etat : ouvert | bientot. Nouveau module = une ligne ici. role : module visible seulement pour ce rôle (ex. admin).",
+ "_note": "Modules de la suite GolfNexus, dans l'ordre de développement. adresse : relative à https://titoustaff.github.io/nexus/ ; etat : ouvert | bientot. Nouveau module = une ligne ici. role : module visible seulement pour ce rôle ou cette liste de rôles (ex. \"admin\", [\"coach\", \"admin\"]).",
  "modules": [
   {
    "id": "saison",
@@ -17,7 +17,11 @@
    "couleur": "#14532d",
    "adresse": "club/",
    "etat": "ouvert",
-   "icone": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z\"/><circle cx=\"9.5\" cy=\"11\" r=\"2\"/><circle cx=\"14.5\" cy=\"11\" r=\"2\"/><path d=\"M6.8 17c.6-1.7 1.6-2.5 2.7-2.5s2.1.8 2.5 1.6c.4-.8 1.4-1.6 2.5-1.6s2.1.8 2.7 2.5\"/></svg>"
+   "icone": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z\"/><circle cx=\"9.5\" cy=\"11\" r=\"2\"/><circle cx=\"14.5\" cy=\"11\" r=\"2\"/><path d=\"M6.8 17c.6-1.7 1.6-2.5 2.7-2.5s2.1.8 2.5 1.6c.4-.8 1.4-1.6 2.5-1.6s2.1.8 2.7 2.5\"/></svg>",
+   "role": [
+    "coach",
+    "admin"
+   ]
   },
   {
    "id": "carte",
