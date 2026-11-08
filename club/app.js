@@ -206,9 +206,10 @@ async function htmlMembres() {
   const [G, M, V] = await Promise.all([sb.rpc("club_gere", { sid }), sb.from("club_membres").select("*").eq("structure_id", sid).order("cree_le"),
     sb.from("club_visibilite").select("groupe,cases").eq("structure_id", sid)]);
   if (M.error) return `<div class="bloc"><h3>Membres du club</h3><p class="meta">${/club_membres|schema cache|does not exist/.test(M.error.message) ? "À activer : script supabase/club-membres.sql à lancer dans Supabase." : "Lecture impossible : " + esc(M.error.message)}</p></div>`;
-  const gere = co.gere = !!G.data, membres = M.data || [], cases = new Set((V.data || []).find((v) => v.groupe === "as")?.cases || []);
+  const gere = co.gere = !!G.data, membres = M.data || [];
+  const casesDe = (g) => new Set((V.data || []).find((v) => v.groupe === g)?.cases || []);
   const date = (d) => (d ? fmtDate(String(d).slice(0, 10)) : "");
-  return `<div class="bloc mb-bloc"><h3>Membres du club <small>${membres.filter((m) => m.statut !== "refuse").length} · coachs et membres de l'AS</small></h3>
+  return `<div class="bloc mb-bloc"><h3>Membres du club <small>${membres.filter((m) => m.statut !== "refuse").length} · coachs, membres AS et membres club</small></h3>
     ${membres.length ? `<div class="st-table"><table><thead><tr><th>Nom</th><th>E-mail</th><th>Rôle</th><th>Statut</th><th>Depuis</th>${gere ? "<th></th>" : ""}</tr></thead><tbody>
       ${membres.map((m) => `<tr><td><b>${esc(m.nom || "—")}</b></td><td>${esc(m.email)}</td><td>${GROUPE_LIB[m.groupe] || m.groupe}</td>
         <td><span class="tag ${m.statut === "actif" ? "" : "ok-att"}">${STATUT_LIB[m.statut] || m.statut}</span></td><td>${date(m.valide_le || m.cree_le)}</td>
@@ -219,23 +220,25 @@ async function htmlMembres() {
         <input id="mb-nom" placeholder="Prénom Nom" aria-label="Nom" maxlength="60" autocomplete="off">
         <input id="mb-email" type="email" placeholder="e-mail" aria-label="E-mail" autocomplete="off">
         <input id="mb-licence" inputmode="numeric" placeholder="licence ffgolf" aria-label="Licence ffgolf" maxlength="14" autocomplete="off">
-        <select id="mb-groupe" aria-label="Rôle"><option value="as">Membre AS</option><option value="coach">Coach</option><option value="club" disabled>Membre club (bientôt)</option></select>
+        <select id="mb-groupe" aria-label="Rôle"><option value="as">Membre AS</option><option value="coach">Coach</option><option value="club">Membre club</option></select>
         <button type="button" class="btn plein" id="mb-inviter">Inviter</button></div>
-      <p class="meta">L'invitation part tout de suite par e-mail (lien valable 24 h). Si la personne a déjà un compte GolfNexus, son accès est ouvert sans e-mail. Un coach invité est rattaché au club. Licence obligatoire pour un membre AS, facultative pour un coach.</p>`
+      <p class="meta">L'invitation part tout de suite par e-mail (lien valable 24 h). Si la personne a déjà un compte GolfNexus, son accès est ouvert sans e-mail. Un coach invité est rattaché au club. Licence obligatoire pour un membre AS, facultative pour un coach ou un membre club.</p>`
     : `<p class="meta">Le coach principal invite les coachs et les membres de l'AS.</p>`}
   </div>
-  <div class="bloc mb-bloc"><h3>Ce que voient les membres AS <small>en lecture seule, même réglage pour tout le groupe</small></h3>
-    <div class="mb-cases">${CASES.map(([k, l, d]) => `<label class="mb-case${cases.has(k) ? " oui" : ""}"><input type="checkbox" data-vis="as" value="${k}" ${cases.has(k) ? "checked" : ""} ${gere ? "" : "disabled"}>
+  ${[["as", "membres AS"], ["club", "membres club"]].map(([g, lib]) => { const cases = casesDe(g);
+    return `<div class="bloc mb-bloc"><h3>Ce que voient les ${lib} <small>dans le Tableau de bord, en lecture seule, même réglage pour tout le groupe</small></h3>
+    <div class="mb-cases">${CASES.map(([k, l, d]) => `<label class="mb-case${cases.has(k) ? " oui" : ""}"><input type="checkbox" data-vis="${g}" value="${k}" ${cases.has(k) ? "checked" : ""} ${gere ? "" : "disabled"}>
       <span><b>${l}</b><small>${d}</small></span></label>`).join("")}</div>
     <p class="meta">Jamais visibles : stats, cartes de score, notes du coach, coordonnées. Seuls les joueurs AS qui ont accepté le suivi du club apparaissent.${gere ? "" : " Réglé par le coach principal."}</p>
-  </div>`;
+  </div>`; }).join("")}`;
 }
 document.addEventListener("change", async (e) => {
   const c = e.target.closest("[data-vis]"); if (!c || !co.gere) return;
   const g = c.dataset.vis, cases = [...document.querySelectorAll(`[data-vis="${g}"]:checked`)].map((x) => x.value);
   c.closest(".mb-case")?.classList.toggle("oui", c.checked);
   const { error } = await sb.from("club_visibilite").upsert({ structure_id: Compte.structure.id, groupe: g, cases, modifie_le: new Date().toISOString() });
-  signaler(error ? "Enregistrement impossible : " + error.message : cases.length ? `Membres AS : ${cases.length} élément${cases.length > 1 ? "s" : ""} visible${cases.length > 1 ? "s" : ""}.` : "Membres AS : rien de visible.");
+  const qui = g === "club" ? "Membres club" : "Membres AS";
+  signaler(error ? "Enregistrement impossible : " + error.message : cases.length ? `${qui} : ${cases.length} élément${cases.length > 1 ? "s" : ""} visible${cases.length > 1 ? "s" : ""}.` : `${qui} : rien de visible.`);
 });
 document.addEventListener("click", async (e) => {
   if (e.target.id === "mb-inviter") {
@@ -243,7 +246,7 @@ document.addEventListener("click", async (e) => {
     if (!nom) { signaler("Indique le nom."); $("mb-nom").focus(); return; }
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { signaler("Adresse e-mail invalide."); $("mb-email").focus(); return; }
     if (licence && !/^\d{6,12}$/.test(licence)) { signaler("Licence : 6 à 12 chiffres."); $("mb-licence").focus(); return; }
-    if (groupe !== "coach" && !licence) { signaler("Licence ffgolf obligatoire pour un membre AS."); $("mb-licence").focus(); return; }
+    if (groupe === "as" && !licence) { signaler("Licence ffgolf obligatoire pour un membre AS."); $("mb-licence").focus(); return; }
     e.target.disabled = true; e.target.textContent = "Envoi…";
     const r = await clubInviter(Compte.structure.id, groupe, email, nom, licence || null);
     if (r.erreur) { signaler("Invitation impossible : " + r.erreur); e.target.disabled = false; e.target.textContent = "Inviter"; return; }
