@@ -463,3 +463,15 @@ html, body { overflow-x: clip; }   /* filet de sécurité : jamais de défilemen
 .vues .vers-module { color: #d6e6da; font-weight: 600; font-size: 14px; padding: 6px 14px; border-radius: 999px; text-decoration: none; white-space: nowrap; }
 .vues .vers-module:hover { color: #fff; background: rgba(255,255,255,.08); }
 .vues .vers-module:focus-visible { outline: 2px solid var(--jaune); outline-offset: 2px; }
+
+/* Mon club : membres du club et visibilité des membres AS (08/11) */
+.mb-form { display: grid; grid-template-columns: 1.2fr 1.4fr 1fr 1fr auto; gap: 8px; margin: 6px 0 8px; }
+.mb-form input, .mb-form select { font: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid var(--bord); border-radius: 8px; background: var(--fond); color: var(--texte); min-width: 0; }
+@media (max-width: 760px) { .mb-form { grid-template-columns: 1fr 1fr; } .mb-form .btn { grid-column: 1 / -1; } }
+.mb-cases { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 8px; margin: 6px 0 10px; }
+.mb-case { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--bord); border-radius: 10px; padding: 10px 12px; cursor: pointer; background: var(--carte); }
+.mb-case.oui { border-color: var(--vert-2); background: var(--sauge-pale); }
+.mb-case input { margin-top: 3px; accent-color: var(--vert); width: 16px; height: 16px; }
+.mb-case span { display: flex; flex-direction: column; gap: 1px; } .mb-case small { color: var(--doux); font-size: 12px; }
+.mb-case:has(input:disabled) { cursor: default; }
+.vo-suppr { color: #b91c1c; }

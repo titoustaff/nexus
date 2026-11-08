@@ -118,7 +118,7 @@ async function rendreCoach() {
     .map(([k, v]) => `<button type="button" data-co-onglet="${k}" aria-pressed="${co.onglet === k}">${v}</button>`).join("")}</div>`}<div id="co-corps"><p class="meta">Chargement…</p></div>`;
   const corps = $("co-corps");
   try {
-    if (co.onglet === "structure") corps.innerHTML = htmlStructure();
+    if (co.onglet === "structure") corps.innerHTML = htmlStructure() + (Compte.structure?.type === "club" ? await htmlMembres() : "");
     else if (!stOk) corps.innerHTML = `<div class="bloc p-parent"><h3>Tu n'es rattaché à aucun club</h3><p>Un coach travaille dans un club (son académie) ou en indépendant. C'est l'administrateur qui te rattache : demande-lui de le faire. Ensuite, tu verras les joueurs et les équipes de ton club.</p></div>`;
     else corps.innerHTML = co.onglet === "equipes" ? await htmlEquipes() : co.onglet === "calendrier" ? await htmlCalendrierEquipe() : co.onglet === "invitations" ? await htmlInvitations() : await htmlJoueurs();
     if (stOk && co.onglet === "joueurs") majTableJoueurs(); }
@@ -173,6 +173,68 @@ function htmlStructure() {
     </div>`}
     <p class="meta">Rattachement, club et coach principal sont gérés par l'administrateur.</p></div>`;
 }
+// ---- Mon club : membres du club et visibilité par groupe (08/11, script supabase/club-membres.sql)
+// Seul le coach principal (ou l'admin) fait entrer quelqu'un : la demande part chez l'administrateur qui envoie l'invitation
+// (le cœur crée les comptes). Membres AS : lecture seule de ce qui est coché pour leur groupe (tout décoché par défaut).
+const CASES = [["joueurs", "Joueurs", "nom, catégorie, index des joueurs AS"], ["equipes", "Équipes", "équipes de l'AS et leur composition"],
+  ["calendrier", "Calendrier", "tournois prévus par les joueurs (envisagé, inscrit)"], ["scores", "Scores", "scores et places en tournoi, une fois joués"],
+  ["merite", "Mérite", "classement au Mérite, mois par mois"], ["evenements", "Événements", "rencontres et compétitions du club"]];
+const GROUPE_LIB = { coach: "Coach", as: "Membre AS", club: "Membre club" };
+const STATUT_LIB = { demande: "en attente de validation (administrateur)", invite: "invitation envoyée", actif: "actif", refuse: "refusée" };
+async function htmlMembres() {
+  const sid = Compte.structure.id;
+  const [G, M, V] = await Promise.all([sb.rpc("club_gere", { sid }), sb.from("club_membres").select("*").eq("structure_id", sid).order("cree_le"),
+    sb.from("club_visibilite").select("groupe,cases").eq("structure_id", sid)]);
+  if (M.error) return `<div class="bloc"><h3>Membres du club</h3><p class="meta">${/club_membres|schema cache|does not exist/.test(M.error.message) ? "À activer : script supabase/club-membres.sql à lancer dans Supabase." : "Lecture impossible : " + esc(M.error.message)}</p></div>`;
+  const gere = co.gere = !!G.data, membres = M.data || [], cases = new Set((V.data || []).find((v) => v.groupe === "as")?.cases || []);
+  const date = (d) => (d ? fmtDate(String(d).slice(0, 10)) : "");
+  return `<div class="bloc mb-bloc"><h3>Membres du club <small>${membres.filter((m) => m.statut !== "refuse").length} · coachs et membres de l'AS</small></h3>
+    ${membres.length ? `<div class="st-table"><table><thead><tr><th>Nom</th><th>E-mail</th><th>Rôle</th><th>Statut</th><th>Depuis</th>${gere ? "<th></th>" : ""}</tr></thead><tbody>
+      ${membres.map((m) => `<tr><td><b>${esc(m.nom || "—")}</b></td><td>${esc(m.email)}</td><td>${GROUPE_LIB[m.groupe] || m.groupe}</td>
+        <td><span class="tag ${m.statut === "actif" ? "" : "ok-att"}">${STATUT_LIB[m.statut] || m.statut}</span></td><td>${date(m.valide_le || m.cree_le)}</td>
+        ${gere ? `<td class="co-act"><button type="button" class="lien vo-suppr" data-membre-suppr="${esc(m.id)}" data-nom="${esc(m.nom || m.email)}">${m.statut === "demande" ? "Annuler" : "Retirer"}</button></td>` : ""}</tr>`).join("")}
+      </tbody></table></div>` : `<p class="meta">Aucun membre pour l'instant${gere ? " : invite tes coachs et les membres de l'AS ci-dessous." : "."}</p>`}
+    ${gere ? `<h4 class="co-suivi-t">Inviter dans le club</h4>
+      <div class="mb-form">
+        <input id="mb-nom" placeholder="Prénom Nom" aria-label="Nom" maxlength="60" autocomplete="off">
+        <input id="mb-email" type="email" placeholder="e-mail" aria-label="E-mail" autocomplete="off">
+        <input id="mb-licence" inputmode="numeric" placeholder="licence ffgolf" aria-label="Licence ffgolf" maxlength="14" autocomplete="off">
+        <select id="mb-groupe" aria-label="Rôle"><option value="as">Membre AS</option><option value="coach">Coach</option><option value="club" disabled>Membre club (bientôt)</option></select>
+        <button type="button" class="btn plein" id="mb-inviter">Demander l'invitation</button></div>
+      <p class="meta">L'administrateur valide la demande et envoie l'invitation par e-mail. Licence obligatoire pour un membre AS (compte GolfNexus de joueur), facultative pour un coach.</p>`
+    : `<p class="meta">Le coach principal invite les coachs et les membres de l'AS.</p>`}
+  </div>
+  <div class="bloc mb-bloc"><h3>Ce que voient les membres AS <small>en lecture seule, même réglage pour tout le groupe</small></h3>
+    <div class="mb-cases">${CASES.map(([k, l, d]) => `<label class="mb-case${cases.has(k) ? " oui" : ""}"><input type="checkbox" data-vis="as" value="${k}" ${cases.has(k) ? "checked" : ""} ${gere ? "" : "disabled"}>
+      <span><b>${l}</b><small>${d}</small></span></label>`).join("")}</div>
+    <p class="meta">Jamais visibles : stats, cartes de score, notes du coach, coordonnées. Seuls les joueurs AS qui ont accepté le suivi du club apparaissent.${gere ? "" : " Réglé par le coach principal."}</p>
+  </div>`;
+}
+document.addEventListener("change", async (e) => {
+  const c = e.target.closest("[data-vis]"); if (!c || !co.gere) return;
+  const g = c.dataset.vis, cases = [...document.querySelectorAll(`[data-vis="${g}"]:checked`)].map((x) => x.value);
+  c.closest(".mb-case")?.classList.toggle("oui", c.checked);
+  const { error } = await sb.from("club_visibilite").upsert({ structure_id: Compte.structure.id, groupe: g, cases, modifie_le: new Date().toISOString() });
+  signaler(error ? "Enregistrement impossible : " + error.message : cases.length ? `Membres AS : ${cases.length} élément${cases.length > 1 ? "s" : ""} visible${cases.length > 1 ? "s" : ""}.` : "Membres AS : rien de visible.");
+});
+document.addEventListener("click", async (e) => {
+  if (e.target.id === "mb-inviter") {
+    const nom = $("mb-nom").value.trim(), email = $("mb-email").value.trim().toLowerCase(), licence = $("mb-licence").value.replace(/\s/g, ""), groupe = $("mb-groupe").value;
+    if (!nom) { signaler("Indique le nom."); $("mb-nom").focus(); return; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { signaler("Adresse e-mail invalide."); $("mb-email").focus(); return; }
+    if (licence && !/^\d{6,12}$/.test(licence)) { signaler("Licence : 6 à 12 chiffres."); $("mb-licence").focus(); return; }
+    if (groupe !== "coach" && !licence) { signaler("Licence ffgolf obligatoire pour un membre AS."); $("mb-licence").focus(); return; }
+    const { error } = await sb.from("club_membres").insert({ structure_id: Compte.structure.id, groupe, email, nom, licence: licence || null });
+    if (error) { signaler(/duplicate|unique/.test(error.message) ? "Cette adresse est déjà dans les membres du club." : "Demande impossible : " + error.message); return; }
+    signaler(`Demande envoyée : l'administrateur va inviter ${nom}.`); rendreCoach(); return;
+  }
+  const s = e.target.closest("[data-membre-suppr]");
+  if (s) {
+    if (!confirm(`Retirer ${s.dataset.nom} des membres du club ?`)) return;
+    const { error } = await sb.from("club_membres").delete().eq("id", s.dataset.membreSuppr);
+    signaler(error ? "Impossible : " + error.message : "Retiré des membres du club."); rendreCoach();
+  }
+});
 // ---- onglet « Invitations » (06/11) : inviter (pas encore de compte), demander l'accès (déjà un compte), suivi
 async function htmlInvitations() {
   const [I, J] = await Promise.all([sb.rpc("mes_invitations"), sb.rpc("mes_joueurs")]);
