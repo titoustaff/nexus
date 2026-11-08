@@ -480,7 +480,7 @@ html, body { overflow-x: clip; }   /* filet de sécurité : jamais de défilemen
 .mb-lecture { margin-top: 6px; }
 .mb-equipes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
 .mb-equipes .bloc { margin: 0; }
-.mb-liste { margin: 0; padding-left: 18px; columns: 2; font-size: 13.5px; } .mb-liste li { margin: 2px 0; }
+.mb-liste { margin: 0; padding: 0; list-style: none; font-size: 14px; } .mb-liste li { display: block; padding: 5px 0; border-bottom: 1px solid var(--bord); } .mb-liste li:last-child { border-bottom: 0; }
 .tag.mb-joue { background: var(--sauge-pale); color: var(--doux); }
 .mb-ligne { cursor: pointer; } .mb-ligne:hover td { background: color-mix(in srgb, var(--sauge-pale) 50%, transparent); }
 .mb-monte { color: var(--vert-2); font-weight: 700; } .mb-baisse { color: #b45309; font-weight: 700; }
