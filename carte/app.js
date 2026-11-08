@@ -84,7 +84,9 @@ function ecran(nom) {
   $("v-nouvelle").hidden = !!etat.vue;
   rendreCompte();
   const jv = etat.vue && Compte.joueurs.find((j) => j.joueur_id === etat.vue);   // coach : bande jaune et raccourcis
-  nexusBandeVue(jv ? jv.nom || jv.libelle || "Joueur" : "", "carte", () => { etat.vue = ""; nexusJoueurVu.ecrire(Compte.moi?.id, ""); ecran("liste"); });
+  nexusBandeVue(jv ? jv.nom || jv.libelle || "Joueur" : "", "carte", () => { etat.vue = ""; nexusJoueurVu.ecrire(Compte.moi?.id, ""); ecran("liste"); },
+    Compte.joueurs.map((j) => ({ id: j.joueur_id, nom: j.nom || j.libelle, info: j.categorie || "" })),
+    (id) => { etat.vue = id; nexusJoueurVu.ecrire(Compte.moi?.id, id, Compte.joueurs.find((j) => j.joueur_id === id)?.nom); ecran("liste"); });
   if (nom === "liste") rendreListe();
   else if (nom === "nouvelle") preparerNouvelle();
   else if (nom === "saisie") rendreSaisie();
