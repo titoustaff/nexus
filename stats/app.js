@@ -105,7 +105,9 @@ function rendre() {
   rendreFiltres();
   const jv = etat.vue && Compte.joueurs.find((j) => j.joueur_id === etat.vue);   // coach : bande jaune et raccourcis
   nexusBandeVue(jv && !etat.cadre ? jv.nom || jv.libelle || "Joueur" : "", "stats", () => {
-    nexusJoueurVu.ecrire(Compte.moi?.id, ""); if (location.hash.length > 1) location.hash = ""; else lireLien(); });
+    nexusJoueurVu.ecrire(Compte.moi?.id, ""); if (location.hash.length > 1) location.hash = ""; else lireLien(); },
+    Compte.joueurs.map((j) => ({ id: j.joueur_id, nom: j.nom || j.libelle, info: j.categorie || "" })),
+    (id) => { nexusJoueurVu.ecrire(Compte.moi?.id, id, Compte.joueurs.find((j) => j.joueur_id === id)?.nom); location.hash = `joueur=${encodeURIComponent(id)}`; });
   const qui = etat.vue ? ` · ${esc(Compte.joueurs.find((j) => j.joueur_id === etat.vue)?.nom || "joueur")}` : "";
   $("st-filtres").hidden = !!etat.focus;
   if (etat.focus) { $("st-titre").innerHTML = (etat.focus.type === "partie" ? "Stats du tour" : "Stats du tournoi") + qui; rendreFocus(); return; }
