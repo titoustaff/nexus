@@ -1086,7 +1086,8 @@ function rendreCompte() {
   pan.hidden = !compte.ouvert;
   rendreBienvenue();
   const vb = $("vue-bandeau");
-  vb.hidden = !(connecte && Saison.demo?.coach);
+  vb.hidden = true;   // bande commune sous l'en-tête (nexusBandeVue, 08/11) : raccourcis Saison · Carte · Stats
+  nexusBandeVue(connecte && Saison.demo?.coach ? Saison.demo.nom || "Joueur" : "", "saison", () => revenirMoi());
   $("saison").hidden = !vb.hidden;   // dans l'en-tête, la ligne « vue joueur » remplace l'avancée de la saison
   if (!vb.hidden) vb.innerHTML = `<span>👁 <b>${esc(Saison.demo.nom || "Joueur")}</b> <small>lecture seule</small></span>
     <button type="button" data-vue-ecran="saison" aria-pressed="${etat.ecran === "saison"}">Saison</button>
