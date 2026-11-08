@@ -36,7 +36,7 @@ function rendreCompte() {
   pan.hidden = !compte.ouvert;
   if (!Compte.user) { b.innerHTML = ""; pan.innerHTML = nexusPanneauConnexion(); return; }
   const mel = Compte.user.email || "", nom = Compte.fiche.nom || mel;
-  b.innerHTML = `<button type="button" class="b-btn b-moi" id="c-ouvrir" aria-haspopup="menu" aria-expanded="${compte.ouvert}" aria-controls="b-pan" title="${esc(mel)}">
+  b.innerHTML = `${selecteurClub()}<button type="button" class="b-btn b-moi" id="c-ouvrir" aria-haspopup="menu" aria-expanded="${compte.ouvert}" aria-controls="b-pan" title="${esc(mel)}">
       <span class="b-init" aria-hidden="true">${esc((nom.trim()[0] || "?").toUpperCase())}</span><span class="b-qui">${esc(nom)}</span><span aria-hidden="true">▾</span></button>`;
   pan.innerHTML = nexusPanneauConnecte(mel);
 }
@@ -122,14 +122,16 @@ $("co-contenu").addEventListener("submit", async (e) => {
 async function clubCourant() {
   if (Compte.role !== "admin") return Compte.structure;
   if (!co.clubs) { const S = await sb.from("structures").select("id,type,nom,club,coach_principal").eq("type", "club").order("nom"); co.clubs = S.data || []; }
+  if (!co.clubId) co.clubId = lsGet("club-admin") || "";
   if (!co.clubs.some((c) => c.id === co.clubId)) co.clubId = (Compte.structure?.type === "club" && co.clubs.some((c) => c.id === Compte.structure.id) ? Compte.structure.id : co.clubs[0]?.id) || "";
   return co.clubs.find((c) => c.id === co.clubId) || null;
 }
-const selecteurClub = () => (Compte.role === "admin" && co.clubs?.length ? `<div class="co-club-choix"><label for="co-club-sel">Administrateur · club affiché</label>
-  <select id="co-club-sel">${co.clubs.map((c) => `<option value="${esc(c.id)}" ${c.id === co.clubId ? "selected" : ""}>${esc(c.nom)}</option>`).join("")}</select></div>` : "");
+// sélecteur de l'administrateur, dans le bandeau à côté de son nom : il se positionne sur un club (mémorisé)
+const selecteurClub = () => (Compte.role === "admin" && co.clubs?.length ? `<label class="b-club" title="Administrateur : club sur lequel tu es positionné"><span aria-hidden="true">🏌️</span>
+  <select id="co-club-sel" aria-label="Club affiché (administrateur)">${co.clubs.map((c) => `<option value="${esc(c.id)}" ${c.id === co.clubId ? "selected" : ""}>${esc(c.nom)}</option>`).join("")}</select></label>` : "");
 document.addEventListener("change", (e) => {
   if (e.target.id !== "co-club-sel") return;
-  co.clubId = e.target.value; mb.cache = {};
+  co.clubId = e.target.value; lsSet("club-admin", co.clubId); mb.cache = {};
   if (mb.acces?.groupe === "coach") vueClub(); else rendreCoach();
 });
 // ---- onglet Coach (coachs et administrateur) : structure, joueurs suivis, invitations ; plus tard les équipes
@@ -149,7 +151,11 @@ async function rendreCoach() {
     if (co.onglet === "structure") {
       const st = await clubCourant(); co.sid = st?.id || null;
       const CC = st?.type === "club" ? await sb.rpc("club_coachs", { sid: st.id }) : { error: true };
-      corps.innerHTML = selecteurClub() + htmlStructure(st, CC) + (st?.type === "club" ? await htmlMembres(st, CC) : "");
+      corps.innerHTML = htmlStructure(st, CC) + (st?.type === "club" ? await htmlMembres(st, CC) : "");
+    }
+    else if (Compte.role === "admin" && co.clubId && co.clubId !== Compte.structure?.id) {
+      const c = co.clubs.find((x) => x.id === co.clubId);
+      corps.innerHTML = `<div class="bloc p-parent"><h3>Positionné sur ${esc(c?.nom || "un autre club")}</h3><p>L'onglet Coach (joueurs, équipes, invitations de joueurs) suit pour l'instant ton propre rattachement. <b>Mon club</b> et le <b>Tableau de bord</b> montrent le club choisi dans le bandeau.</p></div>`;
     }
     else if (!stOk) corps.innerHTML = `<div class="bloc p-parent"><h3>Tu n'es rattaché à aucun club</h3><p>Un coach travaille dans un club (son académie) ou en indépendant. C'est l'administrateur qui te rattache : demande-lui de le faire. Ensuite, tu verras les joueurs et les équipes de ton club.</p></div>`;
     else corps.innerHTML = co.onglet === "equipes" ? await htmlEquipes() : co.onglet === "calendrier" ? await htmlCalendrierEquipe() : co.onglet === "invitations" ? await htmlInvitations() : await htmlJoueurs();
@@ -664,6 +670,7 @@ async function entrer() {
     if (!A.error && A.data?.length) { modeMembre(A.data[0]); return; }
     $("ecran-coach").hidden = false; $("co-contenu").innerHTML = `<div class="bloc vide">Club est réservé aux coachs, à l'administrateur et aux membres de l'AS invités par le club. <a href="../saison/">Retour à Saison</a></div>`; rendreCompte(); return;
   }
+  if (Compte.role === "admin") await clubCourant();   // liste des clubs pour le sélecteur du bandeau
   ecran(location.hash === "#club" ? "club" : location.hash === "#vue" ? "vue" : "coach");
 }
 // ------------------------------------------------------------------ membres AS / club : Club en lecture seule (08/11)
@@ -681,7 +688,7 @@ async function rendreMembre() {
   $("co-titre").textContent = `Tableau de bord · ${a.structure_nom}`;
   const ong = CASES.filter(([k]) => a.cases.includes(k));
   if (!ong.length) { box.innerHTML = `<div class="bloc vide"><p>Le coach principal n'a encore rien ouvert aux ${a.groupe === "as" ? "membres de l'AS" : "membres de la direction du club"}.</p></div>`; return; }
-  box.innerHTML = `${a.groupe === "coach" ? selecteurClub() : ""}<div class="seg co-onglets" role="group" aria-label="Club">${ong.map(([k, l]) => `<button type="button" data-mb-onglet="${k}" aria-pressed="${mb.onglet === k}">${l}</button>`).join("")}</div>
+  box.innerHTML = `<div class="seg co-onglets" role="group" aria-label="Club">${ong.map(([k, l]) => `<button type="button" data-mb-onglet="${k}" aria-pressed="${mb.onglet === k}">${l}</button>`).join("")}</div>
     <div id="mb-corps"><p class="meta">Chargement…</p></div><p class="meta mb-lecture">${a.groupe === "coach" ? "Lecture seule · les membres AS voient les onglets cochés dans Mon club." : `Lecture seule · ouvert par le coach principal de ${esc(a.structure_nom)}.`}</p>`;
   try { $("mb-corps").innerHTML = await (VUES_MB[mb.onglet] || (async () => ""))(a.structure_id); }
   catch (e) { $("mb-corps").innerHTML = `<div class="bloc vide">Lecture impossible : ${esc(e.message || String(e))}</div>`; }
