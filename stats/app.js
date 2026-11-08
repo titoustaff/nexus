@@ -332,7 +332,7 @@ document.addEventListener("click", (e) => {
   const c = e.target.closest("[data-ctx]");
   if (c) { const k = c.dataset.ctx; if (etat.contextes.has(k) && etat.contextes.size > 1) etat.contextes.delete(k); else etat.contextes.add(k); rendre(); }
 });
-document.addEventListener("change", (e) => { if (e.target.id === "st-joueur") nexusJoueurVu.ecrire(Compte.moi?.id, e.target.value); });
+document.addEventListener("change", (e) => { if (e.target.id === "st-joueur") nexusJoueurVu.ecrire(Compte.moi?.id, e.target.value, Compte.joueurs.find((j) => j.joueur_id === e.target.value)?.nom); });
 document.addEventListener("change", (e) => { if (e.target.id === "st-joueur") location.hash = e.target.value ? `joueur=${encodeURIComponent(e.target.value)}` : ""; });
 
 // ------------------------------------------------------------------ données et démarrage
@@ -358,7 +358,7 @@ async function lireLien() {
   etat.cadre = h.get("cadre") === "1"; document.body.classList.toggle("cadre", etat.cadre);
   const vue = Compte.joueurs.some((x) => x.joueur_id === j) ? j : "";
   if (vue !== etat.vue) { etat.vue = vue; await charger(); }
-  nexusJoueurVu.ecrire(Compte.moi?.id, vue);
+  nexusJoueurVu.ecrire(Compte.moi?.id, vue, Compte.joueurs.find((j) => j.joueur_id === vue)?.nom);
   etat.focus = h.get("partie") ? { type: "partie", id: h.get("partie") } : h.get("tournoi") ? { type: "tournoi", ref: h.get("tournoi") } : null;
   rendre(); window.scrollTo(0, 0);
 }
