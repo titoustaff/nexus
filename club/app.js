@@ -64,12 +64,13 @@ function ecran(nom = "coach") {
 document.querySelector(".vues").addEventListener("click", (e) => { const b = e.target.closest("[data-ecran]"); if (b) ecran(b.dataset.ecran); });
 // bandeau et adresse suivent l'onglet affiché (« Mon club » peut aussi s'ouvrir seul : coach pas encore rattaché)
 // « Tableau de bord » (08/11) : la même vue que les membres AS, avec tous les onglets (un coach voit tout dans Club)
-function vueClub() {
-  const st = Compte.structure;
+async function vueClub() {
+  const st = await clubCourant();
   for (const b of document.querySelectorAll(".vues button[data-ecran]")) if (b.dataset.ecran === "vue") b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
   history.replaceState(null, "", location.pathname + location.search + "#vue");
   $("ecran-coach").hidden = false; rendreCompte(); window.scrollTo({ top: 0 });
   if (!st?.id || st.type !== "club") { mb.acces = null; $("co-titre").textContent = "Tableau de bord"; $("co-contenu").innerHTML = `<div class="bloc vide">Le tableau de bord existe pour un coach rattaché à un club (pas en indépendant).</div>`; return; }
+  if (mb.acces?.structure_id !== st.id) mb.cache = {};
   mb.acces = { structure_id: st.id, structure_nom: st.nom, groupe: "coach", cases: CASES.map(([k]) => k) };
   if (!mb.onglet) mb.onglet = "joueurs";
   rendreMembre();
@@ -117,6 +118,20 @@ $("co-contenu").addEventListener("submit", async (e) => {
   rendreCoach();
 });
 
+// club affiché dans Mon club et le Tableau de bord : le sien ; l'administrateur (qui aide tous les clubs) choisit le club
+async function clubCourant() {
+  if (Compte.role !== "admin") return Compte.structure;
+  if (!co.clubs) { const S = await sb.from("structures").select("id,type,nom,club,coach_principal").eq("type", "club").order("nom"); co.clubs = S.data || []; }
+  if (!co.clubs.some((c) => c.id === co.clubId)) co.clubId = (Compte.structure?.type === "club" && co.clubs.some((c) => c.id === Compte.structure.id) ? Compte.structure.id : co.clubs[0]?.id) || "";
+  return co.clubs.find((c) => c.id === co.clubId) || null;
+}
+const selecteurClub = () => (Compte.role === "admin" && co.clubs?.length ? `<div class="co-club-choix"><label for="co-club-sel">Administrateur · club affiché</label>
+  <select id="co-club-sel">${co.clubs.map((c) => `<option value="${esc(c.id)}" ${c.id === co.clubId ? "selected" : ""}>${esc(c.nom)}</option>`).join("")}</select></div>` : "");
+document.addEventListener("change", (e) => {
+  if (e.target.id !== "co-club-sel") return;
+  co.clubId = e.target.value; mb.cache = {};
+  if (mb.acces?.groupe === "coach") vueClub(); else rendreCoach();
+});
 // ---- onglet Coach (coachs et administrateur) : structure, joueurs suivis, invitations ; plus tard les équipes
 const co = { onglet: "joueurs", equipe: "", eqSel: "", annee: new Date().getFullYear(), candidats: {}, voir: 50 };
 async function rendreCoach() {
@@ -131,7 +146,11 @@ async function rendreCoach() {
     .map(([k, v]) => `<button type="button" data-co-onglet="${k}" aria-pressed="${co.onglet === k}">${v}</button>`).join("")}</div>`}<div id="co-corps"><p class="meta">Chargement…</p></div>`;
   const corps = $("co-corps");
   try {
-    if (co.onglet === "structure") corps.innerHTML = htmlStructure() + (Compte.structure?.type === "club" ? await htmlMembres() : "");
+    if (co.onglet === "structure") {
+      const st = await clubCourant(); co.sid = st?.id || null;
+      const CC = st?.type === "club" ? await sb.rpc("club_coachs", { sid: st.id }) : { error: true };
+      corps.innerHTML = selecteurClub() + htmlStructure(st, CC) + (st?.type === "club" ? await htmlMembres(st, CC) : "");
+    }
     else if (!stOk) corps.innerHTML = `<div class="bloc p-parent"><h3>Tu n'es rattaché à aucun club</h3><p>Un coach travaille dans un club (son académie) ou en indépendant. C'est l'administrateur qui te rattache : demande-lui de le faire. Ensuite, tu verras les joueurs et les équipes de ton club.</p></div>`;
     else corps.innerHTML = co.onglet === "equipes" ? await htmlEquipes() : co.onglet === "calendrier" ? await htmlCalendrierEquipe() : co.onglet === "invitations" ? await htmlInvitations() : await htmlJoueurs();
     if (stOk && co.onglet === "joueurs") majTableJoueurs(); }
@@ -173,12 +192,13 @@ async function htmlJoueurs() {
       <div id="co-pied"></div></div>`;
 }
 // ---- onglet « Mon club » (06/11) : la structure du coach, en lecture seule (rattachement par l'administrateur)
-function htmlStructure() {
-  const st = Compte.structure;
+function htmlStructure(st, CC = { error: true }) {
   if (!st) return `<div class="bloc p-parent"><h3>Mon club</h3><p>Tu n'es rattaché à aucun club pour l'instant. C'est l'administrateur qui rattache un coach à son club (ou le déclare coach indépendant) : demande-lui de le faire.</p></div>`;
   const club = st.club ? titre(st.club) : null;
   const initiales = (n) => esc(String(n || "?").trim().split(/\s+/).map((x) => x[0]).slice(0, 2).join("").toUpperCase());
-  const coachs = String(st.coachs || "").split(",").map((x) => x.trim()).filter(Boolean);
+  // coachs du club (club_coachs : sans l'administrateur) ; sans le script club-coachs.sql : la fiche du club
+  const coachs = !CC.error ? (CC.data || []).map((c) => c.nom) : String(st.coachs || "").split(",").map((x) => x.trim()).filter(Boolean);
+  if (!CC.error) st = { ...st, principal: (CC.data || []).find((c) => c.principal)?.nom || null };
   const pastille = (n, principal = false) => `<span class="mc-coach${principal ? " principal" : ""}"><i aria-hidden="true">${initiales(n)}</i>${esc(n)}${principal ? ' <small>principal</small>' : ""}</span>`;
   if (st.type === "independant") return `<div class="bloc mc-club"><div class="mc-tete"><div><h3>${esc(st.nom)}</h3><span class="mc-badge">Coach indépendant</span></div></div>
     <p class="meta">Tu suis tes joueurs à titre personnel ; pas d'équipes.</p></div>`;
@@ -214,23 +234,28 @@ async function clubInviter(structure_id, groupe, email, nom, licence) {
   const msg = error ? (await error.context?.json?.().catch(() => null))?.erreur || error.message : data?.erreur;
   return msg ? { erreur: msg } : data || {};
 }
-async function htmlMembres() {
-  const sid = Compte.structure.id;
+async function htmlMembres(st, CC) {
+  const sid = st.id;
   const [G, M, V] = await Promise.all([sb.rpc("club_gere", { sid }), sb.from("club_membres").select("*").eq("structure_id", sid).order("cree_le"),
     sb.from("club_visibilite").select("groupe,cases").eq("structure_id", sid)]);
   if (M.error) return `<div class="bloc"><h3>Membres du club</h3><p class="meta">${/club_membres|schema cache|does not exist/.test(M.error.message) ? "À activer : script supabase/club-membres.sql à lancer dans Supabase." : "Lecture impossible : " + esc(M.error.message)}</p></div>`;
   const gere = co.gere = !!G.data;
-  // coachs déjà rattachés au club par l'administrateur (avant les invitations de Mon club) : en tête de liste
-  const st = Compte.structure || {}, invites = M.data || [];
-  const dejaLa = new Set(invites.filter((m) => m.groupe === "coach").map((m) => plier(m.nom)));
-  const rattaches = String(st.coachs || "").split(",").map((x) => x.trim()).filter((n) => n && !dejaLa.has(plier(n)))
-    .map((n) => ({ nom: n, groupe: "coach", statut: "actif", rattache: true, principal: n === st.principal }));
-  const membres = [...rattaches.sort((a, b) => b.principal - a.principal), ...invites];
+  // coachs : tous ceux rattachés au club (club_coachs, club-coachs.sql), y compris par l'administrateur ; statut de l'invitation
+  // s'il y en a une. Sans le script : noms seulement (fiche du club).
+  const invites = M.data || [];
+  const parUid = Object.fromEntries(invites.filter((m) => m.user_id).map((m) => [m.user_id, m]));
+  const coachs = !CC.error ? (CC.data || []).map((c) => ({ ...(parUid[c.user_id] || {}), groupe: "coach", nom: c.nom, email: c.email, user_id: c.user_id,
+      statut: parUid[c.user_id]?.statut || "actif", depuis: c.depuis, principal: c.principal }))
+    : String(st.coachs || "").split(",").map((x) => x.trim()).filter(Boolean).map((n) => ({ nom: n, groupe: "coach", statut: "actif", principal: n === st.principal }));
+  const vus = new Set(coachs.map((c) => c.user_id).filter(Boolean));
+  const membres = [...coachs, ...invites.filter((m) => !(m.groupe === "coach" && (vus.has(m.user_id) || CC.error)))];
   const casesDe = (g) => new Set((V.data || []).find((v) => v.groupe === g)?.cases || []);
   const date = (d) => (d ? fmtDate(String(d).slice(0, 10)) : "");
   const ligne = (m) => `<tr><td><b>${esc(m.nom || "—")}</b>${m.principal ? ' <span class="tag">principal</span>' : ""}</td><td>${esc(m.email || "—")}</td>
-        <td><span class="tag ${m.statut === "actif" ? "" : "ok-att"}">${STATUT_LIB[m.statut] || m.statut}</span></td><td>${m.rattache ? '<span class="meta">rattaché par l\'admin</span>' : date(m.valide_le || m.cree_le)}</td>
-        ${gere ? m.rattache ? "<td></td>" : `<td class="co-act">${m.statut === "invite" ? `<button type="button" class="btn" data-membre-renvoyer="${esc(m.id)}">Renvoyer</button> ` : ""}<button type="button" class="lien vo-suppr" data-membre-suppr="${esc(m.id)}" data-nom="${esc(m.nom || m.email)}">Retirer</button></td>` : ""}</tr>`;
+        <td><span class="tag ${m.statut === "actif" ? "" : "ok-att"}">${STATUT_LIB[m.statut] || m.statut}</span></td><td>${date(m.depuis || m.valide_le || m.cree_le) || "—"}</td>
+        ${gere ? `<td class="co-act">${m.statut === "invite" && m.id ? `<button type="button" class="btn" data-membre-renvoyer="${esc(m.id)}">Renvoyer</button> ` : ""}${m.principal ? ""
+          : m.groupe === "coach" ? (m.user_id ? `<button type="button" class="lien vo-suppr" data-coach-retirer="${esc(m.user_id)}" data-nom="${esc(m.nom || m.email)}">Retirer</button>` : "")
+          : `<button type="button" class="lien vo-suppr" data-membre-suppr="${esc(m.id)}" data-nom="${esc(m.nom || m.email)}">Retirer</button>`}</td>` : ""}</tr>`;
   const liste = (g, titreL, vide) => { const L = membres.filter((m) => m.groupe === g && m.statut !== "refuse");
     return `<h4 class="mb-liste-t">${titreL} <small>${L.length}</small></h4>${L.length ? `<div class="st-table"><table><thead><tr><th>Nom</th><th>E-mail</th><th>Statut</th><th>Depuis</th>${gere ? "<th></th>" : ""}</tr></thead><tbody>
       ${L.map(ligne).join("")}</tbody></table></div>` : `<p class="meta">${vide}</p>`}`; };
@@ -259,7 +284,7 @@ document.addEventListener("change", async (e) => {
   const c = e.target.closest("[data-vis]"); if (!c || !co.gere) return;
   const g = c.dataset.vis, cases = [...document.querySelectorAll(`[data-vis="${g}"]:checked`)].map((x) => x.value);
   c.closest(".mb-case")?.classList.toggle("oui", c.checked);
-  const { error } = await sb.from("club_visibilite").upsert({ structure_id: Compte.structure.id, groupe: g, cases, modifie_le: new Date().toISOString() });
+  const { error } = await sb.from("club_visibilite").upsert({ structure_id: co.sid, groupe: g, cases, modifie_le: new Date().toISOString() });
   const qui = g === "club" ? "Direction du club" : "Membres AS";
   signaler(error ? "Enregistrement impossible : " + error.message : cases.length ? `${qui} : ${cases.length} élément${cases.length > 1 ? "s" : ""} visible${cases.length > 1 ? "s" : ""}.` : `${qui} : rien de visible.`);
 });
@@ -271,7 +296,7 @@ document.addEventListener("click", async (e) => {
     if (licence && !/^\d{6,12}$/.test(licence)) { signaler("Licence : 6 à 12 chiffres."); $("mb-licence").focus(); return; }
     if (groupe === "as" && !licence) { signaler("Licence ffgolf obligatoire pour un membre AS."); $("mb-licence").focus(); return; }
     e.target.disabled = true; e.target.textContent = "Envoi…";
-    const r = await clubInviter(Compte.structure.id, groupe, email, nom, licence || null);
+    const r = await clubInviter(co.sid, groupe, email, nom, licence || null);
     if (r.erreur) { signaler("Invitation impossible : " + r.erreur); e.target.disabled = false; e.target.textContent = "Inviter"; return; }
     signaler(r.deja_compte ? `${nom} a déjà un compte : accès ouvert${groupe === "coach" ? ", rattaché au club" : ""}.` : `Invitation envoyée à ${email}.`); rendreCoach(); return;
   }
@@ -281,6 +306,14 @@ document.addEventListener("click", async (e) => {
     rv.disabled = true;
     const r = await clubInviter(m.structure_id, m.groupe, m.email, m.nom, m.licence);
     signaler(r.erreur ? "Renvoi impossible : " + r.erreur : r.deja_compte ? "Cette personne s'est connectée : accès ouvert." : "Invitation renvoyée."); rendreCoach(); return;
+  }
+  const cr = e.target.closest("[data-coach-retirer]");
+  if (cr) {
+    if (!confirm(`Retirer ${cr.dataset.nom} du club ? Ses joueurs AS restent au club avec un autre coach référent ; ses joueurs hors club le suivent.`)) return;
+    cr.disabled = true;
+    const { data, error } = await sb.functions.invoke("club-inviter", { body: { action: "retirer", structure_id: co.sid, user_id: cr.dataset.coachRetirer } });
+    const msg = error ? (await error.context?.json?.().catch(() => null))?.erreur || error.message : data?.erreur;
+    signaler(msg ? "Retrait impossible : " + msg : `${cr.dataset.nom} ne fait plus partie du club.`); rendreCoach(); return;
   }
   const s = e.target.closest("[data-membre-suppr]");
   if (s) {
@@ -645,10 +678,10 @@ function modeMembre(acces) {
 }
 async function rendreMembre() {
   const a = mb.acces, box = $("co-contenu");
-  $("co-titre").textContent = a.groupe === "coach" ? `Tableau de bord · ${a.structure_nom}` : `Tableau de bord · ${a.structure_nom}`;
+  $("co-titre").textContent = `Tableau de bord · ${a.structure_nom}`;
   const ong = CASES.filter(([k]) => a.cases.includes(k));
   if (!ong.length) { box.innerHTML = `<div class="bloc vide"><p>Le coach principal n'a encore rien ouvert aux ${a.groupe === "as" ? "membres de l'AS" : "membres de la direction du club"}.</p></div>`; return; }
-  box.innerHTML = `<div class="seg co-onglets" role="group" aria-label="Club">${ong.map(([k, l]) => `<button type="button" data-mb-onglet="${k}" aria-pressed="${mb.onglet === k}">${l}</button>`).join("")}</div>
+  box.innerHTML = `${a.groupe === "coach" ? selecteurClub() : ""}<div class="seg co-onglets" role="group" aria-label="Club">${ong.map(([k, l]) => `<button type="button" data-mb-onglet="${k}" aria-pressed="${mb.onglet === k}">${l}</button>`).join("")}</div>
     <div id="mb-corps"><p class="meta">Chargement…</p></div><p class="meta mb-lecture">${a.groupe === "coach" ? "Lecture seule · les membres AS voient les onglets cochés dans Mon club." : `Lecture seule · ouvert par le coach principal de ${esc(a.structure_nom)}.`}</p>`;
   try { $("mb-corps").innerHTML = await (VUES_MB[mb.onglet] || (async () => ""))(a.structure_id); }
   catch (e) { $("mb-corps").innerHTML = `<div class="bloc vide">Lecture impossible : ${esc(e.message || String(e))}</div>`; }

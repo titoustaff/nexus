@@ -520,3 +520,6 @@ html, body { overflow-x: clip; }   /* filet de sécurité : jamais de défilemen
 .mb-bloc .st-table th:nth-child(1) { width: 30%; } .mb-bloc .st-table th:nth-child(2) { width: 30%; }
 .mb-bloc .st-table th:nth-child(3) { width: 16%; } .mb-bloc .st-table th:nth-child(4) { width: 14%; }
 .mb-bloc .st-table td { overflow: hidden; text-overflow: ellipsis; }
+/* administrateur : choix du club affiché (Mon club, Tableau de bord) */
+.co-club-choix { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 12px; padding: 8px 12px; border-radius: 10px; background: color-mix(in srgb, var(--jaune) 14%, var(--carte)); border: 1px solid var(--jaune); font-size: 13px; font-weight: 600; color: var(--texte); }
+.co-club-choix select { font: inherit; font-weight: 600; padding: 5px 8px; border: 1px solid var(--bord); border-radius: 8px; background: var(--carte); color: var(--vert); }
