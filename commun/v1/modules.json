@@ -33,8 +33,8 @@
    "nom": "Stats",
    "verbe": "Analyser",
    "couleur": "#6d28d9",
-   "adresse": null,
-   "etat": "bientot",
+   "adresse": "stats/",
+   "etat": "ouvert",
    "icone": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 20h16\"/><rect x=\"5.5\" y=\"12\" width=\"3\" height=\"6\" rx=\"1\"/><rect x=\"10.5\" y=\"8\" width=\"3\" height=\"10\" rx=\"1\"/><rect x=\"15.5\" y=\"4\" width=\"3\" height=\"14\" rx=\"1\"/></svg>"
   },
   {
