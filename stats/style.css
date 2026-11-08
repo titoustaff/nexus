@@ -85,3 +85,24 @@ th { color: var(--doux); font-weight: 600; font-size: 11px; text-transform: uppe
 
 .st-table th, .st-table td { white-space: nowrap; } .st-table .n { text-align: right; }
 .st-bulle { position: fixed; z-index: 3000; max-width: 280px; background: var(--texte); color: var(--fond); font-size: 12.5px; line-height: 1.4; padding: 7px 10px; border-radius: 8px; white-space: pre-line; pointer-events: none; box-shadow: var(--ombre); }
+
+/* vue Tour / vue Tournoi */
+.st-retour { display: inline-block; margin: 0 0 10px; font-size: 13.5px; font-weight: 600; color: var(--vert); text-decoration: none; }
+.st-retour:hover { text-decoration: underline; }
+.st-entete { margin: 0 0 12px; } .st-entete h3 { margin: 0 0 2px; font-size: 19px; color: var(--vert); }
+.st-entete .meta::first-letter { text-transform: uppercase; }
+.st-lien-tournoi { display: inline-block; margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--vert); background: var(--sauge-pale); border-radius: 999px; padding: 4px 12px; text-decoration: none; }
+.st-lien-tournoi:hover { background: color-mix(in srgb, var(--sauge-pale) 70%, var(--vert-2)); }
+.st-moy { display: block; margin-top: 2px; }
+.st-sous-titre { margin: 18px 0 10px; font-size: 16px; color: var(--vert); }
+.st-tour-tab { margin-bottom: 4px; }
+.st-tours th small { display: block; font-weight: 500; text-transform: none; letter-spacing: 0; font-size: 11px; }
+.st-tours th a { color: var(--vert); }
+.st-tours tbody th { text-transform: none; letter-spacing: 0; font-size: 13px; color: var(--texte); font-weight: 500; }
+.st-tours .st-total { background: var(--sauge-pale); font-weight: 700; }
+.st-tours .st-hab { color: var(--doux); }
+.st-table a { color: var(--vert); font-weight: 600; text-decoration: none; } .st-table a:hover { text-decoration: underline; }
+.st-groupe td { font-weight: 600; }
+.st-enfant td { background: color-mix(in srgb, var(--sauge-pale) 45%, transparent); } .st-enfant td:nth-child(2) { padding-left: 34px; }
+.st-deplier { border: 1px solid var(--bord); background: var(--carte); border-radius: 6px; width: 24px; height: 22px; padding: 0; cursor: pointer; color: var(--vert); font-size: 12px; }
+.st-filtres[hidden] { display: none; }

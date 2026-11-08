@@ -6,7 +6,7 @@
 // et servent dans Carte à contrôler une carte ; jamais ici (score seul = stats incomplètes).
 // Plus tard : séances d'Entraînement, coup par coup (Carte V2), strokes gained.
 
-const etat = { parties: [], vue: "", periode: "12m", contextes: new Set(["entrainement", "libre", "rencontre", "competition", "tournoi"]) };
+const etat = { parties: [], noms: new Map(), ouverts: new Set(), focus: null, vue: "", periode: "12m", contextes: new Set(["entrainement", "libre", "rencontre", "competition", "tournoi"]) };
 const $ = (id) => document.getElementById(id);
 const JOUR = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })();
 // contextes, du plus calme au plus exigeant (niveau de pression)
@@ -103,6 +103,9 @@ function rendreFiltres() {
 }
 function rendre() {
   rendreFiltres();
+  const qui = etat.vue ? ` · ${esc(Compte.joueurs.find((j) => j.joueur_id === etat.vue)?.nom || "joueur")}` : "";
+  $("st-filtres").hidden = !!etat.focus;
+  if (etat.focus) { $("st-titre").innerHTML = (etat.focus.type === "partie" ? "Stats du tour" : "Stats du tournoi") + qui; rendreFocus(); return; }
   $("st-titre").textContent = etat.vue ? "Stats du joueur" : "Mes stats";
   const box = $("st-contenu"), P = filtrees();
   if (!etat.parties.length) {
@@ -185,15 +188,124 @@ function barresContexte(L) {
     <b>${x.n ? signe(x.moy) : "—"}</b><small>${x.n ? `${x.n} partie${x.n > 1 ? "s" : ""}` : "aucune"}</small></div>`).join("")}</div>
     <p class="meta">Un écart qui grandit avec la pression signale un problème de transfert entraînement → jeu plutôt que de technique.</p>`;
 }
-// ---- tableau (vue accessible de toutes les valeurs)
-function tableau(R) {
-  const L = R.slice().sort((a, b) => b.p.jour.localeCompare(a.p.jour));
-  return `<div class="defile"><table class="st-table"><thead><tr><th>Date</th><th>Golf</th><th>Contexte</th><th class="n">Trous</th><th class="n">Score</th><th class="n">Écart</th><th class="n">Putts</th><th class="n">Fairways</th><th class="n">GIR</th></tr></thead><tbody>
-    ${L.map((r) => { const J = joues(r.p), F = J.filter((t) => t.par > 3 && t.fw), C = J.filter((t) => t.putts != null && coherent(t));
-      return `<tr><td>${dateCourte(r.p.jour)}</td><td>${esc(titre(r.p.golf_nom || r.p.golf))}</td><td>${LIB_CTX[r.p.contexte] || ""}</td><td class="n">${r.n}</td><td class="n"><b>${r.score}</b></td><td class="n">${signe(r.ecart, 0)}</td>
-        <td class="n">${C.length ? C.reduce((s, t) => s + t.putts, 0) : "—"}</td><td class="n">${F.length ? `${F.filter((t) => t.fw === "fairway").length}/${F.length}` : "—"}</td><td class="n">${C.length ? `${C.filter(gir).length}/${C.length}` : "—"}</td></tr>`; }).join("")}
-    </tbody></table></div>`;
+// ---- tableau (vue accessible de toutes les valeurs) ; les tours d'un même tournoi sont regroupés sur une ligne qui se déplie
+function chiffres(P) {
+  const b = bilan(P);
+  return `<td class="n">${b.n}</td><td class="n"><b>${b.score}</b></td><td class="n">${signe(b.ecart, 0)}</td><td class="n">${b.putts != null ? b.putts : "—"}</td>
+    <td class="n">${b.nF ? `${b.fw}/${b.nF}` : "—"}</td><td class="n">${b.nC ? `${b.gir}/${b.nC}` : "—"}</td>`;
 }
+function tableau(R) {
+  const groupes = new Map();
+  for (const r of R) { const k = r.p.tournoi_id || "p:" + r.p.id; if (!groupes.has(k)) groupes.set(k, []); groupes.get(k).push(r.p); }
+  const G = [...groupes.entries()].map(([k, P]) => ({ k, P: P.sort((a, b) => (a.tour || 1) - (b.tour || 1) || a.jour.localeCompare(b.jour)) }))
+    .sort((a, b) => b.P.at(-1).jour.localeCompare(a.P.at(-1).jour));
+  const ligne = (p, enfant) => `<tr class="${enfant ? "st-enfant" : ""}"><td>${dateCourte(p.jour)}</td><td><a href="${lienPartie(p)}">${enfant ? `Tour ${p.tour || "?"}` : esc(titre(p.golf_nom || p.golf))}</a></td><td>${enfant ? "" : LIB_CTX[p.contexte] || ""}</td>${chiffres([p])}</tr>`;
+  return `<div class="defile"><table class="st-table"><thead><tr><th>Date</th><th>Partie</th><th>Contexte</th><th class="n">Trous</th><th class="n">Score</th><th class="n">Écart</th><th class="n">Putts</th><th class="n">Fairways</th><th class="n">GIR</th></tr></thead><tbody>
+    ${G.map(({ k, P }) => { if (P.length < 2) return ligne(P[0]);
+      const ouvert = etat.ouverts.has(k), d1 = dateCourte(P[0].jour), d2 = dateCourte(P.at(-1).jour);
+      return `<tr class="st-groupe"><td>${d1}${d1 !== d2 ? ` → ${d2}` : ""}</td><td><button type="button" class="st-deplier" data-deplier="${esc(k)}" aria-expanded="${ouvert}" aria-label="${ouvert ? "Replier" : "Déplier"} les tours">${ouvert ? "▾" : "▸"}</button> <a href="${lienTournoi(k)}">${esc(nomTournoi(k, P))}</a> <span class="tag">${P.length} tours</span></td><td>${LIB_CTX[P[0].contexte] || ""}</td>${chiffres(P)}</tr>
+        ${ouvert ? P.map((p) => ligne(p, true)).join("") : ""}`; }).join("")}
+    </tbody></table></div>
+    <p class="meta">Clique une partie pour voir ses stats ; un tournoi regroupe ses tours (▸ pour les déplier).</p>`;
+}
+// ------------------------------------------------------------------ vue Tour et vue Tournoi (lien #partie=… ou #tournoi=…)
+// Un tournoi = les cartes qui portent le même tournoi_id (tournoi ffgolf ou « club:<id> » pour un événement du coach),
+// rangées par tour. Chaque tour a sa stat ; le tournoi additionne les tours. Comparaison : ta moyenne sur tes autres parties.
+const somme = (L, f) => L.reduce((s, x) => s + f(x), 0);
+function bilan(P) {   // chiffres bruts (pas ramenés à 18 trous) d'une ou plusieurs cartes
+  const T = P.flatMap(joues), C = T.filter((t) => t.putts != null && coherent(t)), F = T.filter((t) => t.par > 3 && t.fw), S = T.filter((t) => t.bunker);
+  return { n: T.length, score: somme(T, (t) => t.score), ecart: somme(T, (t) => t.score - t.par),
+    putts: C.length ? somme(C, (t) => t.putts) : null, nC: C.length, un: C.filter((t) => t.putts <= 1).length, trois: C.filter((t) => t.putts >= 3).length,
+    gir: C.filter(gir).length, fw: F.filter((t) => t.fw === "fairway").length, nF: F.length,
+    fwz: Object.fromEntries(["gauche", "fairway", "droite", "court", "long"].map((k) => [k, F.filter((t) => t.fw === k).length])),
+    pen: somme(T, (t) => t.pen || 0), sable: S.length, sauve: S.filter((t) => t.score <= t.par).length,
+    parType: [3, 4, 5].map((par) => { const X = T.filter((t) => t.par === par); return { par, n: X.length, moy: X.length ? somme(X, (t) => t.score - t.par) / X.length : null }; }),
+    repart: Object.fromEntries(CLASSES.map(([k]) => [k, T.filter((t) => classe(t) === k).length])) };
+}
+const tournoiDe = (p) => (p.tournoi_id ? etat.parties.filter((x) => x.tournoi_id === p.tournoi_id && joues(x).length)
+  .sort((a, b) => (a.tour || 1) - (b.tour || 1) || (a.jour + a.cree_le).localeCompare(b.jour + b.cree_le)) : []);
+const nomTournoi = (ref, P) => etat.noms.get(ref) || titre(P[0]?.golf_nom || P[0]?.golf || "Tournoi");
+const lienPartie = (p) => `#partie=${encodeURIComponent(p.id)}${etat.vue ? `&joueur=${encodeURIComponent(etat.vue)}` : ""}`;
+const lienTournoi = (ref) => `#tournoi=${encodeURIComponent(ref)}${etat.vue ? `&joueur=${encodeURIComponent(etat.vue)}` : ""}`;
+// ta moyenne habituelle (toutes tes autres cartes d'au moins 9 trous), ramenée à n trous pour comparer à ce tour
+function moyenneHors(ids) {
+  const A = etat.parties.filter((p) => !ids.has(p.id) && joues(p).length >= 9);
+  return A.length ? { ...calculer(A), nb: A.length } : null;
+}
+const aN = (v18, n) => (v18 == null ? null : (v18 * n) / 18);
+const cmp = (txt) => (txt ? `<small class="st-moy">ta moyenne : ${txt}</small>` : "");
+
+function rendreFocus() {
+  const box = $("st-contenu"), f = etat.focus;
+  const retour = `<a class="st-retour" href="#${etat.vue ? `joueur=${encodeURIComponent(etat.vue)}` : ""}">← Toutes les stats</a>`;
+  if (f.type === "partie") {
+    const p = etat.parties.find((x) => x.id === f.id);
+    if (!p) { box.innerHTML = `${retour}<div class="bloc vide"><p>Cette carte est introuvable (supprimée, ou pas à ce compte).</p></div>`; return; }
+    const T = tournoiDe(p), b = bilan([p]), m = moyenneHors(new Set([p.id]));
+    const rang = T.length > 1 ? `<a class="st-lien-tournoi" href="${lienTournoi(p.tournoi_id)}">Tour ${p.tour || T.indexOf(p) + 1} sur ${T.length} · voir le tournoi (${T.length} tours) →</a>` : "";
+    box.innerHTML = `${retour}
+      <div class="st-entete"><h3>${esc(titre(p.golf_nom || p.golf))}${p.tour ? ` · tour ${p.tour}` : ""}</h3>
+        <p class="meta">${new Date(p.jour + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · ${LIB_CTX[p.contexte] || ""}${p.parcours_nom ? ` · ${esc(p.parcours_nom)}` : ""}${p.repere ? ` · repère ${esc(p.repere)}` : ""} · ${b.n} trou${b.n > 1 ? "s" : ""}${p.terminee ? "" : " · en cours"}</p>${rang}</div>
+      ${blocsBilan(b, m)}`;
+  } else {
+    const T = etat.parties.filter((x) => x.tournoi_id === f.ref && joues(x).length)
+      .sort((a, b) => (a.tour || 1) - (b.tour || 1) || (a.jour + a.cree_le).localeCompare(b.jour + b.cree_le));
+    if (!T.length) { box.innerHTML = `${retour}<div class="bloc vide"><p>Aucune carte pour ce tournoi.</p></div>`; return; }
+    const B = T.map((p) => bilan([p])), tot = bilan(T), m = moyenneHors(new Set(T.map((p) => p.id)));
+    box.innerHTML = `${retour}
+      <div class="st-entete"><h3>${esc(nomTournoi(f.ref, T))}</h3>
+        <p class="meta">${T.length} tour${T.length > 1 ? "s" : ""} saisi${T.length > 1 ? "s" : ""} · ${dateCourte(T[0].jour)}${T.length > 1 && T.at(-1).jour !== T[0].jour ? ` → ${dateCourte(T.at(-1).jour)}` : ""} · ${esc(titre(T[0].golf_nom || T[0].golf))}</p></div>
+      <section class="bloc st-bloc st-tour-tab" aria-labelledby="t-tours"><h3 id="t-tours">Tour par tour <small>et total du tournoi</small></h3>${tableauTours(T, B, tot, m)}</section>
+      <h3 class="st-sous-titre">Total du tournoi</h3>
+      ${blocsBilan(tot, m, T.length)}`;
+  }
+  brancherBulle();
+}
+// tuiles + blocs d'une carte ou d'un tournoi (nbTours : pour comparer un total à ta moyenne × nombre de tours)
+function blocsBilan(b, m, nbTours = 1) {
+  const moyScore = m ? `${signe(aN(m.ecart18, b.n))}` : "";
+  return `<div class="st-tuiles">
+      ${tuile(`${b.score} <small>(${signe(b.ecart, 0)})</small>`, "score", cmp(moyScore && `${moyScore} sur ${b.n} trous`))}
+      ${tuile(b.putts != null ? b.putts : "—", "putts", cmp(m?.putts18 != null && b.nC ? virgule(aN(m.putts18, b.nC)) : ""))}
+      ${tuile(b.nF ? `${b.fw}/${b.nF}` : "—", "fairways touchés", (b.nF ? `<small>${pct(b.fw, b.nF)} %</small>` : "") + cmp(m?.fwPct != null && b.nF ? `${m.fwPct} %` : ""))}
+      ${tuile(b.nC ? `${b.gir}/${b.nC}` : "—", "greens en régulation", (b.nC ? `<small>${pct(b.gir, b.nC)} %</small>` : "") + cmp(m?.girPct != null && b.nC ? `${m.girPct} %` : ""), "Green atteint en (par − 2) coups ou moins")}
+      ${tuile(b.pen, "pénalités", cmp(m?.pen18 != null ? virgule(aN(m.pen18, b.n)) : ""))}
+    </div>
+    ${m ? `<p class="meta st-base">Comparaison avec ta moyenne sur tes ${m.nb} autre${m.nb > 1 ? "s" : ""} partie${m.nb > 1 ? "s" : ""}, ramenée au même nombre de trous${nbTours > 1 ? ` (${nbTours} tours)` : ""}.</p>` : ""}
+    <div class="st-grille">
+      <section class="bloc st-bloc" aria-labelledby="f-rep"><h3 id="f-rep">Répartition des scores <small>sur ${b.n} trous</small></h3>${barreRepartition(b.repart, b.n)}</section>
+      <section class="bloc st-bloc" aria-labelledby="f-par"><h3 id="f-par">Par 3, par 4, par 5 <small>écart moyen au par, par trou</small></h3>
+        <div class="st-pars">${b.parType.map((x, i) => `<div><span>Par ${x.par}</span><b>${x.n ? signe(x.moy, 2) : "—"}</b><small>${x.n} trou${x.n > 1 ? "s" : ""}${m?.parType[i].moy != null ? ` · moy. ${signe(m.parType[i].moy, 2)}` : ""}</small></div>`).join("")}</div></section>
+      <section class="bloc st-bloc" aria-labelledby="f-putt"><h3 id="f-putt">Putting</h3>
+        <div class="st-pars"><div><span>1 putt ou moins</span><b>${b.nC ? b.un : "—"}</b><small>trou${b.un > 1 ? "s" : ""}${m?.un != null ? ` · moy. ${m.un} %` : ""}</small></div>
+          <div><span>3 putts ou plus</span><b>${b.nC ? b.trois : "—"}</b><small>trou${b.trois > 1 ? "s" : ""}${m?.trois != null ? ` · moy. ${m.trois} %` : ""}</small></div>
+          <div><span>Par trou</span><b>${b.nC ? virgule(b.putts / b.nC, 2) : "—"}</b><small>putts${m?.puttsTrou != null ? ` · moy. ${virgule(m.puttsTrou, 2)}` : ""}</small></div></div></section>
+      <section class="bloc st-bloc" aria-labelledby="f-dep"><h3 id="f-dep">Mises en jeu <small>${b.nF} départ${b.nF > 1 ? "s" : ""} (par 4 et 5)</small></h3>${terrainFw(b.fwz, b.nF)}</section>
+      <section class="bloc st-bloc st-large" aria-labelledby="f-sable"><h3 id="f-sable">Bunkers</h3>
+        <div class="st-pars"><div><span>Trous avec bunker</span><b>${b.sable}</b><small>sur ${b.n}</small></div>
+          <div><span>Par ou mieux malgré le bunker</span><b>${b.sable ? b.sauve : "—"}</b><small>sur ${b.sable}${m?.sauve != null ? ` · moy. ${m.sauve} %` : ""}</small></div></div></section>
+    </div>`;
+}
+// tableau tour par tour : une colonne par tour, puis le total, puis ta moyenne par tour (18 trous)
+function tableauTours(T, B, tot, m) {
+  const L = [
+    ["Trous", (b) => b.n, ""],
+    ["Score", (b) => `<b>${b.score}</b>`, ""],
+    ["Écart au par", (b) => signe(b.ecart, 0), m ? signe(m.ecart18) : "—"],
+    ["Putts", (b) => (b.putts != null ? b.putts : "—"), m?.putts18 != null ? virgule(m.putts18) : "—"],
+    ["1 putt ou moins", (b) => (b.nC ? b.un : "—"), ""],
+    ["3 putts ou plus", (b) => (b.nC ? b.trois : "—"), ""],
+    ["Fairways", (b) => (b.nF ? `${b.fw}/${b.nF}` : "—"), m?.fwPct != null ? m.fwPct + " %" : "—"],
+    ["Greens en régulation", (b) => (b.nC ? `${b.gir}/${b.nC}` : "—"), m?.girPct != null ? m.girPct + " %" : "—"],
+    ["Pénalités", (b) => b.pen, m?.pen18 != null ? virgule(m.pen18) : "—"],
+    ["Bunkers (sauvés)", (b) => (b.sable ? `${b.sable} (${b.sauve})` : "0"), ""],
+    ...[0, 1, 2].map((i) => [`Par ${3 + i}`, (b) => (b.parType[i].n ? signe(b.parType[i].moy, 2) : "—"), m?.parType[i].moy != null ? signe(m.parType[i].moy, 2) : "—"]),
+  ];
+  return `<div class="defile"><table class="st-table st-tours"><thead><tr><th></th>${T.map((p, i) => `<th class="n"><a href="${lienPartie(p)}" title="Stats de ce tour">Tour ${p.tour || i + 1}</a><small>${dateCourte(p.jour)}</small></th>`).join("")}<th class="n st-total">Total</th>${m ? `<th class="n st-hab">Ta moyenne<small>par partie de 18</small></th>` : ""}</tr></thead><tbody>
+    ${L.map(([lib, f, hab]) => `<tr><th scope="row">${lib}</th>${B.map((b) => `<td class="n">${f(b)}</td>`).join("")}<td class="n st-total">${f(tot)}</td>${m ? `<td class="n st-hab">${hab}</td>` : ""}</tr>`).join("")}
+  </tbody></table></div>`;
+}
+
 // ---- bulle au survol (et au toucher) des marques
 function brancherBulle() {
   let bulle = $("st-bulle");
@@ -207,11 +319,12 @@ function brancherBulle() {
 
 // ------------------------------------------------------------------ filtres
 document.addEventListener("click", (e) => {
+  const dp = e.target.closest("[data-deplier]"); if (dp) { const k = dp.dataset.deplier; if (etat.ouverts.has(k)) etat.ouverts.delete(k); else etat.ouverts.add(k); rendre(); return; }
   const p = e.target.closest("[data-periode]"); if (p) { etat.periode = p.dataset.periode; rendre(); return; }
   const c = e.target.closest("[data-ctx]");
   if (c) { const k = c.dataset.ctx; if (etat.contextes.has(k) && etat.contextes.size > 1) etat.contextes.delete(k); else etat.contextes.add(k); rendre(); }
 });
-document.addEventListener("change", async (e) => { if (e.target.id === "st-joueur") { etat.vue = e.target.value; await charger(); rendre(); } });
+document.addEventListener("change", (e) => { if (e.target.id === "st-joueur") location.hash = e.target.value ? `joueur=${encodeURIComponent(e.target.value)}` : ""; });
 
 // ------------------------------------------------------------------ données et démarrage
 async function charger() {
@@ -219,7 +332,25 @@ async function charger() {
   const { data, error } = await sb.from("carte_parties").select("*").eq("user_id", etat.vue || Compte.moi.id).order("jour", { ascending: true });
   if (error) { etat.parties = []; signaler("Lecture des cartes impossible : " + error.message); return; }
   etat.parties = data || [];
+  await chargerNoms();
 }
+// noms des tournois : événements du coach (club_evenements) et tournois ffgolf (données publiées, seulement si besoin)
+async function chargerNoms() {
+  const refs = [...new Set(etat.parties.map((p) => p.tournoi_id).filter(Boolean))].filter((r) => !etat.noms.has(r));
+  const club = refs.filter((r) => r.startsWith("club:")).map((r) => r.slice(5)), ff = refs.filter((r) => !r.startsWith("club:"));
+  if (club.length) { const { data } = await sb.from("club_evenements").select("id,nom").in("id", club); for (const e of data || []) etat.noms.set("club:" + e.id, e.nom); }
+  if (ff.length) { try { const T = (await telechargerDonnees()).tournois || []; const parId = new Map(T.map((t) => [String(t.id), t.nom]));
+    for (const r of ff) if (parId.has(String(r))) etat.noms.set(r, titre(parId.get(String(r)))); } catch { /* le nom du golf suffit */ } }
+}
+// lien direct : #partie=<id> · #tournoi=<ref> · &joueur=<id> (coach : stats d'un joueur suivi)
+async function lireLien() {
+  const h = new URLSearchParams(location.hash.slice(1)), j = h.get("joueur") || "";
+  const vue = Compte.joueurs.some((x) => x.joueur_id === j) ? j : "";
+  if (vue !== etat.vue) { etat.vue = vue; await charger(); }
+  etat.focus = h.get("partie") ? { type: "partie", id: h.get("partie") } : h.get("tournoi") ? { type: "tournoi", ref: h.get("tournoi") } : null;
+  rendre(); window.scrollTo(0, 0);
+}
+window.addEventListener("hashchange", () => { if (demarre) lireLien(); });
 let demarre = false;
 async function entrer() {   // pas de données publiées ici : seulement le compte et les cartes
   if (demarre) return;
@@ -228,7 +359,7 @@ async function entrer() {   // pas de données publiées ici : seulement le comp
   try { await Compte.connecter(data.session.user); } catch (e) { signaler("Lecture du compte impossible : " + (e.message || e)); }
   document.body.classList.remove("verrou");
   rendreCompte();
-  await charger(); rendre();
+  await charger(); await lireLien();
 }
 nexusBrancherAccueil();
 if (sb) nexusDemarrer(entrer);
