@@ -228,12 +228,16 @@ async function htmlMembres() {
   const membres = [...rattaches.sort((a, b) => b.principal - a.principal), ...invites];
   const casesDe = (g) => new Set((V.data || []).find((v) => v.groupe === g)?.cases || []);
   const date = (d) => (d ? fmtDate(String(d).slice(0, 10)) : "");
-  return `<div class="bloc mb-bloc"><h3>Membres du club <small>${membres.filter((m) => m.statut !== "refuse").length} · coachs, membres AS et direction du club</small></h3>
-    ${membres.length ? `<div class="st-table"><table><thead><tr><th>Nom</th><th>E-mail</th><th>Rôle</th><th>Statut</th><th>Depuis</th>${gere ? "<th></th>" : ""}</tr></thead><tbody>
-      ${membres.map((m) => `<tr><td><b>${esc(m.nom || "—")}</b></td><td>${esc(m.email || "—")}</td><td>${m.principal ? "Coach principal" : GROUPE_LIB[m.groupe] || m.groupe}</td>
+  const ligne = (m) => `<tr><td><b>${esc(m.nom || "—")}</b>${m.principal ? ' <span class="tag">principal</span>' : ""}</td><td>${esc(m.email || "—")}</td>
         <td><span class="tag ${m.statut === "actif" ? "" : "ok-att"}">${STATUT_LIB[m.statut] || m.statut}</span></td><td>${m.rattache ? '<span class="meta">rattaché par l\'admin</span>' : date(m.valide_le || m.cree_le)}</td>
-        ${gere ? m.rattache ? "<td></td>" : `<td class="co-act">${m.statut === "invite" ? `<button type="button" class="btn" data-membre-renvoyer="${esc(m.id)}">Renvoyer</button> ` : ""}<button type="button" class="lien vo-suppr" data-membre-suppr="${esc(m.id)}" data-nom="${esc(m.nom || m.email)}">Retirer</button></td>` : ""}</tr>`).join("")}
-      </tbody></table></div>` : `<p class="meta">Aucun membre pour l'instant${gere ? " : invite tes coachs et les membres de l'AS ci-dessous." : "."}</p>`}
+        ${gere ? m.rattache ? "<td></td>" : `<td class="co-act">${m.statut === "invite" ? `<button type="button" class="btn" data-membre-renvoyer="${esc(m.id)}">Renvoyer</button> ` : ""}<button type="button" class="lien vo-suppr" data-membre-suppr="${esc(m.id)}" data-nom="${esc(m.nom || m.email)}">Retirer</button></td>` : ""}</tr>`;
+  const liste = (g, titreL, vide) => { const L = membres.filter((m) => m.groupe === g && m.statut !== "refuse");
+    return `<h4 class="mb-liste-t">${titreL} <small>${L.length}</small></h4>${L.length ? `<div class="st-table"><table><thead><tr><th>Nom</th><th>E-mail</th><th>Statut</th><th>Depuis</th>${gere ? "<th></th>" : ""}</tr></thead><tbody>
+      ${L.map(ligne).join("")}</tbody></table></div>` : `<p class="meta">${vide}</p>`}`; };
+  return `<div class="bloc mb-bloc"><h3>Membres du club</h3>
+    ${liste("coach", "Coachs", "Aucun coach.")}
+    ${liste("as", "Membres AS", "Aucun membre AS pour l'instant.")}
+    ${liste("club", "Direction du club", "Personne de la direction pour l'instant.")}
     ${gere ? `<h4 class="co-suivi-t">Inviter dans le club</h4>
       <div class="mb-form">
         <input id="mb-nom" placeholder="Prénom Nom" aria-label="Nom" maxlength="60" autocomplete="off">

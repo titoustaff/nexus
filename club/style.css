@@ -515,3 +515,8 @@ html, body { overflow-x: clip; }   /* filet de sécurité : jamais de défilemen
 .mc-roles { margin: 0; padding: 0; list-style: none; font-size: 13.5px; line-height: 1.45; }
 .mc-roles li { padding: 6px 0; border-bottom: 1px solid var(--bord); } .mc-roles li:last-child { border-bottom: 0; }
 .mc-pied { margin-top: 12px; }
+.mb-liste-t { margin: 14px 0 6px; font-size: 14px; color: var(--vert); } .mb-liste-t:first-of-type { margin-top: 4px; } .mb-liste-t small { color: var(--doux); font-weight: 500; }
+.mb-bloc .st-table table { table-layout: fixed; min-width: 560px; }
+.mb-bloc .st-table th:nth-child(1) { width: 30%; } .mb-bloc .st-table th:nth-child(2) { width: 30%; }
+.mb-bloc .st-table th:nth-child(3) { width: 16%; } .mb-bloc .st-table th:nth-child(4) { width: 14%; }
+.mb-bloc .st-table td { overflow: hidden; text-overflow: ellipsis; }
