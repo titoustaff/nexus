@@ -1,0 +1,87 @@
+/* Stats : styles du module. Charte commune : ../commun/v1/charte.css (chargée avant). */
+/* bases reprises de Saison (même aspect dans toute la suite) */
+.tag { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--sauge-pale); color: var(--vert); margin: 2px 4px 0 0; }
+.vide { color: var(--doux); padding: 20px 14px; }
+.bloc { background: var(--carte); border-radius: 12px; padding: 12px 14px; box-shadow: var(--ombre); margin-bottom: 10px; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--bord); font-size: 13px; }
+th { color: var(--doux); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+.defile { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.s-tete { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.s-tete h2 { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -.02em; color: var(--vert); display: flex; align-items: center; gap: 10px; }
+.s-tete select { font: inherit; font-size: 18px; font-weight: 700; color: var(--vert); border: 1px solid var(--bord); background: var(--carte); border-radius: 8px; padding: 2px 6px; }
+.pied { color: var(--doux); font-size: 12px; padding: 14px 0 24px; }
+.st-tuiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.st-tuile { background: var(--carte); border-radius: 12px; box-shadow: var(--ombre); padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; }
+.st-tuile b { font-size: 24px; color: var(--vert); line-height: 1.1; } .st-tuile b small { font-size: 13px; }
+.st-tuile span { font-size: 12.5px; color: var(--doux); } .st-tuile small { font-size: 12px; color: var(--doux); }
+.meta { color: var(--doux); font-size: 13px; margin: 0; }
+.carte-ecrans { max-width: 980px; margin: 0 auto; }
+.bloc.vide { text-align: center; } .bloc.vide p { margin: 0 0 12px; }
+.vues .vers-module { color: #d6e6da; font-weight: 600; font-size: 14px; padding: 6px 14px; border-radius: 999px; text-decoration: none; white-space: nowrap; }
+.vues .vers-module:hover { color: #fff; background: rgba(255,255,255,.08); }
+.vues .vers-module:focus-visible { outline: 2px solid var(--jaune); outline-offset: 2px; }
+.stats-ecran { max-width: 1100px; margin: 0 auto; }
+.s-tete select { font-size: 14px; }
+.st-base { margin: 0 0 10px; }
+
+/* filtres : une rangée au-dessus des graphiques */
+.st-filtres { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 12px; }
+.st-filtres .seg { display: inline-flex; border: 1px solid var(--bord); border-radius: 999px; overflow: hidden; background: var(--carte); }
+.st-filtres .seg button { border: 0; background: none; padding: 6px 14px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--texte); }
+.st-filtres .seg button + button { border-left: 1px solid var(--bord); }
+.st-filtres .seg button[aria-pressed="true"] { background: var(--vert); color: var(--fond); }
+.st-ctx { display: flex; flex-wrap: wrap; gap: 6px; }
+.st-ctx button { font: inherit; font-size: 12.5px; font-weight: 600; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--bord); background: var(--carte); color: var(--doux); cursor: pointer; }
+.st-ctx button[aria-pressed="true"] { background: var(--sauge-pale); border-color: var(--vert-2); color: var(--vert); }
+.st-ctx button[aria-pressed="true"]::before { content: "✓ "; }
+
+.st-grille { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 24px; }
+.st-large { grid-column: 1 / -1; }
+.st-bloc { margin: 0; padding: 14px 16px; }
+.st-bloc h3 { margin: 0 0 10px; font-size: 15px; color: var(--vert); } .st-bloc h3 small { font-weight: 500; color: var(--doux); font-size: 12px; margin-left: 6px; }
+@media (max-width: 760px) { .st-grille { grid-template-columns: 1fr; } }
+
+/* évolution : courbe 2 px, marques 9 px, grille discrète */
+.st-graph svg { width: 100%; height: auto; display: block; }
+.st-grille-l { stroke: var(--bord); stroke-width: 1; } .st-axe0 { stroke: var(--doux); stroke-width: 1; stroke-dasharray: 3 3; }
+.st-axe-t { fill: var(--doux); font-size: 11px; }
+.st-ligne { fill: none; stroke: var(--vert-2); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.st-pt { fill: var(--vert-2); stroke: var(--carte); stroke-width: 2; }
+.st-cible { fill: transparent; cursor: pointer; } .st-cible:hover { fill: color-mix(in srgb, var(--vert-2) 8%, transparent); }
+
+/* répartition : barre segmentée, 2 px entre les parts, extrémités arrondies */
+.st-barre { display: flex; gap: 2px; height: 34px; }
+.st-seg { display: grid; place-items: center; color: #fff; font-size: 12px; font-weight: 700; min-width: 3px; cursor: default; }
+.st-seg.clair { color: #1c1917; }
+.st-seg:first-child { border-radius: 4px 0 0 4px; } .st-seg:last-child { border-radius: 0 4px 4px 0; } .st-seg:only-child { border-radius: 4px; }
+.st-legende { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 12.5px; color: var(--doux); }
+.st-legende i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.st-legende b { color: var(--texte); }
+
+/* chiffres par 3 / 4 / 5, putting, bunkers */
+.st-pars { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
+.st-pars div { background: var(--sauge-pale); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 2px; }
+.st-pars span { font-size: 12px; color: var(--doux); } .st-pars b { font-size: 22px; color: var(--vert); line-height: 1.15; } .st-pars small { font-size: 11.5px; color: var(--doux); }
+
+/* mises en jeu : le fairway vu de dessus (comme dans Carte) */
+.fw-terrain { display: grid; grid-template-columns: 1fr 1.6fr 1fr; grid-template-rows: 48px 110px 48px 20px; max-width: 360px; margin: 0 auto; border-radius: 16px; overflow: hidden; background: #3f6e35; }
+.fw-zone { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.35); line-height: 1.1; }
+.fw-zone b { font-size: 18px; } .fw-zone span { font-size: 11px; font-weight: 600; opacity: .9; }
+.fw-long, .fw-court { grid-column: 1 / -1; background: #6f9a5b; }
+.fw-gauche, .fw-droite { background: #3f6e35; }
+.fw-fairway { background: repeating-linear-gradient(180deg, #8cc06e 0 20px, #7fb562 20px 40px); border-radius: 40px / 22px; margin: 0 -6px; z-index: 1; color: #1d3a12; text-shadow: none; }
+.fw-depart { grid-column: 1 / -1; display: grid; place-items: center; background: #5a8549; color: #e9f3e3; font-size: 10.5px; font-weight: 700; }
+
+/* selon la pression : barres horizontales, valeur écrite */
+.st-ctx-barres { display: grid; gap: 8px; margin-bottom: 8px; }
+.st-ctx-l { display: grid; grid-template-columns: 120px 1fr 60px 80px; gap: 10px; align-items: center; font-size: 13px; }
+.st-ctx-l.vide { opacity: .45; }
+.st-ctx-piste { height: 16px; background: var(--sauge-pale); border-radius: 4px; overflow: hidden; }
+.st-ctx-piste i { display: block; height: 100%; background: var(--vert-2); border-radius: 0 4px 4px 0; }
+.st-ctx-piste i.sous { background: #ea580c; }
+.st-ctx-l b { text-align: right; } .st-ctx-l small { color: var(--doux); font-size: 12px; }
+@media (max-width: 560px) { .st-ctx-l { grid-template-columns: 92px 1fr 48px; } .st-ctx-l small { display: none; } }
+
+.st-table th, .st-table td { white-space: nowrap; } .st-table .n { text-align: right; }
+.st-bulle { position: fixed; z-index: 3000; max-width: 280px; background: var(--texte); color: var(--fond); font-size: 12.5px; line-height: 1.4; padding: 7px 10px; border-radius: 8px; white-space: pre-line; pointer-events: none; box-shadow: var(--ombre); }

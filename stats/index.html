@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <title>GolfNexus · Stats</title>
+  <link rel="icon" type="image/svg+xml" href="../saison/favicon.svg">
+  <meta name="description" content="GolfNexus Stats — analyse ton jeu, partie après partie.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="../commun/v1/charte.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="verrou">
+  <script>try { if (localStorage.getItem("gn-auth")) document.body.classList.add("reprise"); } catch { /* */ }</script>   <!-- déjà connecté : écran de chargement (charte.css, nexus.js) -->
+  <!-- Stats (module n° 4) : même accueil que Saison (connexion obligatoire, sur invitation) -->
+  <section id="accueil" class="accueil" aria-labelledby="a-titre">
+    <div class="a-haut">
+      <div class="a-marque">
+        <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#f4f7f2"/><ellipse cx="30" cy="52" rx="20" ry="5" fill="#cfe3d3"/><path d="M22 10v41" stroke="#14532d" stroke-width="4.5" stroke-linecap="round"/><path d="M24 10l22 8-22 8z" fill="#f0b400"/><circle cx="43" cy="45" r="7" fill="#fff" stroke="#14532d" stroke-width="2"/></svg>
+        <span class="nom">Golf<b>Nexus</b></span>
+      </div>
+      <div class="a-grille">
+        <div class="a-texte">
+          <h1 id="a-titre">Stats : comprends ton jeu pour progresser.</h1>
+          <p class="a-sous">Tes cartes saisies dans Carte, analysées : score, putts, fairways, greens en régulation, et comment ton jeu tient selon la pression.</p>
+          <ul class="a-points">
+            <li><b>Tout de suite</b> : tes chiffres dès la carte saisie, entre deux tours d'un tournoi.</li>
+            <li><b>Par secteur</b> : départs, greens, putting, par 3 / 4 / 5.</li>
+            <li><b>Selon la pression</b> : entraînement, partie libre, compétition, tournoi.</li>
+          </ul>
+        </div>
+        <div class="a-carte" id="a-connexion">
+          <h2>Connexion</h2>
+          <form id="a-form" class="c-form c-col">
+            <input id="a-email" type="email" autocomplete="username" placeholder="ton e-mail" aria-label="Adresse e-mail" required>
+            <input id="a-mdp" type="password" autocomplete="current-password" placeholder="mot de passe" aria-label="Mot de passe">
+            <button type="submit" class="btn plein" id="a-ok">Se connecter</button>
+          </form>
+          <button type="button" class="lien" id="a-lien">Pas de mot de passe ou oublié ? Recevoir un lien par e-mail</button>
+          <p class="a-msg" id="a-msg" aria-live="polite"></p>
+          <p class="a-note">Accès sur invitation. Ton coach ou l'administrateur t'envoie un lien par e-mail.</p>
+        </div>
+      </div>
+    </div>
+    <p class="a-pied">Données publiques ffgolf.org · résultats des autres joueurs anonymisés · tes données ne sont vues que par toi et ceux que tu acceptes · <a class="a-rgpd" href="../saison/#v=rgpd">Tes données personnelles</a></p>
+  </section>
+
+  <header class="bandeau">
+    <svg class="decor" aria-hidden="true" viewBox="0 0 1200 120" preserveAspectRatio="xMidYMid slice">
+      <g fill="none" stroke="currentColor" stroke-width="1.1">
+        <path d="M-20 100 C180 60 320 120 520 80 S860 10 1060 50 S1220 40 1240 30"/>
+        <path d="M-20 118 C190 80 330 138 530 100 S870 32 1070 72 S1220 62 1240 54"/>
+        <path d="M-20 136 C200 100 340 156 540 120 S880 54 1080 94 S1220 84 1240 78"/>
+        <path d="M560 -10 C640 20 700 40 820 30 S1000 -6 1100 10"/>
+        <path d="M600 -24 C680 8 740 22 860 14 S1020 -20 1120 -6"/>
+      </g>
+    </svg>
+    <div class="bandeau-in">
+      <div class="marque">
+        <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#f4f7f2"/><ellipse cx="30" cy="52" rx="20" ry="5" fill="#cfe3d3"/><path d="M22 10v41" stroke="#14532d" stroke-width="4.5" stroke-linecap="round"/><path d="M24 10l22 8-22 8z" fill="#f0b400"/><circle cx="43" cy="45" r="7" fill="#fff" stroke="#14532d" stroke-width="2"/></svg>
+        <div>
+          <div class="nom">Golf<span>Nexus</span> · Stats</div>
+          <p class="devise">Analyse ton jeu, partie après partie</p>
+        </div>
+      </div>
+      <nav class="vues" aria-label="Écrans">
+        <a class="vers-module" href="../carte/">Carte</a>
+        <button type="button" aria-current="page">Mes stats</button>
+      </nav>
+      <div class="b-compte" id="b-compte" aria-live="polite"></div>
+    </div>
+  </header>
+  <div class="b-pan-ancre"><div class="b-pan" id="b-pan" hidden></div></div>
+
+  <main class="stats-ecran" id="ecran-stats">
+    <div class="s-tete"><h2 id="st-titre">Mes stats</h2><span id="st-qui"></span></div>
+    <div class="st-filtres" id="st-filtres" role="group" aria-label="Filtres"></div>
+    <div id="st-contenu"><p class="meta">Chargement…</p></div>
+  </main>
+
+  <footer class="pied">Données : tes cartes (Carte) · <a href="../saison/#v=rgpd">Tes données personnelles</a> · <a href="../">GolfNexus</a></footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.js"></script>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <script src="../commun/v1/nexus.js"></script>
+  <script src="../commun/v1/lanceur.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
