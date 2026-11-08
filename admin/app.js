@@ -75,49 +75,38 @@ async function rendreAdmin() {
       <td>${esc(m.licence || "—")} <button type="button" class="lien" data-corriger-lic="${esc(m.id)}" data-lic="${esc(m.licence || "")}" data-email="${esc(m.email)}">corriger</button></td><td>${m.role !== "joueur" ? `<select data-rattacher="${esc(m.id)}" aria-label="Club du coach"><option value="">—</option>${structs.map((x) => `<option value="${esc(x.id)}" ${x.id === m.structure_id ? "selected" : ""}>${esc(x.nom)}</option>`).join("")}</select>` : (m.club_licence ? `<span class="meta">licence : ${esc(titre(m.club_licence))}</span>` : "")}</td><td>${m.mineur ? (m.parent_valide_le ? "✓ " + fmtDate(String(m.parent_valide_le).slice(0, 10)) : "en attente") : "—"}</td>
       <td>${m.derniere_connexion ? fmtDate(String(m.derniere_connexion).slice(0, 10)) : "jamais"}</td></tr>`).join("")}</tbody></table>`;
 }
-// ---- demandes des clubs (08/11, module Club : table club_membres) : le coach principal demande, l'administrateur invite
-// (fonction inviter du cœur), puis rattache les coachs à leur club. Un membre AS a un compte joueur, sans structure.
+// ---- membres des clubs (08/11, module Club : table club_membres, fonction club-inviter) : l'administrateur peut, comme
+// le coach principal, inviter dans n'importe quel club un coach ou un membre AS (lecture seule de ce que le club ouvre).
+const LIB_GROUPE = { coach: "Coach", as: "Membre AS", club: "Membre club" };
 async function rendreDemandes(membres, structs) {
   const box = $("ad-demandes"), bloc = $("ad-demandes-bloc");
-  const C = await sb.from("club_membres").select("*").in("statut", ["demande", "invite", "actif"]).order("cree_le");
+  const C = await sb.from("club_membres").select("*").neq("statut", "refuse").order("cree_le");
   if (C.error) { bloc.hidden = true; return; }   // script club-membres.sql pas encore lancé
-  const nomSt = Object.fromEntries(structs.map((x) => [x.id, x.nom])), parMel = Object.fromEntries(membres.map((m) => [String(m.email).toLowerCase(), m]));
-  const lib = { coach: "Coach", as: "Membre AS", club: "Membre club" };
-  const dem = (C.data || []).filter((c) => c.statut === "demande");
-  // coachs invités dont le compte existe mais pas encore rattaché à leur club (ou pas encore coach)
-  const rat = (C.data || []).filter((c) => c.groupe === "coach" && c.statut !== "demande").map((c) => ({ c, m: parMel[c.email.toLowerCase()] }))
-    .filter(({ c, m }) => m && (m.structure_id !== c.structure_id || m.role === "joueur"));
-  bloc.hidden = !dem.length && !rat.length;
-  box.innerHTML = `${dem.map((c) => { const m = parMel[c.email.toLowerCase()];
-      return `<div class="acces-ligne"><div class="qui"><b>${esc(c.nom || c.email)}</b><small>${lib[c.groupe]} · ${esc(nomSt[c.structure_id] || "club ?")} · ${esc(c.email)}${c.licence ? " · licence " + esc(c.licence) : ""} · demandé le ${fmtDate(String(c.cree_le).slice(0, 10))}${m ? " · <b>a déjà un compte</b>" : ""}</small></div>
-      <button type="button" class="btn plein" data-cm-inviter="${esc(c.id)}">${m ? "Accepter" : "Inviter"}</button><button type="button" class="lien" data-cm-refuser="${esc(c.id)}">Refuser</button></div>`; }).join("")}
-    ${rat.map(({ c, m }) => `<div class="acces-ligne"><div class="qui"><b>${esc(c.nom || c.email)}</b><small>Coach invité par ${esc(nomSt[c.structure_id] || "club ?")} : compte créé${m.role === "joueur" ? ", encore joueur" : ""}, pas encore rattaché</small></div>
-      <button type="button" class="btn plein" data-cm-rattacher="${esc(c.id)}" data-uid="${esc(m.id)}" data-role="${esc(m.role)}">${m.role === "joueur" ? "Passer coach et rattacher" : "Rattacher au club"}</button></div>`).join("")}`;
-  ad.demandes = C.data || [];
+  bloc.hidden = false;
+  const clubs = structs.filter((x) => x.type === "club"), nomSt = Object.fromEntries(structs.map((x) => [x.id, x.nom]));
+  const statut = { demande: "en attente", invite: "invitation envoyée", actif: "actif" };
+  box.innerHTML = `${(C.data || []).length ? `<div class="st-table"><table><thead><tr><th>Club</th><th>Nom</th><th>E-mail</th><th>Rôle</th><th>Statut</th></tr></thead><tbody>
+      ${(C.data || []).map((c) => `<tr><td>${esc(nomSt[c.structure_id] || "—")}</td><td><b>${esc(c.nom || "—")}</b></td><td>${esc(c.email)}</td><td>${LIB_GROUPE[c.groupe] || c.groupe}</td><td>${statut[c.statut] || c.statut}</td></tr>`).join("")}
+    </tbody></table></div>` : `<p class="meta">Aucun membre de club pour l'instant.</p>`}
+    <form id="ad-cm-form" class="c-form ad-st-form" autocomplete="off"><b>Inviter dans un club</b>
+      <select id="ad-cm-club" aria-label="Club" required><option value="">Club…</option>${clubs.map((x) => `<option value="${esc(x.id)}">${esc(x.nom)}</option>`).join("")}</select>
+      <input id="ad-cm-nom" placeholder="Prénom Nom" maxlength="60" required aria-label="Nom">
+      <input id="ad-cm-email" type="email" placeholder="e-mail" required aria-label="E-mail">
+      <input id="ad-cm-lic" inputmode="numeric" placeholder="licence ffgolf" maxlength="14" aria-label="Licence">
+      <select id="ad-cm-groupe" aria-label="Rôle"><option value="as">Membre AS</option><option value="coach">Coach</option></select>
+      <button type="submit" class="btn plein">Inviter</button></form>
+    <p class="meta">Même chose que le coach principal dans Mon club : invitation immédiate ; compte existant : accès ouvert ; un coach est rattaché au club.</p>`;
 }
-$("ecran-admin").addEventListener("click", async (e) => {
-  const b = e.target.closest("[data-cm-inviter],[data-cm-refuser],[data-cm-rattacher]"); if (!b) return;
-  const c = (ad.demandes || []).find((x) => x.id === (b.dataset.cmInviter || b.dataset.cmRefuser || b.dataset.cmRattacher)); if (!c) return;
-  b.disabled = true;
-  if (b.dataset.cmRefuser) {
-    if (!confirm(`Refuser la demande pour ${c.nom || c.email} ?`)) { b.disabled = false; return; }
-    const { error } = await sb.from("club_membres").update({ statut: "refuse" }).eq("id", c.id);
-    signaler(error ? "Impossible : " + error.message : "Demande refusée."); rendreAdmin(); return;
-  }
-  if (b.dataset.cmRattacher) {
-    let r = b.dataset.role === "joueur" ? await sb.rpc("admin_role", { uid: b.dataset.uid, r: "coach", m: false }) : { error: null };
-    if (!r.error) r = await sb.rpc("admin_rattacher", { uid: b.dataset.uid, sid: c.structure_id });
-    if (!r.error) r = await sb.from("club_membres").update({ statut: "actif", user_id: b.dataset.uid, valide_le: c.valide_le || new Date().toISOString() }).eq("id", c.id);
-    signaler(r.error ? "Rattachement impossible : " + r.error.message : "Coach rattaché à son club."); rendreAdmin(); return;
-  }
-  // invitation par le cœur ; adresse qui a déjà un compte : rien à envoyer, la personne est reliée à sa prochaine visite de Club
-  const err = await inviter(c.email, c.groupe === "coach" ? "coach" : "joueur", c.nom || "", c.licence || "");
-  const dejaCompte = err && /déjà un compte/.test(err) && !/licence/.test(err);
-  if (err && !dejaCompte) { signaler("Invitation impossible : " + err); b.disabled = false; return; }
-  const { error } = await sb.from("club_membres").update({ statut: "invite", valide_le: new Date().toISOString() }).eq("id", c.id);
-  signaler(error ? "Invitation envoyée, mais statut non mis à jour : " + error.message
-    : dejaCompte ? `${c.nom || c.email} a déjà un compte : accès ouvert${c.groupe === "coach" ? " (il reste à le rattacher, ligne ci-dessus)" : " à sa prochaine visite de Club"}.` : `Invitation envoyée à ${c.email}.`);
-  rendreAdmin();
+$("ecran-admin").addEventListener("submit", async (e) => {
+  if (e.target.id !== "ad-cm-form") return;
+  e.preventDefault();
+  const lic = $("ad-cm-lic").value.replace(/\s/g, ""), groupe = $("ad-cm-groupe").value;
+  if (groupe === "as" && !lic) { signaler("Licence ffgolf obligatoire pour un membre AS."); return; }
+  const { data, error } = await sb.functions.invoke("club-inviter", { body: { structure_id: $("ad-cm-club").value, groupe, email: $("ad-cm-email").value.trim().toLowerCase(),
+    nom: $("ad-cm-nom").value.trim(), licence: lic || null, site: new URL("../saison/", location.href).href } });
+  const msg = error ? (await error.context?.json?.().catch(() => null))?.erreur || error.message : data?.erreur;
+  signaler(msg ? "Invitation impossible : " + msg : data?.deja_compte ? "Compte existant : accès ouvert." : "Invitation envoyée.");
+  if (!msg) rendreAdmin();
 });
 // inviter() : briques communes (../commun/v1/nexus.js)
 $("ad-form").addEventListener("submit", async (e) => {
