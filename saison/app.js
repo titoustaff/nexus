@@ -1216,21 +1216,18 @@ $("s-dom").addEventListener("input", () => $("s-dom").setCustomValidity(""));
 // Ils s'affichent dans Ma saison ; le jour J, la carte attend le joueur dans Carte.
 const TYPES_EV = { competition: "Événement hors Mérite", rencontre: "Rencontre inter-clubs", interne: "Partie interne" };
 const evCache = {};
-async function rendreEvenements(an) {
-  const bloc = $("s-ev-bloc"), id = Saison.demo?.coach ? Saison.demo.id : (Saison.mode === "compte" && !Saison.demo ? Saison.moi?.id : null);
-  if (!id || !sb) { bloc.hidden = true; return; }
+const idEvenements = () => (Saison.demo?.coach ? Saison.demo.id : (Saison.mode === "compte" && !Saison.demo ? Saison.moi?.id : null));
+// événements de l'année affichée, sous la forme des entrées de Ma saison ({ t, e }) : t.ev = l'événement, e.statut = "coach"
+function evenementsDe(an) {
+  const id = idEvenements(); if (!id || !sb) return [];
   if (!evCache[id]) {
-    const { data, error } = await sb.from("club_evenement_joueurs").select("evenement:club_evenements(id,type,nom,golf_nom,debut,fin,categorie)").eq("joueur_id", id);
-    evCache[id] = error ? [] : (data || []).map((r) => r.evenement).filter(Boolean);
+    evCache[id] = [];
+    sb.from("club_evenement_joueurs").select("evenement:club_evenements(id,type,nom,golf,golf_nom,debut,fin,categorie)").eq("joueur_id", id)
+      .then(({ data, error }) => { evCache[id] = error ? [] : (data || []).map((r) => r.evenement).filter(Boolean); if (evCache[id].length && etat.ecran === "saison") rendreSaison(); });
+    return [];
   }
-  const L = evCache[id].filter((e) => +e.debut.slice(0, 4) === an).sort((a, b) => a.debut.localeCompare(b.debut));
-  bloc.hidden = !L.length;
-  if (!L.length) return;
-  const jour = isoLocal(new Date());
-  $("s-evenements").innerHTML = `<ol class="s-ev">${L.map((e) => `<li class="${(e.fin || e.debut) < jour ? "passe" : ""}">
-    <span class="s-ev-date"><b>${esc(fmtDate(e.debut))}</b>${e.fin && e.fin !== e.debut ? `<small>→ ${esc(fmtDate(e.fin))}</small>` : ""}</span>
-    <span class="s-ev-quoi"><b>${esc(e.nom)}</b><small>${esc(TYPES_EV[e.type] || "")}${e.golf_nom ? " · " + esc(titre(e.golf_nom)) : ""}${e.categorie ? " · " + esc(e.categorie) : ""}</small></span>
-    ${e.debut <= jour && !Saison.demo ? `<a class="btn" href="../carte/">Ma carte →</a>` : ""}</li>`).join("")}</ol>`;
+  return evCache[id].filter((e) => +e.debut.slice(0, 4) === an)
+    .map((ev) => ({ t: { id: "club:" + ev.id, nom: ev.nom, debut: ev.debut, fin: ev.fin || ev.debut, golf: ev.golf, golf_nom: ev.golf_nom, ev }, e: { statut: "coach" } }));
 }
 function rendreSaison() {
   const an0 = new Date().getFullYear();
@@ -1257,9 +1254,10 @@ function rendreSaison() {
 
   $("s-alertes").innerHTML = alertes(liste).map(([niveau, html]) => `<div class="s-alerte ${niveau}">${html}</div>`).join("");
   $("s-legende").innerHTML = STATUTS.map(([k, l]) => `<span><i class="puce-statut s-${k}"></i>${l}</span>`).join("") +
-    `<span><i class="puce-statut conflit"></i>chevauchement</span>`;
-  $("s-cal").innerHTML = calendrier(an, liste);
-  rendreEvenements(an);
+    `<span><i class="puce-statut s-ev"></i>événement du coach</span><span><i class="puce-statut conflit"></i>chevauchement</span>`;
+  const evs = evenementsDe(an);   // événements du coach : dans le calendrier et la liste, au milieu des tournois
+  const tout = [...liste, ...evs].sort((a, b) => a.t.debut.localeCompare(b.t.debut));
+  $("s-cal").innerHTML = calendrier(an, tout);
   $("s-ics").disabled = !liste.some((x) => x.e.statut === "inscrit");
   carteSaison(liste);
 
@@ -1268,7 +1266,7 @@ function rendreSaison() {
       <p><button type="button" class="lien" data-connexion>Se connecter</button> en haut à droite, avec ton e-mail et ton mot de passe.</p></div>`;
     return;
   }
-  if (!liste.length) {
+  if (!tout.length) {
     $("s-liste").innerHTML = `<div class="s-vide"><p><b>Ta saison ${an} est vide.</b></p>
       <p>Dans l'écran Tournois, choisis l'année ${an}, puis clique sur l'étoile ☆ d'un tournoi (dans la liste ou sa fiche) pour l'ajouter ici.</p>
       <button type="button" class="btn plein" data-ecran-go>Parcourir les tournois</button></div>`;
@@ -1276,9 +1274,18 @@ function rendreSaison() {
     return;
   }
   let mois = -1, html = "";
-  for (const { t, e } of liste) {
+  for (const { t, e } of tout) {
     const m = +t.debut.slice(5, 7) - 1;
     if (m !== mois) { if (mois >= 0) html += "</ol>"; html += `<h4 class="s-mois">${MOIS[m]}</h4><ol class="s-items">`; mois = m; }
+    if (t.ev) {   // événement du coach (Club) : pas de statut ni de note, un lien vers la carte le jour J
+      const jour = isoLocal(new Date());
+      html += `<li class="s-item s-ev${t.fin < jour ? " passe" : ""}">
+        <div class="date"><b>${new Date(t.debut + "T12:00").getDate()}</b><span>${MOIS_COURT[m]}</span></div>
+        <div class="s-info"><b class="s-nom-ev">${esc(t.nom)}</b>
+          <div class="meta"><span class="tag tag-ev">${esc(TYPES_EV[t.ev.type] || "Événement")}</span> proposé par ton coach${t.golf_nom ? " · " + esc(titre(t.golf_nom)) : ""}${t.ev.categorie ? " · " + esc(t.ev.categorie) : ""}</div>
+          ${t.debut <= jour && !Saison.demo ? `<div class="s-ctrl"><a class="btn" href="../carte/">Ma carte →</a></div>` : ""}</div></li>`;
+      continue;
+    }
     const g = golfDe(t) || {};
     const clos = t.cloture && t.cloture < AUJ && t.fin >= AUJ;
     html += `<li class="s-item s-${e.statut}${t.fin < AUJ ? " passe" : ""}">
@@ -1397,9 +1404,9 @@ function calendrier(an, liste) {
       const d = `${an}-${pad(m + 1)}-${pad(j)}`, l = jours[d], we = (dec + j - 1) % 7 >= 5;
       const cls = ["j", we && "we", d === AUJ && "auj"].filter(Boolean);
       if (l) {
-        const s = l.reduce((a, x) => (RANG[x.e.statut] > RANG[a] ? x.e.statut : a), "envisage");
-        cls.push("pris", "s-" + s); if (l.length > 1) cls.push("conflit");
-        c += `<button type="button" class="${cls.join(" ")}" data-ouvrir="${esc(l[0].t.id)}" title="${esc(l.map((x) => titre(x.t.nom) + " (" + LIB[x.e.statut] + ")").join("\n"))}">${j}</button>`;
+        const T = l.filter((x) => !x.t.ev), s = T.reduce((a, x) => (RANG[x.e.statut] > RANG[a] ? x.e.statut : a), "envisage");
+        cls.push("pris", T.length ? "s-" + s : "s-ev"); if (l.length > 1) cls.push("conflit");
+        c += `<button type="button" class="${cls.join(" ")}" data-ouvrir="${esc((T[0] || l[0]).t.id)}" title="${esc(l.map((x) => (x.t.ev ? x.t.nom : titre(x.t.nom)) + " (" + (x.t.ev ? "événement du coach" : LIB[x.e.statut]) + ")").join("\n"))}">${j}</button>`;
       } else c += `<span class="${cls.join(" ")}">${j}</span>`;
     }
     html += `<div class="s-m"><h4>${MOIS[m]}</h4><div class="s-jours"><b>L</b><b>M</b><b>M</b><b>J</b><b>V</b><b>S</b><b>D</b>${c}</div></div>`;
