@@ -23,6 +23,23 @@ const nexusJoueurVu = {
   lire(moi) { const v = jsonLs("nx-joueur-vu"); return v && moi && v.u === moi ? v.j || "" : ""; },
   ecrire(moi, j) { if (moi) lsSet("nx-joueur-vu", JSON.stringify({ u: moi, j: j || "" })); },
 };
+// bande jaune « tu regardes <joueur> · lecture seule » sous l'en-tête, avec les raccourcis vers les modules qui suivent ce
+// joueur (modules.json : vueJoueur, ouverts) et « Mon compte ». nom vide : la bande disparaît. ici : id du module courant.
+const NX_MODULES_URL = new URL("modules.json", document.currentScript?.src || location.href).href;
+let nxModulesJoueur = null;
+async function nexusBandeVue(nom, ici, revenir) {
+  let b = document.getElementById("nx-vue");
+  if (!nom) { b?.remove(); return; }
+  if (!nxModulesJoueur) {
+    try { nxModulesJoueur = ((await (await fetch(NX_MODULES_URL)).json()).modules || []).filter((m) => m.vueJoueur && m.etat === "ouvert" && m.adresse); }
+    catch { nxModulesJoueur = [{ id: "saison", nom: "Saison", adresse: "saison/" }, { id: "carte", nom: "Carte", adresse: "carte/" }, { id: "stats", nom: "Stats", adresse: "stats/" }]; }
+  }
+  if (!b) { b = document.createElement("div"); b.id = "nx-vue"; b.className = "nx-vue"; (document.querySelector("header.bandeau") || document.body.firstElementChild).after(b); }
+  b.innerHTML = `<span>👁 <b>${esc(nom)}</b> <small>lecture seule</small></span>
+    <nav aria-label="Modules du joueur">${nxModulesJoueur.map((m) => m.id === ici ? `<span aria-current="page">${esc(m.nom)}</span>` : `<a href="${esc(new URL("../../" + m.adresse, NX_MODULES_URL).href)}">${esc(m.nom)}</a>`).join("")}</nav>
+    <button type="button" id="nx-vue-retour">← Mon compte</button>`;
+  b.querySelector("#nx-vue-retour").onclick = revenir;
+}
 const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : "10000000-1000-4000-8000-100000000000".replace(/[018]/g,
   (c) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)));
 // message en bas de l'écran (élément #toast de la page), 6 secondes

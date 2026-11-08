@@ -220,3 +220,12 @@ body.reprise #accueil::after { content: ""; position: absolute; left: 50%; top: 
   border-radius: 50%; border: 3px solid rgba(255,255,255,.18); border-top-color: #f0b400; animation: nx-tourne .9s linear infinite; }
 @keyframes nx-tourne { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { body.reprise #accueil::after { animation-duration: 3s; } }
+
+/* bande jaune « coach : tu regardes un joueur » (nexusBandeVue, 08/11) */
+.nx-vue { margin: 0 0 12px; position: sticky; top: 0; z-index: 900; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 12px; padding: 6px 12px; background: var(--jaune); color: #2e2400; font-size: 13px; font-weight: 600; box-shadow: 0 2px 6px rgba(0,0,0,.12); }
+.nx-vue small { opacity: .75; }
+.nx-vue nav { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+.nx-vue nav a, .nx-vue nav span, .nx-vue button { border: 1px solid rgba(46,36,0,.35); background: rgba(255,255,255,.55); color: #2e2400; border-radius: 999px; padding: 3px 12px; font: inherit; font-size: 12.5px; font-weight: 700; text-decoration: none; cursor: pointer; }
+.nx-vue nav span[aria-current] { background: #2e2400; color: #fff; cursor: default; }
+.nx-vue nav a:hover, .nx-vue button:hover { background: #fff; }
+.nx-vue a:focus-visible, .nx-vue button:focus-visible { outline: 2px solid #2e2400; outline-offset: 2px; }
