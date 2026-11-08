@@ -106,3 +106,13 @@ th { color: var(--doux); font-weight: 600; font-size: 11px; text-transform: uppe
 .st-enfant td { background: color-mix(in srgb, var(--sauge-pale) 45%, transparent); } .st-enfant td:nth-child(2) { padding-left: 34px; }
 .st-deplier { border: 1px solid var(--bord); background: var(--carte); border-radius: 6px; width: 24px; height: 22px; padding: 0; cursor: pointer; color: var(--vert); font-size: 12px; }
 .st-filtres[hidden] { display: none; }
+/* onglets des tours d'un tournoi */
+.st-onglets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.st-onglets a { font-size: 13px; font-weight: 600; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--bord); background: var(--carte); color: var(--vert); text-decoration: none; }
+.st-onglets a[aria-current="page"] { background: var(--vert); border-color: var(--vert); color: var(--fond); }
+.st-onglets a:focus-visible { outline: 2px solid var(--jaune); outline-offset: 2px; }
+/* mode compact : affiché dans la popup de Carte (#…&cadre=1) — ni bandeau, ni pied, ni retour */
+body.cadre .bandeau, body.cadre .b-pan-ancre, body.cadre .pied, body.cadre .st-retour, body.cadre .s-tete { display: none; }
+body.cadre .stats-ecran { padding: 12px 14px 4px; }
+body.cadre .st-grille { margin-bottom: 8px; }
+@media (max-width: 560px) { .st-tuiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } .st-tuile b { font-size: 21px; } }

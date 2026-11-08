@@ -6,7 +6,7 @@
 // et servent dans Carte à contrôler une carte ; jamais ici (score seul = stats incomplètes).
 // Plus tard : séances d'Entraînement, coup par coup (Carte V2), strokes gained.
 
-const etat = { parties: [], noms: new Map(), ouverts: new Set(), focus: null, vue: "", periode: "12m", contextes: new Set(["entrainement", "libre", "rencontre", "competition", "tournoi"]) };
+const etat = { parties: [], noms: new Map(), ouverts: new Set(), focus: null, cadre: false, vue: "", periode: "12m", contextes: new Set(["entrainement", "libre", "rencontre", "competition", "tournoi"]) };
 const $ = (id) => document.getElementById(id);
 const JOUR = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })();
 // contextes, du plus calme au plus exigeant (niveau de pression)
@@ -225,8 +225,12 @@ function bilan(P) {   // chiffres bruts (pas ramenés à 18 trous) d'une ou plus
 const tournoiDe = (p) => (p.tournoi_id ? etat.parties.filter((x) => x.tournoi_id === p.tournoi_id && joues(x).length)
   .sort((a, b) => (a.tour || 1) - (b.tour || 1) || (a.jour + a.cree_le).localeCompare(b.jour + b.cree_le)) : []);
 const nomTournoi = (ref, P) => etat.noms.get(ref) || titre(P[0]?.golf_nom || P[0]?.golf || "Tournoi");
-const lienPartie = (p) => `#partie=${encodeURIComponent(p.id)}${etat.vue ? `&joueur=${encodeURIComponent(etat.vue)}` : ""}`;
-const lienTournoi = (ref) => `#tournoi=${encodeURIComponent(ref)}${etat.vue ? `&joueur=${encodeURIComponent(etat.vue)}` : ""}`;
+const suite = () => `${etat.vue ? `&joueur=${encodeURIComponent(etat.vue)}` : ""}${etat.cadre ? "&cadre=1" : ""}`;
+const lienPartie = (p) => `#partie=${encodeURIComponent(p.id)}${suite()}`;
+const lienTournoi = (ref) => `#tournoi=${encodeURIComponent(ref)}${suite()}`;
+// onglets d'un tournoi à plusieurs tours : Tour 1 · Tour 2 · … · Tournoi (actif : id de la partie, ou "tournoi")
+const onglets = (T, actif) => (T.length > 1 ? `<nav class="st-onglets" aria-label="Tours du tournoi">${T.map((p, i) =>
+  `<a href="${lienPartie(p)}"${p.id === actif ? ` aria-current="page"` : ""}>Tour ${p.tour || i + 1}</a>`).join("")}<a href="${lienTournoi(T[0].tournoi_id)}"${actif === "tournoi" ? ` aria-current="page"` : ""}>Tournoi · ${T.length} tours</a></nav>` : "");
 // ta moyenne habituelle (toutes tes autres cartes d'au moins 9 trous), ramenée à n trous pour comparer à ce tour
 function moyenneHors(ids) {
   const A = etat.parties.filter((p) => !ids.has(p.id) && joues(p).length >= 9);
@@ -242,7 +246,8 @@ function rendreFocus() {
     const p = etat.parties.find((x) => x.id === f.id);
     if (!p) { box.innerHTML = `${retour}<div class="bloc vide"><p>Cette carte est introuvable (supprimée, ou pas à ce compte).</p></div>`; return; }
     const T = tournoiDe(p), b = bilan([p]), m = moyenneHors(new Set([p.id]));
-    const rang = T.length > 1 ? `<a class="st-lien-tournoi" href="${lienTournoi(p.tournoi_id)}">Tour ${p.tour || T.indexOf(p) + 1} sur ${T.length} · voir le tournoi (${T.length} tours) →</a>` : "";
+    const rang = onglets(T, p.id);
+    if (!b.n) { box.innerHTML = `${retour}${rang}<div class="bloc vide"><p>Aucun trou saisi pour l'instant sur cette carte.</p></div>`; return; }
     box.innerHTML = `${retour}
       <div class="st-entete"><h3>${esc(titre(p.golf_nom || p.golf))}${p.tour ? ` · tour ${p.tour}` : ""}</h3>
         <p class="meta">${new Date(p.jour + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · ${LIB_CTX[p.contexte] || ""}${p.parcours_nom ? ` · ${esc(p.parcours_nom)}` : ""}${p.repere ? ` · repère ${esc(p.repere)}` : ""} · ${b.n} trou${b.n > 1 ? "s" : ""}${p.terminee ? "" : " · en cours"}</p>${rang}</div>
@@ -254,7 +259,7 @@ function rendreFocus() {
     const B = T.map((p) => bilan([p])), tot = bilan(T), m = moyenneHors(new Set(T.map((p) => p.id)));
     box.innerHTML = `${retour}
       <div class="st-entete"><h3>${esc(nomTournoi(f.ref, T))}</h3>
-        <p class="meta">${T.length} tour${T.length > 1 ? "s" : ""} saisi${T.length > 1 ? "s" : ""} · ${dateCourte(T[0].jour)}${T.length > 1 && T.at(-1).jour !== T[0].jour ? ` → ${dateCourte(T.at(-1).jour)}` : ""} · ${esc(titre(T[0].golf_nom || T[0].golf))}</p></div>
+        <p class="meta">${T.length} tour${T.length > 1 ? "s" : ""} saisi${T.length > 1 ? "s" : ""} · ${dateCourte(T[0].jour)}${T.length > 1 && T.at(-1).jour !== T[0].jour ? ` → ${dateCourte(T.at(-1).jour)}` : ""} · ${esc(titre(T[0].golf_nom || T[0].golf))}</p>${onglets(T, "tournoi")}</div>
       <section class="bloc st-bloc st-tour-tab" aria-labelledby="t-tours"><h3 id="t-tours">Tour par tour <small>et total du tournoi</small></h3>${tableauTours(T, B, tot, m)}</section>
       <h3 class="st-sous-titre">Total du tournoi</h3>
       ${blocsBilan(tot, m, T.length)}`;
@@ -345,6 +350,7 @@ async function chargerNoms() {
 // lien direct : #partie=<id> · #tournoi=<ref> · &joueur=<id> (coach : stats d'un joueur suivi)
 async function lireLien() {
   const h = new URLSearchParams(location.hash.slice(1)), j = h.get("joueur") || "";
+  etat.cadre = h.get("cadre") === "1"; document.body.classList.toggle("cadre", etat.cadre);
   const vue = Compte.joueurs.some((x) => x.joueur_id === j) ? j : "";
   if (vue !== etat.vue) { etat.vue = vue; await charger(); }
   etat.focus = h.get("partie") ? { type: "partie", id: h.get("partie") } : h.get("tournoi") ? { type: "tournoi", ref: h.get("tournoi") } : null;

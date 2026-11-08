@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="verrou">
-  <script>try { if (localStorage.getItem("gn-auth")) document.body.classList.add("reprise"); } catch { /* */ }</script>   <!-- déjà connecté : écran de chargement (charte.css, nexus.js) -->
+  <script>try { if (localStorage.getItem("gn-auth")) document.body.classList.add("reprise"); } catch { /* */ } if (/(^|[#&])cadre=1/.test(location.hash)) document.body.classList.add("cadre");</script>   <!-- déjà connecté : écran de chargement (charte.css, nexus.js) -->
   <!-- Stats (module n° 4) : même accueil que Saison (connexion obligatoire, sur invitation) -->
   <section id="accueil" class="accueil" aria-labelledby="a-titre">
     <div class="a-haut">
