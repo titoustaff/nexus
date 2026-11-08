@@ -177,14 +177,27 @@ function htmlStructure() {
   const st = Compte.structure;
   if (!st) return `<div class="bloc p-parent"><h3>Mon club</h3><p>Tu n'es rattaché à aucun club pour l'instant. C'est l'administrateur qui rattache un coach à son club (ou le déclare coach indépendant) : demande-lui de le faire.</p></div>`;
   const club = st.club ? titre(st.club) : null;
-  return `<div class="bloc"><h3>${esc(st.nom)} <small>${st.type === "independant" ? "coach indépendant" : `club ffgolf : ${esc(club)}`}</small></h3>
-    ${st.type === "independant" ? `<p>Tu suis tes joueurs à titre personnel ; pas d'équipes.</p>` : `
-    <div class="co-club">
-      <div><h4>Académie</h4><p>${st.principal ? `Coach principal : <b>${esc(st.principal)}</b><br>` : ""}Coachs : ${esc(st.coachs || "—")}</p>
-        <p class="meta">Les coachs de l'académie voient tous les <b>Joueurs AS</b> (licenciés à ${esc(club)}) et composent les équipes. Les <b>joueurs hors club</b> que tu suis ne sont visibles que par toi.</p></div>
-      <div><h4>AS</h4><p>Les équipes de l'AS (onglet « Équipes de l'AS ») n'accueillent que les licenciés à ${esc(club)}.</p></div>
-    </div>`}
-    <p class="meta">Rattachement, club et coach principal sont gérés par l'administrateur.</p></div>`;
+  const initiales = (n) => esc(String(n || "?").trim().split(/\s+/).map((x) => x[0]).slice(0, 2).join("").toUpperCase());
+  const coachs = String(st.coachs || "").split(",").map((x) => x.trim()).filter(Boolean);
+  const pastille = (n, principal = false) => `<span class="mc-coach${principal ? " principal" : ""}"><i aria-hidden="true">${initiales(n)}</i>${esc(n)}${principal ? ' <small>principal</small>' : ""}</span>`;
+  if (st.type === "independant") return `<div class="bloc mc-club"><div class="mc-tete"><div><h3>${esc(st.nom)}</h3><span class="mc-badge">Coach indépendant</span></div></div>
+    <p class="meta">Tu suis tes joueurs à titre personnel ; pas d'équipes.</p></div>`;
+  return `<div class="bloc mc-club">
+    <div class="mc-tete"><div class="mc-blason" aria-hidden="true">${initiales(st.nom)}</div>
+      <div><h3>${esc(st.nom)}</h3><span class="mc-badge">Club ffgolf · ${esc(club)}</span></div></div>
+    <div class="mc-cartes">
+      <section class="mc-carte"><h4><span aria-hidden="true">🎓</span> Académie <small>${coachs.length} coach${coachs.length > 1 ? "s" : ""}</small></h4>
+        <div class="mc-coachs">${st.principal ? pastille(st.principal, true) : ""}${coachs.filter((n) => n !== st.principal).map((n) => pastille(n)).join("")}</div>
+        <p>Les coachs voient tous les <b>joueurs AS</b> (licenciés à ${esc(club)}) et composent les équipes. Tes <b>joueurs hors club</b> ne sont visibles que par toi.</p></section>
+      <section class="mc-carte"><h4><span aria-hidden="true">⛳</span> AS</h4>
+        <p>Les équipes de l'AS (onglet Coach → « Équipes de l'AS ») n'accueillent que les licenciés à ${esc(club)}.</p>
+        <p>Les membres de l'AS suivent le club dans le <b>Tableau de bord</b>, avec ce que les coachs leur ouvrent.</p></section>
+      <section class="mc-carte"><h4><span aria-hidden="true">👥</span> Qui fait quoi</h4>
+        <ul class="mc-roles"><li><b>Coach principal</b> invite coachs, membres AS et direction ; règle leur visibilité.</li>
+          <li><b>Coachs</b> invitent les joueurs et composent les équipes.</li>
+          <li><b>Membres AS · Direction</b> consultent le Tableau de bord, en lecture seule.</li></ul></section>
+    </div>
+    <p class="meta mc-pied">Rattachement au club et choix du coach principal : l'administrateur.</p></div>`;
 }
 // ---- Mon club : membres du club et visibilité par groupe (08/11, script supabase/club-membres.sql)
 // Seul le coach principal (ou l'admin) fait entrer quelqu'un, directement : fonction Edge du module, club-inviter

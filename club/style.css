@@ -494,3 +494,24 @@ html, body { overflow-x: clip; }   /* filet de sécurité : jamais de défilemen
 .mb-bulles button[aria-pressed="true"] { background: var(--vert); border-color: var(--vert); color: var(--fond); }
 .mb-bulles button:focus-visible { outline: 2px solid var(--jaune); outline-offset: 2px; }
 .mb-listes { margin-bottom: 10px; } .mb-listes small { opacity: .7; font-weight: 500; }
+
+/* Mon club : présentation du club (08/11) */
+.mc-club { padding: 18px 20px; }
+.mc-tete { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.mc-tete h3 { margin: 0 0 4px; font-size: 22px; color: var(--vert); letter-spacing: -.01em; }
+.mc-blason { flex: none; width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; background: linear-gradient(135deg, var(--vert), var(--vert-2)); color: #fff; font-weight: 800; font-size: 18px; box-shadow: var(--ombre); }
+.mc-badge { display: inline-block; font-size: 12px; font-weight: 600; color: var(--vert); background: var(--sauge-pale); border-radius: 999px; padding: 3px 10px; }
+.mc-cartes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.mc-carte { border: 1px solid var(--bord); border-radius: 12px; padding: 14px 16px; background: var(--fond); }
+.mc-carte h4 { margin: 0 0 10px; font-size: 15px; color: var(--vert); display: flex; align-items: center; gap: 6px; }
+.mc-carte h4 small { margin-left: auto; font-weight: 500; color: var(--doux); font-size: 12px; }
+.mc-carte p { margin: 0 0 8px; font-size: 13.5px; line-height: 1.5; color: var(--texte); } .mc-carte p:last-child { margin: 0; }
+.mc-coachs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.mc-coach { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; padding: 3px 10px 3px 3px; border-radius: 999px; background: var(--carte); border: 1px solid var(--bord); }
+.mc-coach i { font-style: normal; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--sauge-pale); color: var(--vert); font-size: 10.5px; font-weight: 800; }
+.mc-coach.principal { border-color: var(--jaune); background: color-mix(in srgb, var(--jaune) 14%, var(--carte)); }
+.mc-coach.principal i { background: var(--jaune); color: var(--jaune-texte, #3d2e00); }
+.mc-coach small { font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--doux); }
+.mc-roles { margin: 0; padding: 0; list-style: none; font-size: 13.5px; line-height: 1.45; }
+.mc-roles li { padding: 6px 0; border-bottom: 1px solid var(--bord); } .mc-roles li:last-child { border-bottom: 0; }
+.mc-pied { margin-top: 12px; }
