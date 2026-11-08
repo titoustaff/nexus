@@ -1088,7 +1088,8 @@ function rendreCompte() {
   const vb = $("vue-bandeau");
   vb.hidden = true;   // bande commune sous l'en-tête (nexusBandeVue, 08/11) : raccourcis Saison · Carte · Stats
   nexusBandeVue(connecte && Saison.demo?.coach ? Saison.demo.nom || "Joueur"
-    : document.body.classList.contains("nx-vue-charge") ? nexusJoueurVu.nom(Saison.moi?.id || Saison.user?.id) : "", "saison", () => revenirMoi());
+    : document.body.classList.contains("nx-vue-charge") ? nexusJoueurVu.nom(Saison.moi?.id || Saison.user?.id) : "", "saison", () => revenirMoi(),
+    (Saison.joueurs || []).map((j) => ({ id: j.joueur_id, nom: j.nom || j.libelle, info: j.categorie || "" })), (id) => voirJoueur(id, etat.ecran === "stats" ? "stats" : null));
   $("saison").hidden = !vb.hidden;   // dans l'en-tête, la ligne « vue joueur » remplace l'avancée de la saison
   if (!vb.hidden) vb.innerHTML = `<span>👁 <b>${esc(Saison.demo.nom || "Joueur")}</b> <small>lecture seule</small></span>
     <button type="button" data-vue-ecran="saison" aria-pressed="${etat.ecran === "saison"}">Saison</button>
