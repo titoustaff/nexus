@@ -26,17 +26,18 @@ const nexusJoueurVu = {
 // bande jaune « tu regardes <joueur> · lecture seule » sous l'en-tête, avec les raccourcis vers les modules qui suivent ce
 // joueur (modules.json : vueJoueur, ouverts) et « Mon compte ». nom vide : la bande disparaît. ici : id du module courant.
 const NX_MODULES_URL = new URL("modules.json", document.currentScript?.src || location.href).href;
-let nxModulesJoueur = null;
+let nxModulesJoueur = null, nxBandeTour = 0;
 async function nexusBandeVue(nom, ici, revenir) {
+  const tour = ++nxBandeTour;   // plusieurs appels rapprochés : seul le dernier dessine, toujours dans UNE seule bande
+  if (!nom) { document.getElementById("nx-vue")?.remove(); return; }
+  nxModulesJoueur ||= fetch(NX_MODULES_URL).then((r) => r.json()).then((d) => (d.modules || []).filter((m) => m.vueJoueur && m.etat === "ouvert" && m.adresse))
+    .catch(() => [{ id: "saison", nom: "Saison", adresse: "saison/" }, { id: "carte", nom: "Carte", adresse: "carte/" }, { id: "stats", nom: "Stats", adresse: "stats/" }]);
+  const M = await nxModulesJoueur;
+  if (tour !== nxBandeTour) return;
   let b = document.getElementById("nx-vue");
-  if (!nom) { b?.remove(); return; }
-  if (!nxModulesJoueur) {
-    try { nxModulesJoueur = ((await (await fetch(NX_MODULES_URL)).json()).modules || []).filter((m) => m.vueJoueur && m.etat === "ouvert" && m.adresse); }
-    catch { nxModulesJoueur = [{ id: "saison", nom: "Saison", adresse: "saison/" }, { id: "carte", nom: "Carte", adresse: "carte/" }, { id: "stats", nom: "Stats", adresse: "stats/" }]; }
-  }
   if (!b) { b = document.createElement("div"); b.id = "nx-vue"; b.className = "nx-vue"; (document.querySelector("header.bandeau") || document.body.firstElementChild).after(b); }
   b.innerHTML = `<span>👁 <b>${esc(nom)}</b> <small>lecture seule</small></span>
-    <nav aria-label="Modules du joueur">${nxModulesJoueur.map((m) => m.id === ici ? `<span aria-current="page">${esc(m.nom)}</span>` : `<a href="${esc(new URL("../../" + m.adresse, NX_MODULES_URL).href)}">${esc(m.nom)}</a>`).join("")}</nav>
+    <nav aria-label="Modules du joueur">${M.map((m) => m.id === ici ? `<span aria-current="page">${esc(m.nom)}</span>` : `<a href="${esc(new URL("../../" + m.adresse, NX_MODULES_URL).href)}">${esc(m.nom)}</a>`).join("")}</nav>
     <button type="button" id="nx-vue-retour">← Mon compte</button>`;
   b.querySelector("#nx-vue-retour").onclick = revenir;
 }
