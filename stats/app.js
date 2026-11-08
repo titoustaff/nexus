@@ -367,5 +367,23 @@ async function entrer() {   // pas de données publiées ici : seulement le comp
   rendreCompte();
   await charger(); await lireLien();
 }
-nexusBrancherAccueil();
-if (sb) nexusDemarrer(entrer);
+// lien public (#direct=<jeton>) : la carte partagée seulement, sans compte, lue par carte_partagee (comme le direct de Carte).
+// Stats de ce tour uniquement : pas de comparaison (la personne n'a pas accès aux autres parties du joueur), relue toutes les 15 s.
+async function modeDirect(jeton) {
+  etat.cadre = true; document.body.classList.add("cadre");
+  finReprise(); document.body.classList.remove("verrou");
+  const lire = async () => {
+    const { data, error } = await sb.rpc("carte_partagee", { j: jeton });
+    const p = Array.isArray(data) ? data[0] : data;
+    if (error || !p) { $("st-contenu").innerHTML = `<div class="bloc vide"><p><b>Ce lien de partage n'est plus valable.</b></p><p class="meta">Il a expiré ou le joueur a arrêté le partage.</p></div>`; return false; }
+    etat.parties = [{ ...p, id: "direct", cree_le: "" }]; etat.focus = { type: "partie", id: "direct" }; rendre();
+    return !p.terminee;
+  };
+  let enDirect = await lire();
+  const relire = async () => { if (enDirect) enDirect = await lire(); };
+  setInterval(relire, 15000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) relire(); });
+}
+const jetonDirect = new URLSearchParams(location.hash.slice(1)).get("direct");
+if (sb && jetonDirect) modeDirect(jetonDirect);
+else { nexusBrancherAccueil(); if (sb) nexusDemarrer(entrer); }
