@@ -125,7 +125,7 @@ async function rendreListe() {
       <span class="li-chiffres">${b.putts != null ? `<span><b>${b.putts}</b> putts</span>` : ""}<span><b>${b.fairways}</b> fairways</span></span>
     </button>`; }).join("")}</div>`;
 }
-document.addEventListener("change", (e) => { if (e.target.id === "li-qui") { etat.vue = e.target.value; ecran("liste"); } });
+document.addEventListener("change", (e) => { if (e.target.id === "li-qui") { etat.vue = e.target.value; nexusJoueurVu.ecrire(Compte.moi?.id, etat.vue); ecran("liste"); } });
 $("li-contenu").addEventListener("click", (e) => {
   const at = e.target.closest("[data-attend]"); if (at) { preremplir(at.dataset.attend); return; }
   const b = e.target.closest("[data-partie]"); if (!b) return;
@@ -418,6 +418,8 @@ async function entrer() {
   etat.tournois = D.tournois || [];
   const { data } = await sb.auth.getSession();
   try { await Compte.connecter(data.session.user); } catch (e) { signaler("Lecture du compte impossible : " + (e.message || e)); }
+  // coach : le joueur regardé dans un autre module (Saison, Stats) reste choisi
+  { const j = nexusJoueurVu.lire(Compte.moi?.id); if (j && (Compte.joueurs || []).some((x) => x.joueur_id === j)) etat.vue = j; }
   document.body.classList.remove("verrou");
   // une saisie non enregistrée (coupure réseau) : on la renvoie
   try { await chargerAgenda(); } catch { etat.agenda = []; }
