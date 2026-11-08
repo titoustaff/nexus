@@ -360,6 +360,7 @@ function rendreVoir0() {
       <small>${p.terminee ? "" : "mise à jour automatique · "}dernière saisie ${new Date(p.modifie_le).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</small></div>` : ""}
     <div class="s-tete"><h2>${esc(titre(p.golf_nom || p.golf))}</h2><span class="meta">${esc(p.parcours_nom || "")}${p.repere ? " · " + esc(p.repere) : ""} · ${dateLongue(p.jour)} · ${CONTEXTES[p.contexte] || ""}</span></div>
     <div class="st-tuiles">${tuileSt(b.n ? b.score : "—", "score", b.n ? ecartPar(b.ecart) + (b.n < p.nb_trous ? ` sur ${b.n} trous` : "") : "")}${tuileSt(b.putts ?? "—", "putts")}${tuileSt(b.fairways, "fairways touchés")}${tuileSt(b.gir, "greens en régulation")}${tuileSt(b.pen, "pénalités")}</div>
+    ${!etat.partage && b.n ? `<button type="button" class="vo-stats" data-stats-tour><span aria-hidden="true">📊</span> <b>Stats du tour</b><small>comparées à ta moyenne${p.tournoi_id ? " · tournoi tour par tour" : ""}</small></button>` : ""}
     <div class="bloc vo-carte">${moities.map((T, k) => `<div class="defile">${tableau(T, moities.length > 1 ? (k ? "Retour" : "Aller") : "Total")}</div>`).join("")}
       <p class="meta vo-legende"><span class="nt nt-albatros">2</span> albatros <span class="nt nt-aigle">3</span> eagle <span class="nt nt-birdie">4</span> birdie <span class="nt nt-par">5</span> par <span class="nt nt-bogey">6</span> bogey <span class="nt nt-double">7</span> double + · départ ${miniFw("fairway")} · ${SABLE} bunker</p></div>
     ${p.contexte === "tournoi" && p.tournoi_id && !String(p.tournoi_id).startsWith("club:") && !etat.partage ? `<div id="vo-ffgolf"></div>` : ""}
@@ -478,6 +479,22 @@ async function ouvrirPartage() {
   });
 }
 document.addEventListener("click", (e) => { if (e.target.closest("[data-partager]")) ouvrirPartage(); });
+// Stats du tour : calculées par le module Stats (séparation des rôles), affichées ici dans une fenêtre (Stats en mode compact)
+function ouvrirStats() {
+  const p = etat.partie; if (!p?.id) return;
+  const src = `../stats/#partie=${encodeURIComponent(p.id)}${etat.vue ? `&joueur=${encodeURIComponent(etat.vue)}` : ""}&cadre=1`;
+  const f = document.createElement("div"); f.className = "pt-fond"; f.id = "st-fond";
+  f.innerHTML = `<div class="pt-boite st-boite" role="dialog" aria-modal="true" aria-labelledby="st-titre-f">
+    <div class="st-boite-tete"><h2 id="st-titre-f">📊 Stats du tour</h2><a class="lien" href="${src.replace("&cadre=1", "")}" target="_top">Ouvrir dans Stats →</a><button type="button" class="btn" id="st-fermer" aria-label="Fermer">✕</button></div>
+    <iframe src="${src}" title="Stats du tour" loading="eager"></iframe></div>`;
+  document.body.append(f);
+  const fermer = () => { f.remove(); document.removeEventListener("keydown", esc_); };
+  const esc_ = (e) => { if (e.key === "Escape") fermer(); };
+  document.addEventListener("keydown", esc_);
+  f.addEventListener("click", (e) => { if (e.target.id === "st-fond" || e.target.closest("#st-fermer")) fermer(); });
+  $("st-fermer").focus();
+}
+document.addEventListener("click", (e) => { if (e.target.closest("[data-stats-tour]")) ouvrirStats(); });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("pt-fond")?.remove(); });
 
 async function modePartage(jeton) {

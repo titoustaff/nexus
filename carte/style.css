@@ -168,3 +168,16 @@ body.partage .vues, body.partage #b-compte { display: none; }
 .ff-ecart .btn { margin-left: 8px; height: 34px; padding: 0 12px; }
 .ff-attente { margin: 0 0 10px; }
 .nv-form label[hidden] { display: none; }   /* « Tournoi » et « Tour » : seulement pour le contexte Tournoi ffgolf */
+
+/* Stats du tour : bouton sous les tuiles, fenêtre avec le module Stats en mode compact */
+.vo-stats { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; width: 100%; margin: 0 0 12px; padding: 12px 16px; border-radius: 12px; border: 1px solid var(--vert-2); background: var(--sauge-pale); color: var(--vert); font: inherit; font-size: 15px; text-align: left; cursor: pointer; }
+.vo-stats small { color: var(--doux); font-size: 12.5px; }
+.vo-stats:hover { background: color-mix(in srgb, var(--sauge-pale) 75%, var(--vert-2)); }
+.vo-stats:focus-visible { outline: 2px solid var(--jaune); outline-offset: 2px; }
+.st-boite { width: min(1100px, 100%); max-width: none; height: min(92vh, 1000px); display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+.st-boite-tete { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--bord); }
+.st-boite-tete h2 { margin: 0; font-size: 17px; flex: 1; }
+.st-boite-tete .lien { font-size: 13px; }
+.st-boite iframe { flex: 1; width: 100%; border: 0; background: var(--fond); }
+@media (max-width: 560px) { .st-boite { height: 100%; border-radius: 0; } .st-boite-tete .lien { display: none; } }
+@media (max-width: 560px) { #st-fond { padding: 0; } }
