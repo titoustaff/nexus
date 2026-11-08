@@ -193,7 +193,7 @@ function htmlStructure() {
 const CASES = [["joueurs", "Joueurs", "nom, catégorie, index des joueurs AS"], ["equipes", "Équipes", "équipes de l'AS et leur composition"],
   ["calendrier", "Calendrier", "tournois prévus par les joueurs (envisagé, inscrit)"], ["scores", "Scores", "scores et places en tournoi, une fois joués"],
   ["merite", "Mérite", "classement au Mérite, mois par mois"], ["evenements", "Événements", "rencontres et compétitions du club"]];
-const GROUPE_LIB = { coach: "Coach", as: "Membre AS", club: "Membre club" };
+const GROUPE_LIB = { coach: "Coach", as: "Membre AS", club: "Direction du club" };
 const STATUT_LIB = { demande: "en attente", invite: "invitation envoyée", actif: "actif", refuse: "refusée" };
 // invitation dans le club (coach principal, administrateur) : fonction Edge club-inviter ; renvoie le message d'erreur ou null
 async function clubInviter(structure_id, groupe, email, nom, licence) {
@@ -209,7 +209,7 @@ async function htmlMembres() {
   const gere = co.gere = !!G.data, membres = M.data || [];
   const casesDe = (g) => new Set((V.data || []).find((v) => v.groupe === g)?.cases || []);
   const date = (d) => (d ? fmtDate(String(d).slice(0, 10)) : "");
-  return `<div class="bloc mb-bloc"><h3>Membres du club <small>${membres.filter((m) => m.statut !== "refuse").length} · coachs, membres AS et membres club</small></h3>
+  return `<div class="bloc mb-bloc"><h3>Membres du club <small>${membres.filter((m) => m.statut !== "refuse").length} · coachs, membres AS et direction du club</small></h3>
     ${membres.length ? `<div class="st-table"><table><thead><tr><th>Nom</th><th>E-mail</th><th>Rôle</th><th>Statut</th><th>Depuis</th>${gere ? "<th></th>" : ""}</tr></thead><tbody>
       ${membres.map((m) => `<tr><td><b>${esc(m.nom || "—")}</b></td><td>${esc(m.email)}</td><td>${GROUPE_LIB[m.groupe] || m.groupe}</td>
         <td><span class="tag ${m.statut === "actif" ? "" : "ok-att"}">${STATUT_LIB[m.statut] || m.statut}</span></td><td>${date(m.valide_le || m.cree_le)}</td>
@@ -220,12 +220,12 @@ async function htmlMembres() {
         <input id="mb-nom" placeholder="Prénom Nom" aria-label="Nom" maxlength="60" autocomplete="off">
         <input id="mb-email" type="email" placeholder="e-mail" aria-label="E-mail" autocomplete="off">
         <input id="mb-licence" inputmode="numeric" placeholder="licence ffgolf" aria-label="Licence ffgolf" maxlength="14" autocomplete="off">
-        <select id="mb-groupe" aria-label="Rôle"><option value="as">Membre AS</option><option value="coach">Coach</option><option value="club">Membre club</option></select>
+        <select id="mb-groupe" aria-label="Rôle"><option value="as">Membre AS</option><option value="coach">Coach</option><option value="club">Direction du club</option></select>
         <button type="button" class="btn plein" id="mb-inviter">Inviter</button></div>
-      <p class="meta">L'invitation part tout de suite par e-mail (lien valable 24 h). Si la personne a déjà un compte GolfNexus, son accès est ouvert sans e-mail. Un coach invité est rattaché au club. Licence obligatoire pour un membre AS, facultative pour un coach ou un membre club.</p>`
+      <p class="meta">L'invitation part tout de suite par e-mail (lien valable 24 h). Si la personne a déjà un compte GolfNexus, son accès est ouvert sans e-mail. Un coach invité est rattaché au club. Licence obligatoire pour un membre AS, facultative pour un coach ou la direction du club.</p>`
     : `<p class="meta">Le coach principal invite les coachs et les membres de l'AS.</p>`}
   </div>
-  ${[["as", "membres AS"], ["club", "membres club"]].map(([g, lib]) => { const cases = casesDe(g);
+  ${[["as", "membres AS"], ["club", "membres de la direction du club"]].map(([g, lib]) => { const cases = casesDe(g);
     return `<div class="bloc mb-bloc"><h3>Ce que voient les ${lib} <small>dans le Tableau de bord, en lecture seule, même réglage pour tout le groupe</small></h3>
     <div class="mb-cases">${CASES.map(([k, l, d]) => `<label class="mb-case${cases.has(k) ? " oui" : ""}"><input type="checkbox" data-vis="${g}" value="${k}" ${cases.has(k) ? "checked" : ""} ${gere ? "" : "disabled"}>
       <span><b>${l}</b><small>${d}</small></span></label>`).join("")}</div>
@@ -237,7 +237,7 @@ document.addEventListener("change", async (e) => {
   const g = c.dataset.vis, cases = [...document.querySelectorAll(`[data-vis="${g}"]:checked`)].map((x) => x.value);
   c.closest(".mb-case")?.classList.toggle("oui", c.checked);
   const { error } = await sb.from("club_visibilite").upsert({ structure_id: Compte.structure.id, groupe: g, cases, modifie_le: new Date().toISOString() });
-  const qui = g === "club" ? "Membres club" : "Membres AS";
+  const qui = g === "club" ? "Direction du club" : "Membres AS";
   signaler(error ? "Enregistrement impossible : " + error.message : cases.length ? `${qui} : ${cases.length} élément${cases.length > 1 ? "s" : ""} visible${cases.length > 1 ? "s" : ""}.` : `${qui} : rien de visible.`);
 });
 document.addEventListener("click", async (e) => {
@@ -624,7 +624,7 @@ async function rendreMembre() {
   const a = mb.acces, box = $("co-contenu");
   $("co-titre").textContent = a.groupe === "coach" ? `Tableau de bord · ${a.structure_nom}` : `Tableau de bord · ${a.structure_nom}`;
   const ong = CASES.filter(([k]) => a.cases.includes(k));
-  if (!ong.length) { box.innerHTML = `<div class="bloc vide"><p>Le coach principal n'a encore rien ouvert aux ${a.groupe === "as" ? "membres de l'AS" : "membres du club"}.</p></div>`; return; }
+  if (!ong.length) { box.innerHTML = `<div class="bloc vide"><p>Le coach principal n'a encore rien ouvert aux ${a.groupe === "as" ? "membres de l'AS" : "membres de la direction du club"}.</p></div>`; return; }
   box.innerHTML = `<div class="seg co-onglets" role="group" aria-label="Club">${ong.map(([k, l]) => `<button type="button" data-mb-onglet="${k}" aria-pressed="${mb.onglet === k}">${l}</button>`).join("")}</div>
     <div id="mb-corps"><p class="meta">Chargement…</p></div><p class="meta mb-lecture">${a.groupe === "coach" ? "Lecture seule · les membres AS voient les onglets cochés dans Mon club." : `Lecture seule · ouvert par le coach principal de ${esc(a.structure_nom)}.`}</p>`;
   try { $("mb-corps").innerHTML = await (VUES_MB[mb.onglet] || (async () => ""))(a.structure_id); }
