@@ -181,3 +181,4 @@ body.partage .vues, body.partage #b-compte { display: none; }
 .st-boite iframe { flex: 1; width: 100%; border: 0; background: var(--fond); }
 @media (max-width: 560px) { .st-boite { height: 100%; border-radius: 0; } .st-boite-tete .lien { display: none; } }
 @media (max-width: 560px) { #st-fond { padding: 0; } }
+.vo-gir { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--vert-2); color: #fff; font-size: 12px; font-weight: 800; }
