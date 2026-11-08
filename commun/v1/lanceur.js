@@ -45,6 +45,7 @@ a.lc-module:hover, a.lc-module:focus-visible { background: var(--sauge-pale); ou
 
   const actuel = () => { const m = location.pathname.match(/\/nexus\/([^/]+)\//); return m ? m[1] : ""; };
   let modules = null;
+  let membre = null;
   async function charger() {
     if (modules) return modules;
     try { modules = (await (await fetch(new URL("modules.json", ICI))).json()).modules || []; }
@@ -61,8 +62,12 @@ a.lc-module:hover, a.lc-module:focus-visible { background: var(--sauge-pale); ou
     pan.hidden = !oui; btn.setAttribute("aria-expanded", String(oui));
     if (!oui) return;
     // un module réservé à un rôle (Admin : admin ; Club : coach ou admin) n'apparaît que pour ce rôle (nexus.role, posé par nexusLireProfil)
-    const role = typeof nexus !== "undefined" ? nexus.role : null;
-    const M = (await charger()).filter((m) => !m.role || [].concat(m.role).includes(role)), ici = actuel();
+    const role = typeof nexus !== "undefined" ? nexus.role : null, tous = await charger();
+    // « membre » : membre AS / club invité par un club (Club, club-membres.sql) ; demandé une fois, seulement si utile
+    if (membre === null && tous.some((m) => m.role && [].concat(m.role).includes("membre") && ![].concat(m.role).includes(role))) {
+      try { const r = await sb.rpc("club_mon_acces"); membre = !r.error && !!r.data?.length; } catch { membre = false; }
+    }
+    const M = tous.filter((m) => !m.role || [].concat(m.role).includes(role) || (membre && [].concat(m.role).includes("membre"))), ici = actuel();
     pan.innerHTML = `<div class="lc-titre">Modules GolfNexus</div><div class="lc-grille">${M.map((m) => {
       const ouvert = m.etat === "ouvert" && m.adresse, cour = m.id === ici;
       const corps = `<span class="lc-pastille" style="--c:${e(m.couleur)}">${m.icone || ""}</span><b>${e(m.nom)}</b><small>${cour ? "ici" : ouvert ? e(m.verbe) : "Bientôt"}</small>`;
