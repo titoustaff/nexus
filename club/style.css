@@ -487,3 +487,10 @@ html, body { overflow-x: clip; }   /* filet de sécurité : jamais de défilemen
 .mb-histo td { background: var(--sauge-pale); } .mb-histo span { display: inline-flex; flex-direction: column; align-items: center; min-width: 54px; padding: 4px 6px; }
 .mb-histo small { color: var(--doux); font-size: 11px; } .mb-histo b { font-size: 14px; color: var(--vert); }
 .n { text-align: right; }
+/* bulles de filtre (vues des membres) */
+.mb-bulles { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.mb-bulles button { font: inherit; font-size: 12.5px; font-weight: 600; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--bord); background: var(--carte); color: var(--doux); cursor: pointer; }
+.mb-bulles button small { font-weight: 500; opacity: .75; }
+.mb-bulles button[aria-pressed="true"] { background: var(--vert); border-color: var(--vert); color: var(--fond); }
+.mb-bulles button:focus-visible { outline: 2px solid var(--jaune); outline-offset: 2px; }
+.mb-listes { margin-bottom: 10px; } .mb-listes small { opacity: .7; font-weight: 500; }
