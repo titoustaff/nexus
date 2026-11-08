@@ -93,7 +93,7 @@ async function rendreDemandes(membres, structs) {
       <input id="ad-cm-nom" placeholder="Prénom Nom" maxlength="60" required aria-label="Nom">
       <input id="ad-cm-email" type="email" placeholder="e-mail" required aria-label="E-mail">
       <input id="ad-cm-lic" inputmode="numeric" placeholder="licence ffgolf" maxlength="14" aria-label="Licence">
-      <select id="ad-cm-groupe" aria-label="Rôle"><option value="as">Membre AS</option><option value="coach">Coach</option></select>
+      <select id="ad-cm-groupe" aria-label="Rôle"><option value="as">Membre AS</option><option value="club">Membre club</option><option value="coach">Coach</option></select>
       <button type="submit" class="btn plein">Inviter</button></form>
     <p class="meta">Même chose que le coach principal dans Mon club : invitation immédiate ; compte existant : accès ouvert ; un coach est rattaché au club.</p>`;
 }
