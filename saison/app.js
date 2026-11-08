@@ -1149,6 +1149,9 @@ async function majSession1(session) {
   if (JSON.stringify([etat.ref, $("f-rayon").value, $("f-circuit").value]) !== avant || $("f-place").checked) rendre();
   toutRafraichir();
   if (etat.veutVue && Saison.mode === "compte") { const v = etat.veutVue; etat.veutVue = null; await voirJoueur(v.id, v.cible); }
+  else if (Saison.mode === "compte" && Saison.role !== "joueur" && !Saison.demo) {   // joueur regardé dans un autre module (Carte, Stats)
+    const j = nexusJoueurVu.lire(u?.id); if (j && (Saison.joueurs || []).some((x) => x.joueur_id === j)) await voirJoueur(j, etat.ecran === "stats" ? "stats" : null);
+  }
   if (etat.veutProfil) { const v = etat.veutProfil === "stats" ? "stats" : "profil"; etat.veutProfil = false; if (Saison.mode === "compte") ecran(v); }
 }
 function initCompte() {
@@ -2246,11 +2249,13 @@ async function voirJoueur(id, cible = null) {
     Object.assign(Saison, { demo: { ...Saison.demo, coach: true, id }, user: moi.user, moi: moi.user, role: moi.role, joueurs: moi.joueurs });
     distanceDuProfil(true); rendre(); toutRafraichir();
     ecran(cible || (etat.ecran === "stats" ? "stats" : "saison"));
+    nexusJoueurVu.ecrire(Saison.moi?.id, id);   // Carte et Stats s'ouvriront sur ce joueur
     signaler(`Tu regardes la saison de ${j.nom || "ce joueur"} (lecture seule).`);
   } catch (e) { signaler("Lecture impossible : " + (e.message || e)); }
 }
 async function revenirMoi() {
   const u = Saison.moi; if (!u) return;
+  nexusJoueurVu.ecrire(u.id, "");
   try { await Saison.connecter(u); } catch (e) { signaler("Lecture du compte impossible : " + (e.message || e)); }
   distanceDuProfil(true); rendre(); toutRafraichir(); ecran(etat.ecran === "admin" ? "admin" : etat.ecran);
 }
