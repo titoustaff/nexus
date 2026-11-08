@@ -572,8 +572,98 @@ async function entrer() {
   const { data } = await sb.auth.getSession();
   try { await Compte.connecter(data.session.user); } catch (e) { signaler("Lecture du compte impossible : " + (e.message || e)); }
   document.body.classList.remove("verrou");
-  if (!estCoach()) { $("ecran-coach").hidden = false; $("co-contenu").innerHTML = `<div class="bloc vide">Club est réservé aux coachs et à l'administrateur. <a href="../saison/">Retour à Saison</a></div>`; rendreCompte(); return; }
+  if (!estCoach()) {   // membre AS / club (08/11) : lecture seule de ce que le coach principal a ouvert à son groupe
+    const A = await sb.rpc("club_mon_acces");
+    if (!A.error && A.data?.length) { modeMembre(A.data[0]); return; }
+    $("ecran-coach").hidden = false; $("co-contenu").innerHTML = `<div class="bloc vide">Club est réservé aux coachs, à l'administrateur et aux membres de l'AS invités par le club. <a href="../saison/">Retour à Saison</a></div>`; rendreCompte(); return;
+  }
   ecran(location.hash === "#club" ? "club" : "coach");
 }
+// ------------------------------------------------------------------ membres AS / club : Club en lecture seule (08/11)
+// Un onglet par case cochée par le coach principal (club_visibilite) ; données par les fonctions club_vue_* (club-membres.sql),
+// qui ne renvoient que les joueurs AS ayant accepté le suivi du club, et rien de ce qui n'est pas coché.
+const mb = { acces: null, onglet: "", annee: new Date().getFullYear(), liste: "", ouvert: "" };
+function modeMembre(acces) {
+  mb.acces = acces; mb.onglet = CASES.map(([k]) => k).find((k) => acces.cases.includes(k)) || "";
+  document.body.classList.add("membre");
+  document.querySelector(".vues").innerHTML = `<a class="vers-module" href="../saison/">← Saison</a>`;
+  $("ecran-coach").hidden = false; rendreCompte(); rendreMembre();
+}
+async function rendreMembre() {
+  const a = mb.acces, box = $("co-contenu");
+  $("co-titre").textContent = `${a.structure_nom} · ${GROUPE_LIB[a.groupe] || ""}`;
+  const ong = CASES.filter(([k]) => a.cases.includes(k));
+  if (!ong.length) { box.innerHTML = `<div class="bloc vide"><p>Le coach principal n'a encore rien ouvert aux ${a.groupe === "as" ? "membres de l'AS" : "membres du club"}.</p></div>`; return; }
+  box.innerHTML = `<div class="seg co-onglets" role="group" aria-label="Club">${ong.map(([k, l]) => `<button type="button" data-mb-onglet="${k}" aria-pressed="${mb.onglet === k}">${l}</button>`).join("")}</div>
+    <div id="mb-corps"><p class="meta">Chargement…</p></div><p class="meta mb-lecture">Lecture seule · ouvert par le coach principal de ${esc(a.structure_nom)}.</p>`;
+  try { $("mb-corps").innerHTML = await (VUES_MB[mb.onglet] || (async () => ""))(a.structure_id); }
+  catch (e) { $("mb-corps").innerHTML = `<div class="bloc vide">Lecture impossible : ${esc(e.message || String(e))}</div>`; }
+}
+const lire = async (q) => { const r = await q; if (r.error) throw r.error; return r.data || []; };
+const nomsDe = async (sid) => Object.fromEntries((await lire(sb.rpc("club_vue_joueurs", { sid }))).map((j) => [j.joueur_id, j]));
+const nomT = (id) => { const t = etat.parId.get(id); return t ? titre(t.nom) : "Tournoi " + id; };
+const VUES_MB = {
+  async joueurs(sid) {
+    const J = Object.values(await nomsDe(sid)).sort((x, y) => (x.nom || "").localeCompare(y.nom || ""));
+    return `<div class="bloc"><h3>Joueurs AS <small>${J.length}</small></h3>${J.length ? `<div class="st-table"><table><thead><tr><th>Joueur</th><th>Catégorie</th><th>Index</th></tr></thead><tbody>
+      ${J.map((j) => `<tr><td><b>${esc(j.nom || "—")}</b></td><td>${GROUPES[groupeDe(j)] || "—"}</td><td>${j.index_golf != null ? String(j.index_golf).replace(".", ",") : "—"}</td></tr>`).join("")}</tbody></table></div>` : `<p class="meta">Aucun joueur AS.</p>`}</div>`;
+  },
+  async equipes(sid) {
+    const [E, N] = await Promise.all([lire(sb.rpc("club_vue_equipes", { sid })), nomsDe(sid)]);
+    const eq = new Map(); for (const r of E) { if (!eq.has(r.equipe_id)) eq.set(r.equipe_id, { nom: r.nom, j: [] }); if (r.joueur_id) eq.get(r.equipe_id).j.push(N[r.joueur_id]?.nom || "—"); }
+    const L = [...eq.values()].sort((x, y) => x.nom.localeCompare(y.nom));
+    return L.length ? `<div class="mb-equipes">${L.map((e) => `<div class="bloc"><h3>${esc(e.nom)} <small>${e.j.length} joueur${e.j.length > 1 ? "s" : ""}</small></h3>
+      ${e.j.length ? `<ul class="mb-liste">${e.j.sort().map((n) => `<li>${esc(n)}</li>`).join("")}</ul>` : `<p class="meta">Pas encore de joueur.</p>`}</div>`).join("")}</div>` : `<div class="bloc vide">Aucune équipe pour l'instant.</div>`;
+  },
+  async calendrier(sid) {
+    const [C, N] = await Promise.all([lire(sb.rpc("club_vue_calendrier", { sid, an: mb.annee })), nomsDe(sid)]);
+    const parT = new Map(); for (const r of C) { if (!parT.has(r.tournoi_id)) parT.set(r.tournoi_id, []); parT.get(r.tournoi_id).push(r); }
+    const L = [...parT.entries()].map(([id, R]) => ({ id, t: etat.parId.get(id), R })).sort((x, y) => (x.t?.debut || "9").localeCompare(y.t?.debut || "9"));
+    const lib = { envisage: "envisagé", inscrit: "inscrit", joue: "joué" };
+    return `<div class="bloc"><div class="co-eq-tete"><h3>Calendrier ${mb.annee} <small>${L.length} tournoi${L.length > 1 ? "s" : ""}</small></h3>
+      <div class="seg">${[mb.annee - 1, mb.annee, mb.annee + 1].filter((a, i, T) => T.indexOf(a) === i).map((a) => `<button type="button" data-mb-annee="${a}" aria-pressed="${a === mb.annee}">${a}</button>`).join("")}</div></div>
+      ${L.length ? `<div class="st-table"><table><thead><tr><th>Date</th><th>Tournoi</th><th>Golf</th><th>Joueurs</th></tr></thead><tbody>
+      ${L.map(({ id, t, R }) => `<tr><td>${t?.debut ? fmtDate(t.debut) : "—"}</td><td><b>${esc(nomT(id))}</b></td><td>${esc(t ? titre(t.golf_nom || t.golf || "") : "")}</td>
+        <td>${R.map((r) => `<span class="tag ${r.statut === "inscrit" ? "" : r.statut === "joue" ? "mb-joue" : "ok-att"}">${esc(N[r.joueur_id]?.nom || "—")} · ${lib[r.statut] || r.statut}</span>`).join(" ")}</td></tr>`).join("")}
+      </tbody></table></div>` : `<p class="meta">Aucun tournoi prévu par les joueurs AS cette année.</p>`}</div>`;
+  },
+  async scores(sid) {
+    const [S, N] = await Promise.all([lire(sb.rpc("club_vue_scores", { sid })), nomsDe(sid)]);
+    const L = S.map((r) => ({ ...r, t: etat.parId.get(r.tournoi_id) })).sort((x, y) => (y.t?.debut || "").localeCompare(x.t?.debut || "")).slice(0, 200);
+    const ecart = (p) => (p == null ? "" : p === 0 ? "par" : (p > 0 ? "+" : "−") + Math.abs(p));
+    return `<div class="bloc"><h3>Scores en tournoi <small>${L.length} résultat${L.length > 1 ? "s" : ""}, du plus récent</small></h3>${L.length ? `<div class="st-table"><table><thead><tr><th>Date</th><th>Tournoi</th><th>Joueur</th><th>Tours</th><th>Total</th><th>Place</th></tr></thead><tbody>
+      ${L.map((r) => `<tr><td>${r.t?.debut ? fmtDate(r.t.debut) : "—"}</td><td>${esc(nomT(r.tournoi_id))}</td><td><b>${esc(N[r.joueur_id]?.nom || "—")}</b></td><td>${(r.tours || []).join(" · ") || "—"}</td>
+        <td>${r.total != null ? `<b>${r.total}</b> <small>${ecart(r.par)}</small>` : "—"}</td><td>${esc(r.place || "—")}${r.classes ? ` <small>/ ${r.classes}</small>` : ""}</td></tr>`).join("")}</tbody></table></div>` : `<p class="meta">Aucun résultat relevé.</p>`}</div>`;
+  },
+  async merite(sid) {
+    const [M, N] = await Promise.all([lire(sb.rpc("club_vue_merite", { sid })), nomsDe(sid)]);
+    const listes = [...new Set(M.map((m) => m.liste))].sort(); if (!listes.includes(mb.liste)) mb.liste = listes.includes("jeunes") ? "jeunes" : listes[0] || "";
+    const parJ = new Map(); for (const m of M.filter((x) => x.liste === mb.liste)) { if (!parJ.has(m.joueur_id)) parJ.set(m.joueur_id, []); parJ.get(m.joueur_id).push(m); }
+    const L = [...parJ.entries()].map(([j, H]) => { H.sort((a, b) => b.mois.localeCompare(a.mois)); return { j, H, d: H[0] }; }).sort((a, b) => (a.d.place || 1e9) - (b.d.place || 1e9));
+    const moisLib = (m) => `${MOIS_COURT[+m.slice(4) - 1]} ${m.slice(2, 4)}`;
+    const LIB = { amateurs: "Amateurs", jeunes: "Jeunes", midams: "Mid-Amateurs", seniors: "Seniors" };
+    return `<div class="bloc"><div class="co-eq-tete"><h3>Mérite${L[0] ? ` · ${moisLib(L[0].d.mois)}` : ""} <small>${L.length} joueur${L.length > 1 ? "s" : ""}</small></h3>
+      ${listes.length > 1 ? `<div class="seg">${listes.map((l) => `<button type="button" data-mb-liste="${l}" aria-pressed="${l === mb.liste}">${LIB[l] || l}</button>`).join("")}</div>` : ""}</div>
+      ${L.length ? `<div class="st-table"><table><thead><tr><th>Joueur</th><th>Catégorie</th><th class="n">Rang</th><th class="n">Évolution</th><th class="n">Index</th></tr></thead><tbody>
+      ${L.map(({ j, H, d }) => { const ev = d.place && d.place_prec ? d.place_prec - d.place : null;
+        return `<tr class="mb-ligne" data-mb-ouvrir="${esc(j)}"><td><b>${esc(N[j]?.nom || "—")}</b> <small class="meta">▸ historique</small></td><td>${esc(d.categorie || "—")}</td><td class="n"><b>${d.place ?? "—"}</b></td>
+          <td class="n ${ev > 0 ? "mb-monte" : ev < 0 ? "mb-baisse" : ""}">${ev == null ? "—" : ev > 0 ? `▲ ${ev}` : ev < 0 ? `▼ ${-ev}` : "="}</td><td class="n">${d.index_golf != null ? String(d.index_golf).replace(".", ",") : "—"}</td></tr>
+          ${mb.ouvert === j ? `<tr class="mb-histo"><td colspan="5">${H.slice(0, 13).reverse().map((h) => `<span><small>${moisLib(h.mois)}</small><b>${h.place ?? "—"}</b></span>`).join("")}</td></tr>` : ""}`; }).join("")}
+      </tbody></table></div><p class="meta">Rang national dans la liste ${LIB[mb.liste] || mb.liste} ; évolution par rapport au mois précédent. Clique un joueur pour son historique.</p>` : `<p class="meta">Aucun classement relevé.</p>`}</div>`;
+  },
+  async evenements(sid) {
+    const E = await lire(sb.from("club_evenements").select("id,type,nom,golf_nom,debut,fin,nb_tours,categorie").eq("structure_id", sid).order("debut", { ascending: false }));
+    const lib = { competition: "Compétition hors Mérite", rencontre: "Rencontre", interne: "Partie interne" };
+    return `<div class="bloc"><h3>Événements du club <small>${E.length}</small></h3>${E.length ? `<div class="st-table"><table><thead><tr><th>Date</th><th>Événement</th><th>Type</th><th>Golf</th></tr></thead><tbody>
+      ${E.map((e) => `<tr><td>${fmtDate(e.debut)}${e.fin && e.fin !== e.debut ? ` → ${fmtDate(e.fin)}` : ""}</td><td><b>${esc(e.nom)}</b>${e.categorie ? ` <span class="tag">${esc(e.categorie)}</span>` : ""}</td><td>${lib[e.type] || e.type}</td><td>${esc(titre(e.golf_nom || ""))}</td></tr>`).join("")}</tbody></table></div>` : `<p class="meta">Aucun événement.</p>`}</div>`;
+  },
+};
+document.addEventListener("click", (e) => {
+  if (!mb.acces) return;
+  const o = e.target.closest("[data-mb-onglet]"); if (o) { mb.onglet = o.dataset.mbOnglet; rendreMembre(); return; }
+  const a = e.target.closest("[data-mb-annee]"); if (a) { mb.annee = +a.dataset.mbAnnee; rendreMembre(); return; }
+  const l = e.target.closest("[data-mb-liste]"); if (l) { mb.liste = l.dataset.mbListe; mb.ouvert = ""; rendreMembre(); return; }
+  const r = e.target.closest("[data-mb-ouvrir]"); if (r) { mb.ouvert = mb.ouvert === r.dataset.mbOuvrir ? "" : r.dataset.mbOuvrir; rendreMembre(); }
+});
 nexusBrancherAccueil();
 if (sb) nexusDemarrer(entrer);

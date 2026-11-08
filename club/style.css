@@ -475,3 +475,15 @@ html, body { overflow-x: clip; }   /* filet de sécurité : jamais de défilemen
 .mb-case span { display: flex; flex-direction: column; gap: 1px; } .mb-case small { color: var(--doux); font-size: 12px; }
 .mb-case:has(input:disabled) { cursor: default; }
 .vo-suppr { color: #b91c1c; }
+
+/* membres AS / club : Club en lecture seule (08/11) */
+.mb-lecture { margin-top: 6px; }
+.mb-equipes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.mb-equipes .bloc { margin: 0; }
+.mb-liste { margin: 0; padding-left: 18px; columns: 2; font-size: 13.5px; } .mb-liste li { margin: 2px 0; }
+.tag.mb-joue { background: var(--sauge-pale); color: var(--doux); }
+.mb-ligne { cursor: pointer; } .mb-ligne:hover td { background: color-mix(in srgb, var(--sauge-pale) 50%, transparent); }
+.mb-monte { color: var(--vert-2); font-weight: 700; } .mb-baisse { color: #b45309; font-weight: 700; }
+.mb-histo td { background: var(--sauge-pale); } .mb-histo span { display: inline-flex; flex-direction: column; align-items: center; min-width: 54px; padding: 4px 6px; }
+.mb-histo small { color: var(--doux); font-size: 11px; } .mb-histo b { font-size: 14px; color: var(--vert); }
+.n { text-align: right; }
