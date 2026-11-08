@@ -230,3 +230,13 @@ body.reprise #accueil::after { content: ""; position: absolute; left: 50%; top: 
 .nx-vue nav a:hover, .nx-vue button:hover { background: #fff; }
 .nx-vue a:focus-visible, .nx-vue button:focus-visible { outline: 2px solid #2e2400; outline-offset: 2px; }
 .nx-vue-charge main, .nx-vue-charge [id^="ecran-"] { opacity: .35; pointer-events: none; transition: opacity .2s; }
+.nx-vue-qui { position: relative; display: inline-flex; align-items: center; gap: 6px; }
+.nx-vue-choix { border: 1px solid rgba(46,36,0,.35); background: rgba(255,255,255,.7); color: #2e2400; border-radius: 999px; padding: 3px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+.nx-vue-choix:hover { background: #fff; }
+.nx-vue-pop { position: absolute; top: calc(100% + 6px); left: 0; z-index: 950; width: min(320px, 86vw); background: var(--carte, #fff); color: var(--texte, #1c1917); border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,.25); padding: 8px; text-align: left; }
+.nx-vue-pop input { width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid var(--bord, #ddd); border-radius: 8px; background: var(--fond, #f6f6f3); color: inherit; }
+.nx-vue-pop ul { list-style: none; margin: 6px 0 0; padding: 0; max-height: 280px; overflow-y: auto; }
+.nx-vue-pop li { padding: 7px 10px; border-radius: 8px; cursor: pointer; font-size: 13.5px; font-weight: 600; }
+.nx-vue-pop li small { color: var(--doux, #6b6b6b); font-weight: 500; }
+.nx-vue-pop li[aria-selected="true"], .nx-vue-pop li:hover { background: var(--sauge-pale, #e8f0e6); }
+.nx-vue-pop li.vide { color: var(--doux, #6b6b6b); cursor: default; font-weight: 500; }

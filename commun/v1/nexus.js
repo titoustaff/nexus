@@ -28,7 +28,8 @@ const nexusJoueurVu = {
 // joueur (modules.json : vueJoueur, ouverts) et « Mon compte ». nom vide : la bande disparaît. ici : id du module courant.
 const NX_MODULES_URL = new URL("modules.json", document.currentScript?.src || location.href).href;
 let nxModulesJoueur = null, nxBandeTour = 0;
-async function nexusBandeVue(nom, ici, revenir) {
+// joueurs + choisir(id) : le nom devient un sélecteur avec recherche (passer d'un joueur à l'autre sans changer de module)
+async function nexusBandeVue(nom, ici, revenir, joueurs = [], choisir = null) {
   const tour = ++nxBandeTour;   // plusieurs appels rapprochés : seul le dernier dessine, toujours dans UNE seule bande
   if (!nom) { document.getElementById("nx-vue")?.remove(); return; }
   nxModulesJoueur ||= fetch(NX_MODULES_URL).then((r) => r.json()).then((d) => (d.modules || []).filter((m) => m.vueJoueur && m.etat === "ouvert" && m.adresse))
@@ -37,10 +38,32 @@ async function nexusBandeVue(nom, ici, revenir) {
   if (tour !== nxBandeTour) return;
   let b = document.getElementById("nx-vue");
   if (!b) { b = document.createElement("div"); b.id = "nx-vue"; b.className = "nx-vue"; (document.querySelector("header.bandeau") || document.body.firstElementChild).after(b); }
-  b.innerHTML = `<span>👁 <b>${esc(nom)}</b> <small>lecture seule</small></span>
+  const liste = choisir ? (joueurs || []).filter((j) => j.id && j.nom).sort((x, y) => x.nom.localeCompare(y.nom, "fr")) : [];
+  b.innerHTML = `<span class="nx-vue-qui">👁 ${liste.length > 1 ? `<button type="button" class="nx-vue-choix" aria-haspopup="listbox" aria-expanded="false" title="Changer de joueur"><b>${esc(nom)}</b> ▾</button>
+      <div class="nx-vue-pop" hidden><input type="search" placeholder="Rechercher un joueur…" aria-label="Rechercher un joueur" autocomplete="off"><ul role="listbox"></ul></div>` : `<b>${esc(nom)}</b>`} <small>lecture seule</small></span>
     <nav aria-label="Modules du joueur">${M.map((m) => m.id === ici ? `<span aria-current="page">${esc(m.nom)}</span>` : `<a href="${esc(new URL("../../" + m.adresse, NX_MODULES_URL).href)}">${esc(m.nom)}</a>`).join("")}</nav>
     <button type="button" id="nx-vue-retour">← Mon compte</button>`;
   b.querySelector("#nx-vue-retour").onclick = revenir;
+  if (liste.length > 1) nxBrancherChoix(b, liste, choisir);
+}
+// sélecteur de joueur de la bande : recherche (nom, sans accents), flèches, Entrée, Échap
+function nxBrancherChoix(b, liste, choisir) {
+  const btn = b.querySelector(".nx-vue-choix"), pop = b.querySelector(".nx-vue-pop"), q = pop.querySelector("input"), ul = pop.querySelector("ul");
+  let actif = 0, vus = liste;
+  const dessiner = () => {
+    const t = plier(q.value); vus = liste.filter((j) => !t || plier(j.nom).includes(t)); actif = Math.min(actif, Math.max(0, vus.length - 1));
+    ul.innerHTML = vus.length ? vus.slice(0, 50).map((j, i) => `<li role="option" data-id="${esc(j.id)}" aria-selected="${i === actif}">${esc(j.nom)}${j.info ? ` <small>${esc(j.info)}</small>` : ""}</li>`).join("") : `<li class="vide">Aucun joueur</li>`;
+  };
+  const ouvrir = (oui) => { pop.hidden = !oui; btn.setAttribute("aria-expanded", String(oui)); if (oui) { q.value = ""; actif = 0; dessiner(); q.focus(); } };
+  btn.onclick = (e) => { e.stopPropagation(); ouvrir(pop.hidden); };
+  q.oninput = () => { actif = 0; dessiner(); };
+  q.onkeydown = (e) => {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); actif = Math.max(0, Math.min(vus.length - 1, actif + (e.key === "ArrowDown" ? 1 : -1))); dessiner(); ul.children[actif]?.scrollIntoView({ block: "nearest" }); }
+    else if (e.key === "Enter" && vus[actif]) { e.preventDefault(); ouvrir(false); choisir(vus[actif].id); }
+    else if (e.key === "Escape") { ouvrir(false); btn.focus(); }
+  };
+  ul.onmousedown = (e) => { const li = e.target.closest("li[data-id]"); if (li) { e.preventDefault(); ouvrir(false); choisir(li.dataset.id); } };
+  document.addEventListener("click", (e) => { if (!pop.hidden && !b.contains(e.target)) ouvrir(false); });
 }
 const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : "10000000-1000-4000-8000-100000000000".replace(/[018]/g,
   (c) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)));
