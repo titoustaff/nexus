@@ -1087,7 +1087,8 @@ function rendreCompte() {
   rendreBienvenue();
   const vb = $("vue-bandeau");
   vb.hidden = true;   // bande commune sous l'en-tête (nexusBandeVue, 08/11) : raccourcis Saison · Carte · Stats
-  nexusBandeVue(connecte && Saison.demo?.coach ? Saison.demo.nom || "Joueur" : "", "saison", () => revenirMoi());
+  nexusBandeVue(connecte && Saison.demo?.coach ? Saison.demo.nom || "Joueur"
+    : document.body.classList.contains("nx-vue-charge") ? nexusJoueurVu.nom(Saison.moi?.id || Saison.user?.id) : "", "saison", () => revenirMoi());
   $("saison").hidden = !vb.hidden;   // dans l'en-tête, la ligne « vue joueur » remplace l'avancée de la saison
   if (!vb.hidden) vb.innerHTML = `<span>👁 <b>${esc(Saison.demo.nom || "Joueur")}</b> <small>lecture seule</small></span>
     <button type="button" data-vue-ecran="saison" aria-pressed="${etat.ecran === "saison"}">Saison</button>
@@ -1140,6 +1141,9 @@ function majSession(session) { return (fileSession = fileSession.then(() => majS
 async function majSession1(session) {
   const u = session && session.user;
   if ((u && u.id) === (Saison.user && Saison.user.id)) return rendreCompte();
+  // retour d'un autre module sur un joueur regardé : bande jaune tout de suite, contenu grisé jusqu'à ses données
+  const nomVu = !Saison.demo && u && !etat.veutVue ? nexusJoueurVu.nom(u.id) : "";
+  if (nomVu) { nexusBandeVue(nomVu, "saison", () => revenirMoi()); document.body.classList.add("nx-vue-charge"); }
   if (u) {
     try { await Saison.connecter(u); compte.envoye = null; }
     catch (err) { signaler("Lecture du compte impossible : " + (err.message || err)); Saison.chargerLocal(); }
@@ -1153,6 +1157,7 @@ async function majSession1(session) {
   else if (Saison.mode === "compte" && Saison.role !== "joueur" && !Saison.demo) {   // joueur regardé dans un autre module (Carte, Stats)
     const j = nexusJoueurVu.lire(u?.id); if (j && (Saison.joueurs || []).some((x) => x.joueur_id === j)) await voirJoueur(j, etat.ecran === "stats" ? "stats" : null);
   }
+  document.body.classList.remove("nx-vue-charge");
   if (etat.veutProfil) { const v = etat.veutProfil === "stats" ? "stats" : "profil"; etat.veutProfil = false; if (Saison.mode === "compte") ecran(v); }
 }
 function initCompte() {
@@ -2250,7 +2255,7 @@ async function voirJoueur(id, cible = null) {
     Object.assign(Saison, { demo: { ...Saison.demo, coach: true, id }, user: moi.user, moi: moi.user, role: moi.role, joueurs: moi.joueurs });
     distanceDuProfil(true); rendre(); toutRafraichir();
     ecran(cible || (etat.ecran === "stats" ? "stats" : "saison"));
-    nexusJoueurVu.ecrire(Saison.moi?.id, id);   // Carte et Stats s'ouvriront sur ce joueur
+    nexusJoueurVu.ecrire(Saison.moi?.id, id, j.nom || j.libelle);   // Carte et Stats s'ouvriront sur ce joueur
     signaler(`Tu regardes la saison de ${j.nom || "ce joueur"} (lecture seule).`);
   } catch (e) { signaler("Lecture impossible : " + (e.message || e)); }
 }
