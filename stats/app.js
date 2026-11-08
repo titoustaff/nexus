@@ -4,7 +4,7 @@
 // un coach voit les stats des joueurs qui l'ont accepté (droit coach_de du cœur, comme dans Carte).
 // Plus tard : séances d'Entraînement, trou par trou ffgolf, coup par coup (Carte V2), strokes gained.
 
-const etat = { parties: [], vue: "", periode: "12m", contextes: new Set(["entrainement", "libre", "rencontre", "competition", "tournoi"]) };
+const etat = { parties: [], ff: [], tournois: null, ffgolf: true, vue: "", periode: "12m", contextes: new Set(["entrainement", "libre", "rencontre", "competition", "tournoi"]) };
 const $ = (id) => document.getElementById(id);
 const JOUR = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })();
 // contextes, du plus calme au plus exigeant (niveau de pression)
@@ -59,7 +59,7 @@ const dateCourte = (d) => new Date(d + "T12:00:00").toLocaleDateString("fr-FR", 
 
 function filtrees() {
   const debut = etat.periode === "tout" ? "" : (() => { const d = new Date(); d.setMonth(d.getMonth() - (etat.periode === "3m" ? 3 : 12)); return d.toISOString().slice(0, 10); })();
-  return etat.parties.filter((p) => etat.contextes.has(p.contexte) && (!debut || p.jour >= debut) && joues(p).length >= 9);
+  return [...etat.parties, ...(etat.ffgolf ? etat.ff : [])].filter((p) => etat.contextes.has(p.contexte) && (!debut || p.jour >= debut) && joues(p).length >= 9);
 }
 // une partie, ramenée à 18 trous (écart au par × 18 / trous joués) pour comparer 9 et 18 trous
 function resume(p) {
@@ -95,7 +95,8 @@ function calculer(P) {
 const tuile = (val, lib, sous = "", titre = "") => `<div class="st-tuile"${titre ? ` title="${esc(titre)}"` : ""}><b>${val}</b><span>${lib}</span>${sous ? `<small>${sous}</small>` : ""}</div>`;
 function rendreFiltres() {
   $("st-filtres").innerHTML = `<div class="seg" role="group" aria-label="Période">${PERIODES.map(([k, l]) => `<button type="button" data-periode="${k}" aria-pressed="${etat.periode === k}">${l}</button>`).join("")}</div>
-    <div class="st-ctx" role="group" aria-label="Contextes">${CONTEXTES.map(([k, l]) => `<button type="button" data-ctx="${k}" aria-pressed="${etat.contextes.has(k)}">${l}</button>`).join("")}</div>`;
+    <div class="st-ctx" role="group" aria-label="Contextes">${CONTEXTES.map(([k, l]) => `<button type="button" data-ctx="${k}" aria-pressed="${etat.contextes.has(k)}">${l}</button>`).join("")}</div>
+    ${etat.ff.length ? `<div class="st-ctx"><button type="button" data-ff aria-pressed="${etat.ffgolf}" title="Tours de tournois relevés par la ffgolf (score trou par trou) pour lesquels il n'y a pas de carte : comptent dans le score, pas dans le putting ni les départs">Tours ffgolf sans carte (${etat.ff.length})</button></div>` : ""}`;
   $("st-qui").innerHTML = Compte.joueurs.length ? `<select id="st-joueur" aria-label="Stats de"><option value="">Mes stats</option>${Compte.joueurs.map((j) =>
     `<option value="${esc(j.joueur_id)}" ${j.joueur_id === etat.vue ? "selected" : ""}>Stats de ${esc(j.nom || j.libelle || "joueur")}</option>`).join("")}</select>` : "";
 }
@@ -110,7 +111,7 @@ function rendre() {
   if (!P.length) { box.innerHTML = `<div class="bloc vide"><p>Aucune partie (9 trous saisis au moins) pour ces filtres.</p></div>`; return; }
   const s = calculer(P);
   box.innerHTML = `
-    <p class="meta st-base">Sur <b>${s.nbParties} partie${s.nbParties > 1 ? "s" : ""}</b> (${s.nbTrous} trous) · moyennes ramenées à 18 trous</p>
+    <p class="meta st-base">Sur <b>${s.nbParties} partie${s.nbParties > 1 ? "s" : ""}</b> (${s.nbTrous} trous)${(() => { const n = P.filter((p) => p.ffgolf).length; return n ? `, dont ${n} tour${n > 1 ? "s" : ""} relevé${n > 1 ? "s" : ""} par la ffgolf (score seul)` : ""; })()} · moyennes ramenées à 18 trous</p>
     <div class="st-tuiles">
       ${tuile(signe(s.ecart18), "écart au par", s.meilleur ? `meilleure carte : ${s.meilleur.score} (${signe(s.meilleur.ecart, 0)})` : "", "Moyenne de l'écart au par, par partie, ramené à 18 trous")}
       ${tuile(virgule(s.putts18), "putts par partie", s.puttsTrou != null ? `${virgule(s.puttsTrou, 2)} par trou` : "")}
@@ -158,7 +159,7 @@ function graphEvolution(R) {
   const etiquettes = L.map((r, i) => (i === 0 || i === L.length - 1 || L.length <= 8 ? `<text x="${X(i)}" y="${H - 8}" class="st-axe-t" text-anchor="middle">${dateCourte(r.p.jour)}</text>` : "")).join("");
   const ligne = L.map((r, i) => `${i ? "L" : "M"}${X(i).toFixed(1)} ${Y(r.ecart18).toFixed(1)}`).join(" ");
   const points = L.map((r, i) => `<circle cx="${X(i)}" cy="${Y(r.ecart18)}" r="4.5" class="st-pt"/>
-    <rect x="${X(i) - 14}" y="${h}" width="28" height="${H - h - b}" class="st-cible" data-bulle="${esc(`${dateCourte(r.p.jour)} · ${titre(r.p.golf_nom || r.p.golf)}\n${LIB_CTX[r.p.contexte] || ""} · ${r.score} sur ${r.n} trous (${signe(r.ecart, 0)})${r.n < 18 ? ` → ${signe(r.ecart18)} sur 18` : ""}${r.putts18 != null ? `\n${virgule(r.putts18)} putts (18 trous)` : ""}`)}"/>`).join("");
+    <rect x="${X(i) - 14}" y="${h}" width="28" height="${H - h - b}" class="st-cible" data-bulle="${esc(`${dateCourte(r.p.jour)} · ${titre(r.p.golf_nom || r.p.golf)}\n${LIB_CTX[r.p.contexte] || ""}${r.p.ffgolf ? " (relevé ffgolf)" : ""} · ${r.score} sur ${r.n} trous (${signe(r.ecart, 0)})${r.n < 18 ? ` → ${signe(r.ecart18)} sur 18` : ""}${r.putts18 != null ? `\n${virgule(r.putts18)} putts (18 trous)` : ""}`)}"/>`).join("");
   return `<div class="st-graph"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Évolution de l'écart au par sur ${L.length} parties">${grille}${etiquettes}<path d="${ligne}" class="st-ligne"/>${points}</svg></div>`;
 }
 // ---- répartition : une barre segmentée (≤ 6 parts), parts écrites dessus, légende
@@ -188,7 +189,7 @@ function tableau(R) {
   const L = R.slice().sort((a, b) => b.p.jour.localeCompare(a.p.jour));
   return `<div class="defile"><table class="st-table"><thead><tr><th>Date</th><th>Golf</th><th>Contexte</th><th class="n">Trous</th><th class="n">Score</th><th class="n">Écart</th><th class="n">Putts</th><th class="n">Fairways</th><th class="n">GIR</th></tr></thead><tbody>
     ${L.map((r) => { const J = joues(r.p), F = J.filter((t) => t.par > 3 && t.fw), C = J.filter((t) => t.putts != null && coherent(t));
-      return `<tr><td>${dateCourte(r.p.jour)}</td><td>${esc(titre(r.p.golf_nom || r.p.golf))}</td><td>${LIB_CTX[r.p.contexte] || ""}</td><td class="n">${r.n}</td><td class="n"><b>${r.score}</b></td><td class="n">${signe(r.ecart, 0)}</td>
+      return `<tr><td>${dateCourte(r.p.jour)}</td><td>${esc(titre(r.p.golf_nom || r.p.golf))}</td><td>${LIB_CTX[r.p.contexte] || ""}${r.p.ffgolf ? ` <span class="tag">relevé ffgolf</span>` : ""}</td><td class="n">${r.n}</td><td class="n"><b>${r.score}</b></td><td class="n">${signe(r.ecart, 0)}</td>
         <td class="n">${C.length ? C.reduce((s, t) => s + t.putts, 0) : "—"}</td><td class="n">${F.length ? `${F.filter((t) => t.fw === "fairway").length}/${F.length}` : "—"}</td><td class="n">${C.length ? `${C.filter(gir).length}/${C.length}` : "—"}</td></tr>`; }).join("")}
     </tbody></table></div>`;
 }
@@ -206,6 +207,7 @@ function brancherBulle() {
 // ------------------------------------------------------------------ filtres
 document.addEventListener("click", (e) => {
   const p = e.target.closest("[data-periode]"); if (p) { etat.periode = p.dataset.periode; rendre(); return; }
+  if (e.target.closest("[data-ff]")) { etat.ffgolf = !etat.ffgolf; rendre(); return; }
   const c = e.target.closest("[data-ctx]");
   if (c) { const k = c.dataset.ctx; if (etat.contextes.has(k) && etat.contextes.size > 1) etat.contextes.delete(k); else etat.contextes.add(k); rendre(); }
 });
@@ -217,6 +219,29 @@ async function charger() {
   const { data, error } = await sb.from("carte_parties").select("*").eq("user_id", etat.vue || Compte.moi.id).order("jour", { ascending: true });
   if (error) { etat.parties = []; signaler("Lecture des cartes impossible : " + error.message); return; }
   etat.parties = data || [];
+  await chargerFfgolf();
+}
+// Tours de tournois relevés par la ffgolf (resultats_perso : trous[tour][trou], pars[tour][trou]) sans carte saisie pour ce
+// tournoi et ce tour : ils complètent les stats (score, répartition, par 3/4/5), sans putts ni départs.
+async function chargerFfgolf() {
+  etat.ff = [];
+  const { data: R } = await sb.from("resultats_perso").select("tournoi_id,trous,pars").eq("user_id", etat.vue || Compte.moi.id);
+  const avecTrous = (R || []).filter((r) => Array.isArray(r.trous) && r.trous.length);
+  if (!avecTrous.length) return;
+  if (!etat.tournois) { try { etat.tournois = (await telechargerDonnees()).tournois || []; } catch { etat.tournois = []; } }
+  const parId = new Map(etat.tournois.map((t) => [t.id, t]));
+  const aCarte = new Set(etat.parties.filter((p) => p.tournoi_id).map((p) => `${p.tournoi_id}|${p.tour || 1}`));
+  for (const r of avecTrous) {
+    const t = parId.get(r.tournoi_id); if (!t?.debut) continue;
+    r.trous.forEach((sc, k) => {
+      const pars = r.pars?.[k];
+      if (!Array.isArray(sc) || !Array.isArray(pars) || aCarte.has(`${r.tournoi_id}|${k + 1}`)) return;
+      const d = new Date(t.debut + "T12:00:00"); d.setDate(d.getDate() + k);
+      const trous = sc.map((score, i) => ({ t: i + 1, par: pars[i], score })).filter((x) => x.score > 0 && x.par > 0);
+      etat.ff.push({ id: `ff:${r.tournoi_id}:${k + 1}`, ffgolf: true, jour: d.toISOString().slice(0, 10), cree_le: "", golf_nom: t.golf_nom || t.golf,
+        contexte: "tournoi", tournoi_id: r.tournoi_id, tour: k + 1, nb_trous: trous.length, trous, terminee: true, nom: t.nom });
+    });
+  }
 }
 let demarre = false;
 async function entrer() {   // pas de données publiées ici : seulement le compte et les cartes
