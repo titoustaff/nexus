@@ -18,6 +18,11 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch { /* navigation privée */ } };
 const jsonLs = (k) => { try { return JSON.parse(lsGet(k) || "null"); } catch { return null; } };
+// joueur regardé par un coach (« Vue » de Saison, Carte, Stats) : il suit d'un module à l'autre ; propre au compte connecté (08/11)
+const nexusJoueurVu = {
+  lire(moi) { const v = jsonLs("nx-joueur-vu"); return v && moi && v.u === moi ? v.j || "" : ""; },
+  ecrire(moi, j) { if (moi) lsSet("nx-joueur-vu", JSON.stringify({ u: moi, j: j || "" })); },
+};
 const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : "10000000-1000-4000-8000-100000000000".replace(/[018]/g,
   (c) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)));
 // message en bas de l'écran (élément #toast de la page), 6 secondes
