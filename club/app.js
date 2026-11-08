@@ -219,14 +219,20 @@ async function htmlMembres() {
   const [G, M, V] = await Promise.all([sb.rpc("club_gere", { sid }), sb.from("club_membres").select("*").eq("structure_id", sid).order("cree_le"),
     sb.from("club_visibilite").select("groupe,cases").eq("structure_id", sid)]);
   if (M.error) return `<div class="bloc"><h3>Membres du club</h3><p class="meta">${/club_membres|schema cache|does not exist/.test(M.error.message) ? "À activer : script supabase/club-membres.sql à lancer dans Supabase." : "Lecture impossible : " + esc(M.error.message)}</p></div>`;
-  const gere = co.gere = !!G.data, membres = M.data || [];
+  const gere = co.gere = !!G.data;
+  // coachs déjà rattachés au club par l'administrateur (avant les invitations de Mon club) : en tête de liste
+  const st = Compte.structure || {}, invites = M.data || [];
+  const dejaLa = new Set(invites.filter((m) => m.groupe === "coach").map((m) => plier(m.nom)));
+  const rattaches = String(st.coachs || "").split(",").map((x) => x.trim()).filter((n) => n && !dejaLa.has(plier(n)))
+    .map((n) => ({ nom: n, groupe: "coach", statut: "actif", rattache: true, principal: n === st.principal }));
+  const membres = [...rattaches.sort((a, b) => b.principal - a.principal), ...invites];
   const casesDe = (g) => new Set((V.data || []).find((v) => v.groupe === g)?.cases || []);
   const date = (d) => (d ? fmtDate(String(d).slice(0, 10)) : "");
   return `<div class="bloc mb-bloc"><h3>Membres du club <small>${membres.filter((m) => m.statut !== "refuse").length} · coachs, membres AS et direction du club</small></h3>
     ${membres.length ? `<div class="st-table"><table><thead><tr><th>Nom</th><th>E-mail</th><th>Rôle</th><th>Statut</th><th>Depuis</th>${gere ? "<th></th>" : ""}</tr></thead><tbody>
-      ${membres.map((m) => `<tr><td><b>${esc(m.nom || "—")}</b></td><td>${esc(m.email)}</td><td>${GROUPE_LIB[m.groupe] || m.groupe}</td>
-        <td><span class="tag ${m.statut === "actif" ? "" : "ok-att"}">${STATUT_LIB[m.statut] || m.statut}</span></td><td>${date(m.valide_le || m.cree_le)}</td>
-        ${gere ? `<td class="co-act">${m.statut === "invite" ? `<button type="button" class="btn" data-membre-renvoyer="${esc(m.id)}">Renvoyer</button> ` : ""}<button type="button" class="lien vo-suppr" data-membre-suppr="${esc(m.id)}" data-nom="${esc(m.nom || m.email)}">Retirer</button></td>` : ""}</tr>`).join("")}
+      ${membres.map((m) => `<tr><td><b>${esc(m.nom || "—")}</b></td><td>${esc(m.email || "—")}</td><td>${m.principal ? "Coach principal" : GROUPE_LIB[m.groupe] || m.groupe}</td>
+        <td><span class="tag ${m.statut === "actif" ? "" : "ok-att"}">${STATUT_LIB[m.statut] || m.statut}</span></td><td>${m.rattache ? '<span class="meta">rattaché par l\'admin</span>' : date(m.valide_le || m.cree_le)}</td>
+        ${gere ? m.rattache ? "<td></td>" : `<td class="co-act">${m.statut === "invite" ? `<button type="button" class="btn" data-membre-renvoyer="${esc(m.id)}">Renvoyer</button> ` : ""}<button type="button" class="lien vo-suppr" data-membre-suppr="${esc(m.id)}" data-nom="${esc(m.nom || m.email)}">Retirer</button></td>` : ""}</tr>`).join("")}
       </tbody></table></div>` : `<p class="meta">Aucun membre pour l'instant${gere ? " : invite tes coachs et les membres de l'AS ci-dessous." : "."}</p>`}
     ${gere ? `<h4 class="co-suivi-t">Inviter dans le club</h4>
       <div class="mb-form">
