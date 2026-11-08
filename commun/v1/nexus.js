@@ -46,12 +46,13 @@ async function nexusBandeVue(nom, ici, revenir, joueurs = [], choisir = null) {
   b.querySelector("#nx-vue-retour").onclick = revenir;
   if (liste.length > 1) nxBrancherChoix(b, liste, choisir);
 }
-// sélecteur de joueur de la bande : recherche (nom, sans accents), flèches, Entrée, Échap
+// sélecteur avec recherche (joueur de la bande ; club de l'administrateur dans Club) : nom et précision, sans accents ;
+// flèches, Entrée, Échap. Balisage attendu dans b : .nx-vue-choix (bouton), .nx-vue-pop (input + ul).
 function nxBrancherChoix(b, liste, choisir) {
   const btn = b.querySelector(".nx-vue-choix"), pop = b.querySelector(".nx-vue-pop"), q = pop.querySelector("input"), ul = pop.querySelector("ul");
   let actif = 0, vus = liste;
   const dessiner = () => {
-    const t = plier(q.value); vus = liste.filter((j) => !t || plier(j.nom).includes(t)); actif = Math.min(actif, Math.max(0, vus.length - 1));
+    const t = plier(q.value); vus = liste.filter((j) => !t || plier(j.nom + " " + (j.info || "")).includes(t)); actif = Math.min(actif, Math.max(0, vus.length - 1));
     ul.innerHTML = vus.length ? vus.slice(0, 50).map((j, i) => `<li role="option" data-id="${esc(j.id)}" aria-selected="${i === actif}">${esc(j.nom)}${j.info ? ` <small>${esc(j.info)}</small>` : ""}</li>`).join("") : `<li class="vide">Aucun joueur</li>`;
   };
   const ouvrir = (oui) => { pop.hidden = !oui; btn.setAttribute("aria-expanded", String(oui)); if (oui) { q.value = ""; actif = 0; dessiner(); q.focus(); } };
@@ -63,7 +64,8 @@ function nxBrancherChoix(b, liste, choisir) {
     else if (e.key === "Escape") { ouvrir(false); btn.focus(); }
   };
   ul.onmousedown = (e) => { const li = e.target.closest("li[data-id]"); if (li) { e.preventDefault(); ouvrir(false); choisir(li.dataset.id); } };
-  document.addEventListener("click", (e) => { if (!pop.hidden && !b.contains(e.target)) ouvrir(false); });
+  const dehors = (e) => { if (!pop.isConnected) return document.removeEventListener("click", dehors); if (!pop.hidden && !b.contains(e.target)) ouvrir(false); };
+  document.addEventListener("click", dehors);
 }
 const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : "10000000-1000-4000-8000-100000000000".replace(/[018]/g,
   (c) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)));
