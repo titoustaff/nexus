@@ -83,6 +83,8 @@ function ecran(nom) {
     if (b.dataset.ecran === nom) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
   $("v-nouvelle").hidden = !!etat.vue;
   rendreCompte();
+  const jv = etat.vue && Compte.joueurs.find((j) => j.joueur_id === etat.vue);   // coach : bande jaune et raccourcis
+  nexusBandeVue(jv ? jv.nom || jv.libelle || "Joueur" : "", "carte", () => { etat.vue = ""; nexusJoueurVu.ecrire(Compte.moi?.id, ""); ecran("liste"); });
   if (nom === "liste") rendreListe();
   else if (nom === "nouvelle") preparerNouvelle();
   else if (nom === "saisie") rendreSaisie();
