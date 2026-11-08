@@ -39,6 +39,7 @@ function rendreCompte() {
   b.innerHTML = `${selecteurClub()}<button type="button" class="b-btn b-moi" id="c-ouvrir" aria-haspopup="menu" aria-expanded="${compte.ouvert}" aria-controls="b-pan" title="${esc(mel)}">
       <span class="b-init" aria-hidden="true">${esc((nom.trim()[0] || "?").toUpperCase())}</span><span class="b-qui">${esc(nom)}</span><span aria-hidden="true">▾</span></button>`;
   pan.innerHTML = nexusPanneauConnecte(mel);
+  brancherClub();
 }
 nexusBrancherPanneau(rendreCompte, Compte);
 document.addEventListener("click", (e) => {
@@ -137,16 +138,15 @@ async function clubCourant() {
 // sélecteur de l'administrateur, dans le bandeau à côté de son nom : il se positionne sur un club = il s'y rattache
 // (droit admin du cœur sur son propre profil, sans transférer ses joueurs : ils restent à son club d'origine et
 // redeviennent visibles quand il y revient). Tous les onglets suivent : Coach (joueurs, équipes), Tableau de bord, Mon club.
-const selecteurClub = () => (Compte.role === "admin" && co.clubs?.length ? `<label class="b-club" title="Administrateur : club sur lequel tu es positionné"><span aria-hidden="true">🏌️</span>
-  <select id="co-club-sel" aria-label="Club affiché (administrateur)">${co.clubId ? "" : `<option value="" selected>Choisir un club…</option>`}${co.clubs.map((c) => `<option value="${esc(c.id)}" ${c.id === co.clubId ? "selected" : ""}>${esc(c.nom)}</option>`).join("")}</select></label>` : "");
-document.addEventListener("change", (e) => {
-  if (e.target.id !== "co-club-sel" || !e.target.value) return;
-  positionnerAdmin(e.target.value);
-});
+const selecteurClub = () => (Compte.role === "admin" && co.clubs?.length ? `<div class="nx-vue-qui b-club"><span aria-hidden="true">🏌️</span>
+  <button type="button" class="nx-vue-choix" aria-haspopup="listbox" aria-expanded="false" title="Administrateur : club sur lequel tu es positionné"><b>${esc(co.clubs.find((c) => c.id === co.clubId)?.nom || "Choisir un club")}</b> ▾</button>
+  <div class="nx-vue-pop" hidden><input type="search" placeholder="Rechercher un club…" aria-label="Rechercher un club" autocomplete="off"><ul role="listbox"></ul></div></div>` : "");
+// après chaque dessin du bandeau : branche la recherche (commun : nxBrancherChoix)
+const brancherClub = () => { const c = document.querySelector("#b-compte .b-club");
+  if (c) nxBrancherChoix(c, co.clubs.map((x) => ({ id: x.id, nom: x.nom, info: x.club && plier(x.club) !== plier(x.nom) ? titre(x.club) : "" })), (id) => { if (id !== co.clubId) positionnerAdmin(id); }); };
 async function positionnerAdmin(sid) {
-  const sel = $("co-club-sel"); if (sel) sel.disabled = true;
   const { error } = await sb.from("profils").update({ structure_id: sid, modifie_le: new Date().toISOString() }).eq("id", Compte.moi.id);
-  if (error) { signaler("Positionnement impossible : " + error.message); if (sel) sel.disabled = false; return; }
+  if (error) { signaler("Positionnement impossible : " + error.message); return; }
   try { await Compte.connecter(Compte.moi); } catch (e) { signaler("Lecture du compte impossible : " + (e.message || e)); }
   co.clubId = sid; co.data = null; co.sel = new Set(); co.eqSel = ""; co.equipe = ""; mb.cache = {};
   signaler(`Positionné sur ${co.clubs.find((c) => c.id === sid)?.nom || "ce club"} : tu y agis comme un coach (joueurs, équipes, invitations).`);

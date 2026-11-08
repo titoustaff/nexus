@@ -525,3 +525,8 @@ html, body { overflow-x: clip; }   /* filet de sécurité : jamais de défilemen
 .b-club select { font: inherit; font-size: 13px; font-weight: 700; color: #fff; background: transparent; border: 0; padding: 4px 6px; max-width: 200px; cursor: pointer; }
 .b-club select option { color: #1c1917; }
 .b-club select:focus-visible { outline: 2px solid var(--jaune); outline-offset: 2px; border-radius: 6px; }
+/* sélecteur de club de l'administrateur (recherche) : dans le bandeau sombre */
+.b-club.nx-vue-qui { padding: 3px 4px 3px 10px; }
+.b-club .nx-vue-choix { background: transparent; border: 0; color: #fff; font-size: 13px; padding: 3px 6px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.b-club .nx-vue-choix:hover { background: rgba(255,255,255,.08); }
+.b-club .nx-vue-pop { left: auto; right: 0; color: var(--texte); }
