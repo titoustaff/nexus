@@ -84,10 +84,18 @@ function majBandeau(stOk) {
 }
 
 // ---- accès aux joueurs, côté coach (repris de Saison : clicAcces / envoiAcces, partie coach)
-// « Voir » un joueur : sa saison et ses stats s'affichent dans Saison, en lecture seule.
+// « Voir » un joueur (08/11) : raccourcis Saison · Carte · Stats ; le joueur est retenu (bande jaune, nexusJoueurVu) et
+// le module s'ouvre sur lui, en lecture seule. Seulement les joueurs dont le coach a l'accès (coach_de).
+const liensJoueur = (id) => `<span class="co-voir" role="group" aria-label="Ouvrir le joueur">${[["saison", "Saison"], ["carte", "Carte"], ["stats", "Stats"]]
+  .map(([m, l]) => `<button type="button" class="btn" data-voir="${esc(id)}" data-module="${m}">${l}</button>`).join("")}</span>`;
+function voirJoueurDans(id, module) {
+  const j = (Compte.joueurs || []).find((x) => x.joueur_id === id) || (co.data?.joueurs || []).find((x) => x.joueur_id === id) || {};
+  nexusJoueurVu.ecrire(Compte.moi?.id, id, j.nom || j.libelle);
+  location.href = module === "saison" ? `../saison/#vue=${encodeURIComponent(id)}&cible=saison` : module === "stats" ? `../stats/#joueur=${encodeURIComponent(id)}` : "../carte/";
+}
 $("co-contenu").addEventListener("click", async (e) => {
   const b = e.target.closest("button"); if (!b) return;
-  if (b.dataset.voir) { location.href = `../saison/#vue=${encodeURIComponent(b.dataset.voir)}&cible=${encodeURIComponent(b.dataset.cible || "saison")}`; return; }
+  if (b.dataset.voir) { voirJoueurDans(b.dataset.voir, b.dataset.module || "saison"); return; }
   if (!b.dataset.accesCoachFin) return;
   const moi = Compte.moi?.id, id = b.dataset.accesCoachFin, j = (co.data?.joueurs || Compte.joueurs || []).find((x) => x.joueur_id === id) || {};
   const nom = j.nom || j.libelle || "ce joueur", eqs = (co.data?.eqDe?.[id] || []).map((e) => e.nom);
@@ -404,7 +412,7 @@ function majTableJoueurs() {
       <td>${j.moi_referent ? "<b>toi</b>" : esc(j.referent_nom || "—")}${ok && !j.du_club ? ' <span class="tag" title="licencié dans un autre club : visible seulement par son coach">hors club</span>' : ""}</td>
       <td>${(eqDe[j.joueur_id] || []).map((e) => `<span class="co-mini">${esc(e.nom)}</span>`).join(" ") || (ok ? `<span class="meta">—</span>` : "")}</td>
       <td><span class="statut-acces ${j.statut}">${lib[j.statut]}</span></td>
-      <td class="co-td-actions"><span class="co-actions">${ok ? `<button type="button" class="btn" data-voir="${esc(j.joueur_id)}">Saison</button><button type="button" class="btn" data-voir="${esc(j.joueur_id)}" data-cible="stats">Stats</button>` : ""}
+      <td class="co-td-actions"><span class="co-actions">${ok ? `${liensJoueur(j.joueur_id)}` : ""}
         ${ok && j.du_club && !j.moi_referent ? `<button type="button" class="lien" data-referent="${esc(j.joueur_id)}" title="Tu deviens le coach référent de ce joueur">Devenir son coach</button>` : ""}
         <button type="button" class="lien" data-acces-coach-fin="${esc(j.joueur_id)}">${ok ? "Ne plus suivre" : "Annuler"}</button></span></td></tr>`; }).join("")
     || `<tr><td colspan="8" class="meta">${(co.data.joueurs || []).length ? "Aucun joueur pour ces critères." : "Aucun joueur : onglet « Invitations » pour en inviter ou demander l'accès."}</td></tr>`;
@@ -491,7 +499,7 @@ async function htmlEquipes() {
         <div><h4>Dans l'équipe <small>${membres.length}</small></h4>
           ${membres.length > 10 ? `<input type="search" class="co-cherche" data-filtre="co-membres-${esc(e.id)}" placeholder="Filtrer l'équipe…" aria-label="Filtrer l'équipe" autocomplete="off">` : ""}
           <div class="co-defile" id="co-membres-${esc(e.id)}">${membres.map((id) => nomDe(id)).sort((a, b) => (a?.nom || "").localeCompare(b?.nom || "", "fr")).map((j) => j && j.joueur_id).filter(Boolean).concat(membres.filter((id) => !nomDe(id))).map((id) => { const j = nomDe(id); return `<div class="co-ligne" data-q="${esc(plier([j?.nom, j?.libelle, j?.licence, j?.categorie].filter(Boolean).join(" ")))}"><div><b>${esc(j?.nom || j?.libelle || "joueur")}</b>${j && infoJoueur(j) ? `<small>${esc(infoJoueur(j))}</small>` : ""}</div>
-            <span class="co-actions"><button type="button" class="btn" data-voir="${esc(id)}">Saison</button><button type="button" class="btn" data-voir="${esc(id)}" data-cible="stats">Stats</button>
+            <span class="co-actions">${liensJoueur(id)}
             <button type="button" class="lien" data-eq-retirer="${esc(e.id)}|${esc(id)}">Retirer</button></span></div>`; }).join("") || `<p class="meta">Personne pour l'instant : cherche un joueur à droite et clique sur « Ajouter ».</p>`}</div></div>
         <div>${(() => { const ok2 = dispo.filter((j) => correspondEquipe(e.nom, j));
           co.candidats[e.id] = ok2.map((j) => ({ id: j.joueur_id, nom: j.nom || j.libelle || j.licence, info: infoJoueur(j),
@@ -712,12 +720,13 @@ const LISTES_MERITE = { jeunes: "Jeunes", amateurs: "Amateurs", midams: "Mid-Ama
 const VUES_MB = {
   async joueurs(sid) {
     const J = Object.values(await nomsDe(sid)).sort((x, y) => (x.nom || "").localeCompare(y.nom || ""));
-    const V = J.filter((j) => garde("joueurs", groupeDe(j)));
+    const V = J.filter((j) => garde("joueurs", groupeDe(j))), voitDonnees = mb.acces?.groupe === "coach";   // coach : ouvrir le joueur
     return `<div class="bloc"><div class="co-eq-tete"><h3>Joueurs AS <small>${V.length}${V.length !== J.length ? ` sur ${J.length}` : ""}</small></h3>
       <input type="search" id="mb-q" class="co-cherche" placeholder="Rechercher un joueur…" aria-label="Rechercher un joueur" autocomplete="off"></div>
       ${bulles("joueurs", J.map(groupeDe), (g) => GROUPES[g] || g, ORDRE_GROUPES)}
-      ${V.length ? `<div class="st-table"><table><thead><tr><th>Joueur</th><th>Catégorie</th><th>Index</th></tr></thead><tbody>
-      ${V.map((j) => `<tr data-nom="${esc(plier(j.nom))}"><td><b>${esc(j.nom || "—")}</b></td><td>${GROUPES[groupeDe(j)] || "—"}</td><td>${j.index_golf != null ? String(j.index_golf).replace(".", ",") : "—"}</td></tr>`).join("")}</tbody></table></div>` : `<p class="meta">Aucun joueur AS.</p>`}</div>`;
+      ${V.length ? `<div class="st-table"><table><thead><tr><th>Joueur</th><th>Catégorie</th><th>Index</th>${voitDonnees ? "<th></th>" : ""}</tr></thead><tbody>
+      ${V.map((j) => `<tr data-nom="${esc(plier(j.nom))}"><td><b>${esc(j.nom || "—")}</b></td><td>${GROUPES[groupeDe(j)] || "—"}</td><td>${j.index_golf != null ? String(j.index_golf).replace(".", ",") : "—"}</td>
+        ${voitDonnees ? `<td class="co-td-actions">${(Compte.joueurs || []).some((x) => x.joueur_id === j.joueur_id) ? liensJoueur(j.joueur_id) : ""}</td>` : ""}</tr>`).join("")}</tbody></table></div>` : `<p class="meta">Aucun joueur AS.</p>`}</div>`;
   },
   async equipes(sid) {
     const [E, N] = await Promise.all([lire("equipes", () => sb.rpc("club_vue_equipes", { sid })), nomsDe(sid)]);
