@@ -77,7 +77,7 @@ async function rendreAdmin() {
 }
 // ---- membres des clubs (08/11, module Club : table club_membres, fonction club-inviter) : l'administrateur peut, comme
 // le coach principal, inviter dans n'importe quel club un coach ou un membre AS (lecture seule de ce que le club ouvre).
-const LIB_GROUPE = { coach: "Coach", as: "Membre AS", club: "Membre club" };
+const LIB_GROUPE = { coach: "Coach", as: "Membre AS", club: "Direction du club" };
 async function rendreDemandes(membres, structs) {
   const box = $("ad-demandes"), bloc = $("ad-demandes-bloc");
   const C = await sb.from("club_membres").select("*").neq("statut", "refuse").order("cree_le");
@@ -93,7 +93,7 @@ async function rendreDemandes(membres, structs) {
       <input id="ad-cm-nom" placeholder="Prénom Nom" maxlength="60" required aria-label="Nom">
       <input id="ad-cm-email" type="email" placeholder="e-mail" required aria-label="E-mail">
       <input id="ad-cm-lic" inputmode="numeric" placeholder="licence ffgolf" maxlength="14" aria-label="Licence">
-      <select id="ad-cm-groupe" aria-label="Rôle"><option value="as">Membre AS</option><option value="club">Membre club</option><option value="coach">Coach</option></select>
+      <select id="ad-cm-groupe" aria-label="Rôle"><option value="as">Membre AS</option><option value="club">Direction du club</option><option value="coach">Coach</option></select>
       <button type="submit" class="btn plein">Inviter</button></form>
     <p class="meta">Même chose que le coach principal dans Mon club : invitation immédiate ; compte existant : accès ouvert ; un coach est rattaché au club.</p>`;
 }
