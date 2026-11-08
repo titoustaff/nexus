@@ -229,3 +229,4 @@ body.reprise #accueil::after { content: ""; position: absolute; left: 50%; top: 
 .nx-vue nav span[aria-current] { background: #2e2400; color: #fff; cursor: default; }
 .nx-vue nav a:hover, .nx-vue button:hover { background: #fff; }
 .nx-vue a:focus-visible, .nx-vue button:focus-visible { outline: 2px solid #2e2400; outline-offset: 2px; }
+.nx-vue-charge main, .nx-vue-charge [id^="ecran-"] { opacity: .35; pointer-events: none; transition: opacity .2s; }

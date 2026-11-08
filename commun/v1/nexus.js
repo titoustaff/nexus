@@ -21,7 +21,8 @@ const jsonLs = (k) => { try { return JSON.parse(lsGet(k) || "null"); } catch { r
 // joueur regardé par un coach (« Vue » de Saison, Carte, Stats) : il suit d'un module à l'autre ; propre au compte connecté (08/11)
 const nexusJoueurVu = {
   lire(moi) { const v = jsonLs("nx-joueur-vu"); return v && moi && v.u === moi ? v.j || "" : ""; },
-  ecrire(moi, j) { if (moi) lsSet("nx-joueur-vu", JSON.stringify({ u: moi, j: j || "" })); },
+  nom(moi) { const v = jsonLs("nx-joueur-vu"); return v && moi && v.u === moi && v.j ? v.nom || "Joueur" : ""; },   // pour afficher la bande tout de suite
+  ecrire(moi, j, nom = "") { if (moi) lsSet("nx-joueur-vu", JSON.stringify({ u: moi, j: j || "", nom: j ? nom || "" : "" })); },
 };
 // bande jaune « tu regardes <joueur> · lecture seule » sous l'en-tête, avec les raccourcis vers les modules qui suivent ce
 // joueur (modules.json : vueJoueur, ouverts) et « Mon compte ». nom vide : la bande disparaît. ici : id du module courant.
