@@ -685,7 +685,10 @@ async function entrer() {
     $("ecran-coach").hidden = false; $("co-contenu").innerHTML = `<div class="bloc vide">Club est réservé aux coachs, à l'administrateur et aux membres de l'AS invités par le club. <a href="../saison/">Retour à Saison</a></div>`; rendreCompte(); return;
   }
   if (Compte.role === "admin") await clubCourant();   // liste des clubs pour le sélecteur du bandeau
-  ecran(location.hash === "#club" ? "club" : location.hash === "#vue" ? "vue" : "coach");
+  // liens directs (notice aide.html, 10/11) : #club, #vue, ou un sous-onglet Coach : #joueurs #equipes #calendrier #invitations
+  const h = location.hash.slice(1);
+  if (["joueurs", "equipes", "calendrier", "invitations"].includes(h)) { co.onglet = h; co.vuStructure = true; }
+  ecran(h === "club" ? "club" : h === "vue" ? "vue" : "coach");
 }
 // ------------------------------------------------------------------ membres AS / club : Club en lecture seule (08/11)
 // Un onglet par case cochée par le coach principal (club_visibilite) ; données par les fonctions club_vue_* (club-membres.sql),

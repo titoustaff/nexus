@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <title>GolfNexus · Notice du coach</title>
+  <link rel="icon" type="image/svg+xml" href="../saison/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="../commun/v1/charte.css">
+  <!-- Notice du coach (10/11/2026) : page statique, sans base ni connexion. Menu généré depuis les <h2>, recherche dans le texte
+       (sans accents) : les sections sans résultat sont masquées, les mots trouvés surlignés. Pour modifier la notice : éditer
+       les <section> ci-dessous (une section = un id = une entrée du menu). -->
+  <style>
+    .bandeau-in { display: flex; }
+    .vues a { color: #d6e6da; font-weight: 600; font-size: 14px; padding: 6px 14px; border-radius: 999px; text-decoration: none; white-space: nowrap; }
+    .vues a:hover { color: #fff; background: rgba(255,255,255,.08); }
+    .ai { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 24px; align-items: start; padding-bottom: 60px; }
+    .ai-menu { position: sticky; top: 12px; background: var(--carte); border: 1px solid var(--bord); border-radius: 14px; padding: 14px; box-shadow: var(--ombre); }
+    .ai-q { width: 100%; box-sizing: border-box; border: 1px solid var(--bord); background: var(--fond); border-radius: 10px; padding: 9px 12px; font-size: 14px; color: var(--texte); }
+    .ai-q:focus-visible { outline: 2px solid var(--vert-2); outline-offset: 1px; }
+    .ai-nb { margin: 6px 2px 10px; font-size: 12px; color: var(--doux); min-height: 18px; }
+    .ai-menu ol { list-style: none; margin: 0; padding: 0; counter-reset: s; }
+    .ai-menu li { counter-increment: s; }
+    .ai-menu a { display: flex; gap: 8px; padding: 6px 8px; border-radius: 8px; color: var(--texte); text-decoration: none; font-weight: 500; }
+    .ai-menu a::before { content: counter(s); color: var(--doux); font-variant-numeric: tabular-nums; min-width: 14px; }
+    .ai-menu a:hover { background: var(--sauge-pale); }
+    .ai-menu a[aria-current] { background: var(--sauge-pale); color: var(--vert); font-weight: 700; }
+    .ai-menu li.vide a { opacity: .35; pointer-events: none; }
+    .ai-menu .b { font-size: 11px; background: var(--jaune); color: var(--jaune-texte); border-radius: 999px; padding: 0 6px; margin-left: auto; align-self: center; }
+    .ai-corps h1 { color: var(--vert); font-size: 28px; font-weight: 800; letter-spacing: -.02em; margin: 4px 0 4px; }
+    .ai-corps > .sous { color: var(--doux); margin: 0 0 18px; }
+    .ai-corps section { background: var(--carte); border: 1px solid var(--bord); border-radius: 14px; padding: 18px 22px; margin: 0 0 16px; box-shadow: var(--ombre); scroll-margin-top: 12px; }
+    .ai-corps section[hidden] { display: none; }
+    .ai-corps h2 { margin: 0 0 10px; color: var(--vert); font-size: 20px; font-weight: 800; letter-spacing: -.01em; }
+    .ai-corps h3 { margin: 16px 0 6px; font-size: 15px; }
+    .ai-corps p, .ai-corps li { line-height: 1.6; }
+    .ai-corps ul, .ai-corps ol { padding-left: 22px; }
+    .ai-corps li { margin: 3px 0; }
+    .ai-corps table { border-collapse: collapse; width: 100%; font-size: 13px; margin: 10px 0; }
+    .ai-corps th, .ai-corps td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--bord); }
+    .ai-corps th { color: var(--doux); font-weight: 600; font-size: 12px; }
+    .ai-tab { overflow-x: auto; }
+    .ai-corps code { background: var(--fond); border: 1px solid var(--bord); border-radius: 6px; padding: 1px 5px; font-size: 12px; }
+    .ai-corps mark { background: var(--jaune); color: var(--jaune-texte); border-radius: 3px; padding: 0 1px; }
+    .ai-allers { display: flex; flex-wrap: wrap; gap: 6px; margin: -2px 0 12px; }
+    .ai-aller { display: inline-block; font-size: 12px; font-weight: 600; color: var(--vert); background: var(--sauge-pale); border: 1px solid var(--bord);
+      border-radius: 999px; padding: 3px 10px; text-decoration: none; vertical-align: middle; margin-left: 4px; white-space: nowrap; }
+    .ai-allers .ai-aller { margin-left: 0; }
+    .ai-aller:hover { border-color: var(--sauge); }
+    .ai-aller:focus-visible { outline: 2px solid var(--vert-2); outline-offset: 2px; }
+    .ai-rien { text-align: center; color: var(--doux); padding: 30px; }
+    .ai-rien[hidden] { display: none; }
+    @media (max-width: 800px) {
+      .ai { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+      .ai > * { min-width: 0; }
+      .ai-menu { position: static; }
+      .ai-menu ol { display: flex; flex-wrap: wrap; gap: 4px; }
+      .ai-menu a { padding: 4px 10px; border: 1px solid var(--bord); border-radius: 999px; font-size: 13px; }
+      .ai-corps section { padding: 14px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="bandeau">
+    <div class="bandeau-in">
+      <div class="marque">
+        <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#f4f7f2"/><ellipse cx="30" cy="52" rx="20" ry="5" fill="#cfe3d3"/><path d="M22 10v41" stroke="#14532d" stroke-width="4.5" stroke-linecap="round"/><path d="M24 10l22 8-22 8z" fill="#f0b400"/><circle cx="43" cy="45" r="7" fill="#fff" stroke="#14532d" stroke-width="2"/></svg>
+        <div><div class="nom">Golf<span>Nexus</span> · Aide</div><p class="devise">Notice du coach</p></div>
+      </div>
+      <nav class="vues" aria-label="Retour"><a href="./">← Club</a><a href="../saison/">Saison</a></nav>
+    </div>
+  </header>
+
+  <div class="ai">
+    <aside class="ai-menu" aria-label="Sommaire">
+      <input type="search" id="ai-q" class="ai-q" placeholder="Rechercher dans la notice…" aria-label="Rechercher dans la notice" autocomplete="off">
+      <p class="ai-nb" id="ai-nb" aria-live="polite"></p>
+      <ol id="ai-sommaire"></ol>
+    </aside>
+
+    <main class="ai-corps" id="ai-corps">
+      <h1>Notice du coach</h1>
+      <p class="sous">Mise à jour le 10/11/2026 · tape un mot dans la recherche (ex. « licence », « équipe », « bande jaune »). Les boutons verts « … → » t'emmènent directement à l'écran expliqué.</p>
+
+      <section id="bienvenue">
+        <h2>Bienvenue</h2>
+        <p>GolfNexus te permet de suivre la saison, les cartes de score et les stats de tes joueurs, et d'organiser les équipes de ton club. Tout se passe dans le navigateur, sur téléphone ou ordinateur.</p>
+        <div class="ai-tab"><table>
+          <thead><tr><th>Module</th><th>À quoi il sert pour toi</th></tr></thead>
+          <tbody>
+            <tr><td><b>Saison</b></td><td>le calendrier des tournois de chaque joueur, ses résultats et le Mérite (données ffgolf)</td></tr>
+            <tr><td><b>Carte</b></td><td>les cartes de score trou par trou saisies par le joueur, à l'entraînement ou en tournoi</td></tr>
+            <tr><td><b>Stats</b></td><td>l'analyse des cartes : par tour, par tournoi, sur la saison</td></tr>
+            <tr><td><b>Club</b></td><td>ton espace coach : joueurs, équipes, calendrier d'équipe, invitations, membres du club</td></tr>
+          </tbody>
+        </table></div>
+        <p>Un joueur ne t'apparaît que s'il <b>a accepté ton suivi</b>. Tu vois ses données en lecture seule : tu ne modifies jamais sa saison ni ses cartes.</p>
+      </section>
+
+      <section id="premiers-pas">
+        <h2>Premiers pas</h2>
+        <p>Ton accès est créé par le coach principal de ton club ou par l'administrateur : tu reçois un e-mail GolfNexus.</p>
+        <ol>
+          <li>Ouvre le lien de l'e-mail <b>dans les 24 heures</b> (passé ce délai, demande qu'on te renvoie l'invitation).</li>
+          <li>Choisis ton mot de passe. Plus tard, si tu l'oublies : « Pas de mot de passe ou oublié ? Recevoir un lien par e-mail » sur l'écran de connexion.</li>
+          <li>Le menu des modules s'affiche en haut de chaque page : Saison, Club, Carte, Stats. Club n'est visible que pour les coachs.</li>
+          <li>Va dans <b>Club</b> : si le message « Tu n'es rattaché à aucun club » s'affiche, préviens l'administrateur, c'est lui qui te rattache à ton club.</li>
+        </ol>
+        <p>Club a trois onglets : <b>Coach</b> (ton travail au quotidien), <b>Tableau de bord</b> (la vue d'ensemble du club) et <b>Mon club</b> (la fiche et les membres du club).</p>
+      </section>
+
+      <section id="inviter">
+        <h2>Inviter et suivre ses joueurs</h2>
+        <p class="ai-allers"><a class="ai-aller" href="./#invitations">Ouvrir Club › Coach › Invitations →</a></p>
+        <p>Tout se fait dans <b>Club → Coach → Invitations</b>, avec la <b>licence ffgolf</b> du joueur. Deux cas :</p>
+        <div class="ai-tab"><table>
+          <thead><tr><th>Le joueur…</th><th>Ce que tu fais</th><th>Ce qui se passe ensuite</th></tr></thead>
+          <tbody>
+            <tr><td>n'a pas de compte GolfNexus</td><td>« Inviter un joueur » : e-mail, nom, licence ; coche « moins de 18 ans » pour un mineur et mets l'e-mail du parent</td><td>il reçoit un e-mail (lien valable 24 h) ; ta demande de suivi l'attend à son inscription</td></tr>
+            <tr><td>a déjà un compte</td><td>« Demander l'accès » : sa licence</td><td>il (ou son parent) accepte dans <b>Mon profil</b></td></tr>
+          </tbody>
+        </table></div>
+        <ul>
+          <li><b>Plusieurs joueurs d'un coup</b> : « Invitations en masse » (une ligne par joueur : <code>e-mail ; licence ; nom ; mineur</code>) ou « Demandes en masse » (une licence par ligne, copiée d'un tableur).</li>
+          <li><b>La licence est fixée à l'invitation</b> : le joueur ne peut pas la changer. Vérifie-la bien.</li>
+          <li><b>Suivi</b> (en haut de l'onglet) : les invitations pas encore ouvertes, que tu peux renvoyer, et les demandes en attente de réponse.</li>
+          <li>Un joueur licencié dans ton club qui accepte devient un <b>joueur AS</b> : tous les coachs du club le voient. Un joueur d'un autre club reste <b>ton joueur hors club</b>.</li>
+        </ul>
+      </section>
+
+      <section id="coach">
+        <h2>Club, onglet Coach</h2>
+        <p>L'onglet Coach regroupe ton travail au quotidien, en quatre sous-onglets.</p>
+        <h3>Joueurs <a class="ai-aller" href="./#joueurs">Ouvrir →</a></h3>
+        <ul>
+          <li>Cherche par nom, prénom ou licence ; filtre par catégorie (U12, U14, U16, Adultes, Mid-Am, Seniors), sexe, équipe, type (joueurs AS, hors club, dont je suis le coach) et statut.</li>
+          <li>Coche plusieurs joueurs pour les ranger d'un coup dans une équipe.</li>
+          <li>Les boutons <b>Saison · Carte · Stats</b> d'une ligne ouvrent directement ce joueur dans le module (voir « Voir un joueur »).</li>
+        </ul>
+        <h3>Équipes de l'AS <a class="ai-aller" href="./#equipes">Ouvrir →</a></h3>
+        <p>Crée une équipe (« Nouvelle équipe »), puis ajoute ou retire des joueurs AS. Tous les coachs du club peuvent modifier toutes les équipes.</p>
+        <h3>Calendrier d'équipe <a class="ai-aller" href="./#calendrier">Ouvrir →</a></h3>
+        <p>Choisis une équipe et l'année : tu vois, mois par mois, les tournois prévus par ses joueurs.</p>
+        <ul>
+          <li>Les tournois où plusieurs joueurs vont ensemble sont mis en avant : ce sont les rendez-vous de l'équipe.</li>
+          <li>Le nom de l'équipe filtre les tournois : « Équipe 1 Messieurs » ne montre que les tournois adultes ouverts aux hommes.</li>
+        </ul>
+        <h3>Invitations <a class="ai-aller" href="./#invitations">Ouvrir →</a></h3>
+        <p>Voir « Inviter et suivre ses joueurs ».</p>
+      </section>
+
+      <section id="voir-joueur">
+        <h2>Voir un joueur</h2>
+        <p class="ai-allers"><a class="ai-aller" href="./#joueurs">Choisir un joueur dans Club →</a><a class="ai-aller" href="../saison/">Ouvrir Saison →</a></p>
+        <p>Quand tu regardes un joueur, une <b>bande jaune</b> s'affiche en haut de la page : tu es en lecture seule sur ses données.</p>
+        <ol>
+          <li>Choisis le joueur : dans Saison (menu « Vue »), ou avec les boutons Saison · Carte · Stats de Club.</li>
+          <li>Passe d'un module à l'autre avec les liens de la bande jaune : <b>le joueur te suit</b> de Saison à Carte et à Stats.</li>
+          <li>Pour changer de joueur, clique sur son nom dans la bande et tape les premières lettres d'un autre (flèches et Entrée marchent aussi).</li>
+          <li><b>← Mon compte</b> te ramène à tes propres données.</li>
+        </ol>
+      </section>
+
+      <section id="tableau-de-bord">
+        <h2>Tableau de bord</h2>
+        <p class="ai-allers"><a class="ai-aller" href="./#vue">Ouvrir le Tableau de bord →</a></p>
+        <p>Le Tableau de bord montre le club d'un coup d'œil : les joueurs AS, les équipes, le calendrier, les scores en tournoi, le Mérite et les événements du club.</p>
+        <ul>
+          <li>Les <b>bulles</b> en haut de chaque bloc filtrent : catégorie de joueur, catégorie de tournoi, type d'événement.</li>
+          <li>Le Mérite a <b>un onglet par liste</b> Mérite.</li>
+          <li>Une case de recherche aide à retrouver un joueur dans les longues listes.</li>
+          <li>C'est aussi ce que voient les membres AS et la Direction du club, mais seulement pour les blocs que le coach principal a cochés pour eux (voir « Mon club »). Toi, en tant que coach, tu vois tout.</li>
+        </ul>
+      </section>
+
+      <section id="mon-club">
+        <h2>Mon club (coach principal)</h2>
+        <p class="ai-allers"><a class="ai-aller" href="./#club">Ouvrir Mon club →</a></p>
+        <p>Mon club présente la fiche du club et ses membres. Tous les coachs la voient ; <b>seul le coach principal</b> (ou l'administrateur) invite, règle la visibilité et retire des membres.</p>
+        <h3>Les trois listes de membres</h3>
+        <div class="ai-tab"><table>
+          <thead><tr><th>Groupe</th><th>Qui</th><th>Licence ffgolf</th><th>Ce qu'il fait dans GolfNexus</th></tr></thead>
+          <tbody>
+            <tr><td><b>Coachs</b></td><td>les coachs de l'académie</td><td>facultative</td><td>voit tout, invite des joueurs, modifie les équipes</td></tr>
+            <tr><td><b>Membres AS</b></td><td>bénévoles et responsables de l'association sportive</td><td>obligatoire</td><td>lit le Tableau de bord, selon ce qui est coché pour l'AS</td></tr>
+            <tr><td><b>Direction du club</b></td><td>direction, accueil</td><td>facultative</td><td>lit le Tableau de bord, selon ce qui est coché pour la Direction</td></tr>
+          </tbody>
+        </table></div>
+        <h3>Inviter</h3>
+        <p>Formulaire « Inviter dans le club » (nom, e-mail, licence, groupe). La personne reçoit un e-mail ; si elle a déjà un compte, son accès est ouvert tout de suite. Une invitation non ouverte peut être renvoyée.</p>
+        <h3>Ce que voient les membres AS et la Direction</h3>
+        <p>Coche pour chaque groupe ce qu'il peut lire, parmi Joueurs, Équipes, Calendrier, Scores, Mérite, Événements. Tout est décoché au départ. Les membres ne voient jamais les cartes de score, les stats, tes notes ni les coordonnées des joueurs.</p>
+        <h3>Retirer</h3>
+        <p>Un coach retiré quitte le club ; ses joueurs AS restent au club avec un autre coach. Le coach principal ne peut pas être retiré (c'est l'administrateur qui le change).</p>
+      </section>
+
+      <section id="cartes-stats">
+        <h2>Cartes et stats</h2>
+        <p class="ai-allers"><a class="ai-aller" href="../carte/">Ouvrir Carte →</a><a class="ai-aller" href="../stats/">Ouvrir Stats →</a></p>
+        <p>Les stats ne viennent que des <b>cartes saisies par le joueur</b> dans Carte : plus il saisit, plus elles sont justes. Les résultats ffgolf (places, Mérite) restent dans Saison.</p>
+        <ul>
+          <li><b>Lire une carte</b> : dans Carte, ouvre un tour. La carte montre le score trou par trou, les putts, les fairways touchés (total sur la ligne Départ) et les greens en régulation (ligne GIR).</li>
+          <li><b>Stats du tour</b> : le bouton « Stats du tour » sous la carte ouvre l'analyse de ce tour, comparée à la moyenne du joueur.</li>
+          <li><b>Stats d'un tournoi</b> : dans Stats, un tournoi de plusieurs tours se déplie ; un onglet par tour, plus le total du tournoi. Un tour coupé (cut) ou annulé n'apparaît simplement pas.</li>
+          <li><b>Lien public</b> : le joueur peut partager sa carte en direct par un lien, sans compte (parents, coach d'un autre club). Ce lien montre aussi les stats du tour, sans la comparaison à la moyenne.</li>
+        </ul>
+      </section>
+
+      <section id="faq">
+        <h2>Questions fréquentes</h2>
+        <h3>Mon joueur n'apparaît pas. <a class="ai-aller" href="./#invitations">Voir le Suivi →</a></h3>
+        <p>Il n'a pas encore accepté : regarde « Suivi » dans Invitations. Rappelle-lui (ou à son parent) d'accepter dans Mon profil.</p>
+        <h3>Le lien d'invitation ne marche plus. <a class="ai-aller" href="./#invitations">Renvoyer →</a></h3>
+        <p>Il n'est valable que 24 heures : renvoie l'invitation depuis « Suivi ».</p>
+        <h3>Je me suis trompé de licence.</h3>
+        <p>Le joueur ne peut pas la changer : préviens l'administrateur.</p>
+        <h3>Un joueur n'a pas de stats.</h3>
+        <p>Les stats viennent de ses cartes : il doit saisir ses tours dans Carte.</p>
+        <h3>La page n'a pas changé après une mise à jour.</h3>
+        <p>Recharge-la complètement : Ctrl + Maj + R sur ordinateur.</p>
+        <h3>Je ne peux pas inviter un coach ou un membre AS.</h3>
+        <p>C'est réservé au coach principal du club : demande-lui.</p>
+      </section>
+
+      <p class="ai-rien" id="ai-rien" hidden>Aucun résultat. Essaie un autre mot, ou demande à l'administrateur.</p>
+    </main>
+  </div>
+
+  <script>
+    // menu depuis les sections, recherche sans accents, section courante surlignée dans le menu
+    (() => {
+      const plier = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+      const S = [...document.querySelectorAll("#ai-corps section")];
+      const menu = document.getElementById("ai-sommaire"), q = document.getElementById("ai-q");
+      const nb = document.getElementById("ai-nb"), rien = document.getElementById("ai-rien");
+      menu.innerHTML = S.map((s) => `<li data-id="${s.id}"><a href="#${s.id}">${s.querySelector("h2").textContent}<span class="b" hidden></span></a></li>`).join("");
+      const LI = Object.fromEntries([...menu.children].map((li) => [li.dataset.id, li]));
+      // texte d'origine de chaque nœud texte, pour surligner puis revenir en arrière
+      const noeuds = S.map((s) => { const w = document.createTreeWalker(s, NodeFilter.SHOW_TEXT), L = []; while (w.nextNode()) if (w.currentNode.nodeValue.trim()) L.push(w.currentNode); return L; });
+      const marques = [];
+      function effacer() { for (const m of marques.splice(0)) { const p = m.parentNode; if (p) { p.replaceChild(document.createTextNode(m.textContent), m); p.normalize(); } } }
+      function surligner(n, mots) {
+        const t = n.nodeValue, pt = plier(t); let iv = [];
+        for (const m of mots) { let i = 0; while ((i = pt.indexOf(m, i)) >= 0) { iv.push([i, i + m.length]); i += m.length; } }
+        if (!iv.length) return 0;
+        iv.sort((a, b) => a[0] - b[0]); const F = []; for (const x of iv) { const d = F[F.length - 1]; if (d && x[0] <= d[1]) d[1] = Math.max(d[1], x[1]); else F.push([...x]); }
+        const frag = document.createDocumentFragment(); let k = 0;
+        for (const [a, b] of F) { frag.append(t.slice(k, a)); const mk = document.createElement("mark"); mk.textContent = t.slice(a, b); marques.push(mk); frag.append(mk); k = b; }
+        frag.append(t.slice(k)); n.parentNode.replaceChild(frag, n); return F.length;
+      }
+      function chercher() {
+        effacer();
+        S.forEach((s, i) => { noeuds[i] = []; const w = document.createTreeWalker(s, NodeFilter.SHOW_TEXT); while (w.nextNode()) if (w.currentNode.nodeValue.trim() && !w.currentNode.parentNode.closest(".ai-aller")) noeuds[i].push(w.currentNode); });
+        const mots = plier(q.value).trim().split(/\s+/).filter((m) => m.length > 1);
+        let total = 0, sections = 0;
+        S.forEach((s, i) => {
+          const txt = plier(s.textContent), ok = !mots.length || mots.every((m) => txt.includes(m));
+          s.hidden = !ok; const li = LI[s.id], b = li.querySelector(".b");
+          li.classList.toggle("vide", !ok); b.hidden = true;
+          if (ok && mots.length) { let n = 0; for (const nd of noeuds[i]) n += surligner(nd, mots); total += n; sections++; b.textContent = n; b.hidden = !n; }
+        });
+        nb.textContent = mots.length ? (sections ? `${total} résultat${total > 1 ? "s" : ""} dans ${sections} section${sections > 1 ? "s" : ""}` : "") : "";
+        rien.hidden = !mots.length || sections > 0;
+        try { history.replaceState(null, "", mots.length ? "#q=" + encodeURIComponent(q.value.trim()) : location.pathname); } catch { /* */ }
+      }
+      let minuteur; q.addEventListener("input", () => { clearTimeout(minuteur); minuteur = setTimeout(chercher, 150); });
+      q.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") { q.value = ""; chercher(); }
+        if (e.key === "Enter") { const s = S.find((x) => !x.hidden); (s?.querySelector("mark") || s)?.scrollIntoView({ behavior: "smooth", block: "center" }); }
+      });
+      // section courante dans le menu
+      const vis = new IntersectionObserver((E) => { for (const e of E) if (e.isIntersecting) { for (const li of menu.children) li.firstChild.removeAttribute("aria-current"); LI[e.target.id]?.firstChild.setAttribute("aria-current", "true"); } }, { rootMargin: "-20% 0px -70% 0px" });
+      S.forEach((s) => vis.observe(s));
+      // lien direct : aide.html#q=licence ou aide.html#inviter
+      const h = decodeURIComponent(location.hash.slice(1));
+      if (h.startsWith("q=")) { q.value = h.slice(2); chercher(); }
+      else if (h && document.getElementById(h)) document.getElementById(h).scrollIntoView();
+      if (matchMedia("(min-width: 801px)").matches) q.focus();
+    })();
+  </script>
+</body>
+</html>
