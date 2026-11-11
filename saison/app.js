@@ -1292,7 +1292,7 @@ function rendreSaison() {
     if (m !== mois) { if (mois >= 0) html += "</ol>"; html += `<h4 class="s-mois">${MOIS[m]}</h4><ol class="s-items">`; mois = m; }
     if (t.ev) {   // événement (Club ou créé par un joueur) : invitation à accepter, carte le jour J, direct
       const jour = isoLocal(new Date()), ev = t.ev, insc = ev.insc || {}, moi = Saison.moi?.id, lecture = !!Saison.demo;
-      const annule = ev.statut === "annule", invite = insc.statut === "invite", orga = !lecture && ev.cree_par === moi;
+      const annule = ev.statut === "annule", invite = insc.statut === "invite", orga = !lecture && ev.cree_par === moi && nxEvOuvert(ev, Saison.role === "admin");
       const modifie = !annule && insc.statut === "accepte" && ev.modifie_le && (!insc.repondu_le || ev.modifie_le > insc.repondu_le);
       const auj = t.debut <= jour && jour <= t.fin;
       html += `<li class="s-item s-ev${t.fin < jour ? " passe" : ""}${annule ? " ev-annule" : ""}${invite ? " ev-invite" : ""}">
