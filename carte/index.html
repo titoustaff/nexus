@@ -68,6 +68,7 @@
       </div>
       <nav class="vues" aria-label="Écrans">
         <button type="button" data-ecran="liste" aria-current="page">Mes cartes</button>
+        <button type="button" data-ecran="lives" id="v-lives">📡 En direct <span class="nb" id="v-lives-nb" hidden></span></button>
         <button type="button" data-ecran="nouvelle" id="v-nouvelle">+ Nouvelle partie</button>
       </nav>
       <div class="b-compte" id="b-compte" aria-live="polite"></div>
@@ -98,6 +99,7 @@
     <section id="ecran-saisie" hidden aria-labelledby="sa-titre"><div id="sa-contenu"></div></section>
     <section id="ecran-voir" hidden><div id="vo-contenu"></div></section>
     <section id="ecran-direct" hidden aria-label="En direct"><div id="di-contenu"></div></section>
+    <section id="ecran-lives" hidden aria-labelledby="lv-titre"><div class="s-tete"><h2 id="lv-titre">En direct aujourd'hui</h2></div><div id="lv-contenu"></div></section>
   </main>
 
   <footer class="pied">Golfs et parcours : ffgolf.org · <a href="../saison/#v=rgpd">Tes données personnelles</a> · <a href="../">GolfNexus</a></footer>

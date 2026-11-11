@@ -25,7 +25,7 @@ const Compte = {
   moi: null, user: null, role: "joueur", fiche: {}, joueurs: [],
   async connecter(user) {
     const P = await nexusLireProfil(user);
-    Object.assign(this, { moi: user, user, role: P.role, mineur: P.mineur, parentValide: P.parentValide, fiche: P.fiche });
+    Object.assign(this, { moi: user, user, role: P.role, structure: P.structure, mineur: P.mineur, parentValide: P.parentValide, fiche: P.fiche });
     this.joueurs = [];
     if (this.role !== "joueur") { const J = await sb.rpc("mes_joueurs"); this.joueurs = (J.data || []).filter((j) => j.statut === "accepte"); }
   },
@@ -78,7 +78,7 @@ const dateLongue = (d) => new Date(d + "T12:00:00").toLocaleDateString("fr-FR", 
 function ecran(nom) {
   if (nom === "nouvelle" && etat.vue) nom = "liste";   // pas de saisie pour un joueur suivi (lecture seule)
   etat.ecran = nom;
-  for (const k of ["liste", "nouvelle", "saisie", "voir", "direct"]) $("ecran-" + k).hidden = k !== nom;
+  for (const k of ["liste", "nouvelle", "saisie", "voir", "direct", "lives"]) $("ecran-" + k).hidden = k !== nom;
   if (nom !== "direct") { arreterDirect(); if (/(^|[#&])(evt|tournoi)=/.test(location.hash)) history.replaceState(null, "", location.pathname + location.search); }
   for (const b of document.querySelectorAll(".vues button[data-ecran]"))
     if (b.dataset.ecran === nom) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
@@ -93,6 +93,7 @@ function ecran(nom) {
   else if (nom === "saisie") rendreSaisie();
   else if (nom === "voir") rendreVoir();
   else if (nom === "direct") rendreDirect();
+  else if (nom === "lives") rendreLives();
   window.scrollTo({ top: 0 });
 }
 document.addEventListener("click", (e) => {
@@ -436,6 +437,8 @@ async function entrer() {
   const br = jsonLs("carte-brouillon");
   if (br && br.id && br.user_id === Compte.moi.id) { etat.partie = br; sauver(true); }
   if (lireDirect()) { ecran("direct"); return; }   // lien « En direct » (Saison, Club, Carte)
+  if (location.hash === "#lives") { ecran("lives"); return; }   // onglet En direct (lien depuis Club)
+  chargerLives().then(majBadgeLives).catch(() => {});
   // une partie en cours (déconnecté, page fermée…) : on rouvre la saisie sur le trou où l'on s'était arrêté
   const m = jsonLs("carte-en-cours");
   if (m?.id && m.user === Compte.moi.id) {
@@ -653,7 +656,7 @@ async function rendreDirect() {
     ${D.organisateur && !annule ? `<div class="bloc di-public"><b>Lien public</b> <span class="meta">pour les parents, sans compte : ils voient ce classement (prénom et initiale) et les cartes.</span>
       <div class="di-public-b">${D.jeton ? `<input id="di-lien" readonly value="${esc(location.origin + location.pathname + "#evtdirect=" + D.jeton)}" aria-label="Lien public"><button type="button" class="btn plein" id="di-copier">Copier</button><button type="button" class="lien vo-suppr" id="di-couper">Couper le lien</button>`
         : `<button type="button" class="btn" id="di-activer">🔗 Créer le lien public</button>`}</div></div>` : ""}
-    ${di.publicJeton ? `<p class="meta pt-pied">Classement partagé par l'organisateur (lecture seule) · <a href="../">GolfNexus</a></p>` : `<div class="vo-actions"><button type="button" class="btn" data-ecran="liste">← Mes cartes</button></div>`}`;
+    ${di.publicJeton ? `<p class="meta pt-pied">Classement partagé par l'organisateur (lecture seule) · <a href="../">GolfNexus</a></p>` : `<div class="vo-actions"><button type="button" class="btn" data-ecran="lives">← Tous les directs</button><button type="button" class="btn" data-ecran="liste">← Mes cartes</button></div>`}`;
   if (!di.minuteur && !annule) di.minuteur = setInterval(() => { if (!document.hidden) rendreDirect(); }, 15000);
 }
 $("di-contenu").addEventListener("click", async (e) => {
@@ -670,6 +673,53 @@ $("di-contenu").addEventListener("click", async (e) => {
 });
 $("di-contenu").addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && e.target.closest("[data-di]")) { e.preventDefault(); e.target.click(); } });
 document.addEventListener("visibilitychange", () => { if (!document.hidden && etat.ecran === "direct") rendreDirect(); });
+// ------------------------------------------------------------------ onglet « En direct » : tout ce qui se joue aujourd'hui (11/11)
+// Événements du jour visibles (droits de la base : organisateur, participant, coach du club ou d'un participant ; l'admin :
+// le club sur lequel il est positionné) + pour un coach, tournois ffgolf du jour où ses joueurs suivis saisissent une carte.
+// Pas de nouvelle donnée : on s'appuie sur carte_direct et sur la lecture des cartes des joueurs suivis.
+async function chargerLives() {
+  const L = [];
+  const E = await sb.from("club_evenements").select("id,nom,type,golf_nom,debut,fin,nb_tours,statut,structure_id,cree_par").lte("debut", JOUR).neq("statut", "annule");
+  let evs = (E.data || []).filter((e) => (e.fin || e.debut) >= JOUR);
+  if (Compte.role === "admin") evs = evs.filter((e) => e.cree_par === Compte.moi.id || (Compte.structure?.id && e.structure_id === Compte.structure.id));
+  await Promise.all(evs.map(async (e) => {
+    const { data } = await sb.rpc("carte_direct", { ev: e.id });
+    const R = data || [], joueurs = new Set(R.map((r) => r.cle)), avec = R.filter((r) => r.trous);
+    L.push({ evt: e.id, nom: e.nom, lieu: titre(e.golf_nom || ""), quoi: NX_TYPES_EV[e.type] || "Événement", inscrits: joueurs.size,
+      saisissent: new Set(avec.map((r) => r.cle)).size, enCours: avec.some((r) => !r.terminee && bilan(r).n), maj: avec.reduce((m, r) => (r.modifie_le > m ? r.modifie_le : m), "") });
+  }));
+  const suivis = Compte.joueurs || [];
+  if (suivis.length) {
+    const { data } = await sb.from("carte_parties").select("tournoi_id,user_id,terminee,modifie_le,trous").eq("jour", JOUR).in("user_id", suivis.map((j) => j.joueur_id));
+    const parT = {};
+    for (const c of data || []) if (c.tournoi_id && !String(c.tournoi_id).startsWith("club:")) (parT[c.tournoi_id] ||= []).push(c);
+    for (const [id, C] of Object.entries(parT)) {
+      const t = etat.tournois.find((x) => x.id === id);
+      L.push({ tournoi: id, nom: t ? titre(t.nom) : "Tournoi ffgolf", lieu: titre(t?.golf_nom || ""), quoi: "Tournoi ffgolf · tes joueurs", inscrits: null,
+        saisissent: new Set(C.map((c) => c.user_id)).size, enCours: C.some((c) => !c.terminee && bilan(c).n), maj: C.reduce((m, c) => (c.modifie_le > m ? c.modifie_le : m), "") });
+    }
+  }
+  return L.sort((a, b) => b.enCours - a.enCours || b.maj.localeCompare(a.maj) || a.nom.localeCompare(b.nom, "fr"));
+}
+function majBadgeLives(L) { const n = L.filter((x) => x.enCours).length, b = $("v-lives-nb"); if (b) { b.textContent = n; b.hidden = !n; } }
+async function rendreLives() {
+  const box = $("lv-contenu");
+  box.innerHTML = `<p class="meta">Chargement…</p>`;
+  let L;
+  try { L = await chargerLives(); } catch (e) { box.innerHTML = `<div class="bloc vide">Lecture impossible : ${esc(e.message || String(e))}</div>`; return; }
+  majBadgeLives(L);
+  const heure = (d) => new Date(d).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  box.innerHTML = L.length ? `<div class="lv-liste">${L.map((x) => `<button type="button" class="lv-ligne${x.enCours ? " live" : ""}" ${x.evt ? `data-lv-evt="${esc(x.evt)}"` : `data-lv-tournoi="${esc(x.tournoi)}"`}>
+      <span class="lv-etat">${x.enCours ? "● En direct" : x.maj ? "Terminé ou en pause" : "Pas encore commencé"}</span>
+      <b>${esc(x.nom)}</b><small>${esc(x.quoi)}${x.lieu ? " · " + esc(x.lieu) : ""}</small>
+      <small>${x.saisissent} joueur${x.saisissent > 1 ? "s" : ""} avec une carte${x.inscrits != null ? ` sur ${x.inscrits}` : ""}${x.maj ? ` · dernière saisie ${heure(x.maj)}` : ""}</small>
+      <span class="lv-aller">Ouvrir le direct →</span></button>`).join("")}</div>`
+    : `<div class="bloc vide"><p><b>Rien ne se joue aujourd'hui.</b></p><p class="meta">Ici s'affichent les événements du jour${(Compte.joueurs || []).length ? " et les tournois ffgolf où tes joueurs saisissent leur carte" : " auxquels tu participes"}.</p></div>`;
+}
+$("lv-contenu").addEventListener("click", (e) => {
+  const b = e.target.closest(".lv-ligne"); if (!b) return;
+  allerDirect(b.dataset.lvEvt ? { evt: b.dataset.lvEvt } : { tournoi: b.dataset.lvTournoi });
+});
 async function modeDirectPublic(jeton) {
   di.publicJeton = jeton; etat.ecran = "direct";
   finReprise(); document.body.classList.remove("verrou"); document.body.classList.add("partage");

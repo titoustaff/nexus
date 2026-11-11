@@ -210,3 +210,16 @@ body.partage .vues, body.partage #b-compte { display: none; }
 .di-public-b { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .di-public-b input { flex: 1 1 260px; min-width: 0; border: 1px solid var(--bord); background: var(--fond); border-radius: 8px; padding: 7px 10px; font-size: 12px; color: var(--texte); }
 @media (prefers-reduced-motion: reduce) { .di-live { animation: none; } }
+/* onglet En direct : les lives du jour (11/11) */
+.lv-liste { display: grid; gap: 10px; }
+.lv-ligne { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; text-align: left; background: var(--carte); border: 1px solid var(--bord); border-left: 4px solid var(--passe); border-radius: 14px; padding: 12px 16px; cursor: pointer; font: inherit; color: inherit; box-shadow: var(--ombre); }
+.lv-ligne:hover { border-color: var(--sauge); }
+.lv-ligne:focus-visible { outline: 2px solid var(--jaune); outline-offset: 2px; }
+.lv-ligne.live { border-left-color: #c2410c; }
+.lv-ligne > * { grid-column: 1; }
+.lv-etat { font-size: 12px; font-weight: 700; color: var(--doux); }
+.lv-ligne.live .lv-etat { color: #c2410c; }
+.lv-ligne b { font-size: 16px; }
+.lv-ligne small { color: var(--doux); }
+.lv-aller { grid-column: 2 !important; grid-row: 1 / span 4; align-self: center; font-weight: 700; color: var(--vert); white-space: nowrap; }
+@media (max-width: 520px) { .lv-ligne { grid-template-columns: 1fr; } .lv-aller { grid-column: 1 !important; grid-row: auto; } }
