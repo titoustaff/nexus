@@ -679,3 +679,11 @@ html, body { overflow-x: clip; }   /* filet de sécurité : jamais de défilemen
 .s-nom-ev { font-size: 15px; }
 .tag.tag-ev { background: #ede9fe; color: #5b21b6; font-weight: 600; }
 .s-item.s-ev .btn { height: 32px; padding: 0 12px; display: inline-flex; align-items: center; text-decoration: none; }
+
+/* événements (11/11) : invitation en attente, modifié, annulé */
+.s-item.ev-invite { background: linear-gradient(90deg, rgba(240,180,0,.12), transparent 70%); }
+.s-item.ev-annule .s-nom-ev { text-decoration: line-through; color: var(--doux); }
+.tag-modifie { background: var(--jaune); color: #2e2400; }
+.ev-rep { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.ev-rep small { flex-basis: 100%; }
+body.lecture-seule #s-ev-plus { display: none; }

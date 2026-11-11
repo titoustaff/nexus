@@ -1224,7 +1224,7 @@ $("s-dom").addEventListener("input", () => $("s-dom").setCustomValidity(""));
 // ---- rendu de l'écran
 // ---- événements organisés par le coach (module Club : club_evenements), auxquels le joueur affiché est inscrit (08/11)
 // Ils s'affichent dans Ma saison ; le jour J, la carte attend le joueur dans Carte.
-const TYPES_EV = { competition: "Événement hors Mérite", rencontre: "Rencontre inter-clubs", interne: "Partie interne" };
+const TYPES_EV = NX_TYPES_EV;   // commun/v1/nexus.js (événements : galaxy/MD_DOC/EVENEMENTS.md)
 const evCache = {};
 const idEvenements = () => (Saison.demo?.coach ? Saison.demo.id : (Saison.mode === "compte" && !Saison.demo ? Saison.moi?.id : null));
 // événements de l'année affichée, sous la forme des entrées de Ma saison ({ t, e }) : t.ev = l'événement, e.statut = "coach"
@@ -1232,8 +1232,11 @@ function evenementsDe(an) {
   const id = idEvenements(); if (!id || !sb) return [];
   if (!evCache[id]) {
     evCache[id] = [];
-    sb.from("club_evenement_joueurs").select("evenement:club_evenements(id,type,nom,golf,golf_nom,debut,fin,categorie)").eq("joueur_id", id)
-      .then(({ data, error }) => { evCache[id] = error ? [] : (data || []).map((r) => r.evenement).filter(Boolean); if (evCache[id].length && etat.ecran === "saison") rendreSaison(); });
+    // invitations en attente et acceptées (les refusées disparaissent) ; ev.insc = ma réponse
+    sb.from("club_evenement_joueurs").select("statut,repondu_le,evenement:club_evenements(*)").eq("joueur_id", id)
+      .then(({ data, error }) => {
+        evCache[id] = error ? [] : (data || []).filter((r) => r.evenement && r.statut !== "refuse").map((r) => ({ ...r.evenement, insc: { statut: r.statut, repondu_le: r.repondu_le } }));
+        if (evCache[id].length && etat.ecran === "saison") rendreSaison(); });
     return [];
   }
   return evCache[id].filter((e) => +e.debut.slice(0, 4) === an)
@@ -1264,7 +1267,7 @@ function rendreSaison() {
 
   $("s-alertes").innerHTML = alertes(liste).map(([niveau, html]) => `<div class="s-alerte ${niveau}">${html}</div>`).join("");
   $("s-legende").innerHTML = STATUTS.map(([k, l]) => `<span><i class="puce-statut s-${k}"></i>${l}</span>`).join("") +
-    `<span><i class="puce-statut s-ev"></i>événement du coach</span><span><i class="puce-statut conflit"></i>chevauchement</span>`;
+    `<span><i class="puce-statut s-ev"></i>événement</span><span><i class="puce-statut conflit"></i>chevauchement</span>`;
   const evs = evenementsDe(an);   // événements du coach : dans le calendrier et la liste, au milieu des tournois
   const tout = [...liste, ...evs].sort((a, b) => a.t.debut.localeCompare(b.t.debut));
   $("s-cal").innerHTML = calendrier(an, tout);
@@ -1287,13 +1290,21 @@ function rendreSaison() {
   for (const { t, e } of tout) {
     const m = +t.debut.slice(5, 7) - 1;
     if (m !== mois) { if (mois >= 0) html += "</ol>"; html += `<h4 class="s-mois">${MOIS[m]}</h4><ol class="s-items">`; mois = m; }
-    if (t.ev) {   // événement du coach (Club) : pas de statut ni de note, un lien vers la carte le jour J
-      const jour = isoLocal(new Date());
-      html += `<li class="s-item s-ev${t.fin < jour ? " passe" : ""}">
+    if (t.ev) {   // événement (Club ou créé par un joueur) : invitation à accepter, carte le jour J, direct
+      const jour = isoLocal(new Date()), ev = t.ev, insc = ev.insc || {}, moi = Saison.moi?.id, lecture = !!Saison.demo;
+      const annule = ev.statut === "annule", invite = insc.statut === "invite", orga = !lecture && ev.cree_par === moi;
+      const modifie = !annule && insc.statut === "accepte" && ev.modifie_le && (!insc.repondu_le || ev.modifie_le > insc.repondu_le);
+      const auj = t.debut <= jour && jour <= t.fin;
+      html += `<li class="s-item s-ev${t.fin < jour ? " passe" : ""}${annule ? " ev-annule" : ""}${invite ? " ev-invite" : ""}">
         <div class="date"><b>${new Date(t.debut + "T12:00").getDate()}</b><span>${MOIS_COURT[m]}</span></div>
-        <div class="s-info"><b class="s-nom-ev">${esc(t.nom)}</b>
-          <div class="meta"><span class="tag tag-ev">${esc(TYPES_EV[t.ev.type] || "Événement")}</span> proposé par ton coach${t.golf_nom ? " · " + esc(titre(t.golf_nom)) : ""}${t.ev.categorie ? " · " + esc(t.ev.categorie) : ""}</div>
-          ${t.debut <= jour && !Saison.demo ? `<div class="s-ctrl"><a class="btn" href="../carte/">Ma carte →</a></div>` : ""}</div></li>`;
+        <div class="s-info"><b class="s-nom-ev">${esc(t.nom)}</b>${annule ? ` <span class="tag">annulé</span>` : modifie ? ` <span class="tag tag-modifie" title="date, heure ou golf changés depuis ta réponse">modifié</span>` : ""}
+          <div class="meta"><span class="tag tag-ev">${esc(TYPES_EV[ev.type] || "Événement")}</span> ${ev.cree_par === moi ? "organisé par toi" : ev.structure_id ? "proposé par ton club" : "invitation"}${t.golf_nom ? " · " + esc(titre(t.golf_nom)) : ""}${ev.heure ? " · " + esc(ev.heure.slice(0, 5)) : ""}${ev.nb_tours > 1 ? ` · ${ev.nb_tours} tours` : ""}${ev.categorie ? " · " + esc(ev.categorie) : ""}</div>
+          ${ev.note ? `<div class="meta">${esc(ev.note)}</div>` : ""}
+          ${invite && !annule && !lecture ? `<div class="s-ctrl ev-rep"><button type="button" class="btn plein" data-ev-oui="${esc(ev.id)}">Accepter</button><button type="button" class="btn" data-ev-non="${esc(ev.id)}">Refuser</button>
+            <small class="meta">En acceptant, l'événement entre dans ta saison et tes scores de cet événement sont visibles des participants.</small></div>`
+          : invite ? `<div class="meta">invitation pas encore acceptée</div>` : ""}
+          ${!invite && !annule && auj && !lecture ? `<div class="s-ctrl"><a class="btn" href="../carte/">Ma carte →</a><a class="btn" href="../carte/#evt=${esc(ev.id)}">📡 En direct</a></div>` : ""}
+          ${orga && !annule ? `<div class="s-ctrl"><button type="button" class="lien" data-ev-modifier="${esc(ev.id)}">Modifier · inviter</button> · <button type="button" class="lien" data-ev-annuler="${esc(ev.id)}">Annuler l'événement</button></div>` : ""}</div></li>`;
       continue;
     }
     const g = golfDe(t) || {};
@@ -1416,7 +1427,7 @@ function calendrier(an, liste) {
       if (l) {
         const T = l.filter((x) => !x.t.ev), s = T.reduce((a, x) => (RANG[x.e.statut] > RANG[a] ? x.e.statut : a), "envisage");
         cls.push("pris", T.length ? "s-" + s : "s-ev"); if (l.length > 1) cls.push("conflit");
-        c += `<button type="button" class="${cls.join(" ")}" data-ouvrir="${esc((T[0] || l[0]).t.id)}" title="${esc(l.map((x) => (x.t.ev ? x.t.nom : titre(x.t.nom)) + " (" + (x.t.ev ? "événement du coach" : LIB[x.e.statut]) + ")").join("\n"))}">${j}</button>`;
+        c += `<button type="button" class="${cls.join(" ")}" data-ouvrir="${esc((T[0] || l[0]).t.id)}" title="${esc(l.map((x) => (x.t.ev ? x.t.nom : titre(x.t.nom)) + " (" + (x.t.ev ? "événement" : LIB[x.e.statut]) + ")").join("\n"))}">${j}</button>`;
       } else c += `<span class="${cls.join(" ")}">${j}</span>`;
     }
     html += `<div class="s-m"><h4>${MOIS[m]}</h4><div class="s-jours"><b>L</b><b>M</b><b>M</b><b>J</b><b>V</b><b>S</b><b>D</b>${c}</div></div>`;
@@ -2500,3 +2511,40 @@ $("assistant").addEventListener("click", async (e) => {
 });
 
 demarrage();
+
+// ---- événements créés par le joueur (11/11, galaxy/MD_DOC/EVENEMENTS.md) : création, réponse aux invitations, annulation
+function rafraichirEvenements() { const id = idEvenements(); if (id) delete evCache[id]; rendreSaison(); }
+$("s-ev-plus")?.addEventListener("click", async () => {
+  if (Saison.mode !== "compte" || Saison.demo || !Saison.moi) { signaler("Connecte-toi pour créer un événement."); return; }
+  const r = await nexusFormEvenement({ golfs: etat.golfs, parLicence: true, titreForm: "Nouvel événement" });
+  if (!r) return;
+  try {
+    const { erreurs } = await nexusEnregistrerEvenement({ champs: r.champs, autres: r.autres, moi: Saison.moi.id });
+    signaler("Événement créé" + (r.autres.length ? " : tes invités l'acceptent dans leur Saison." : ".") + (erreurs.length ? " Invitations impossibles — " + erreurs.join(" ; ") : ""));
+  } catch (err) { signaler("Création impossible : " + nxErreurEv(err) + (/column|relation|check|policy/.test(err.message || "") ? " (script club-evenements-v2.sql à lancer)" : "")); }
+  etat.sAnnee = +r.champs.debut.slice(0, 4); rafraichirEvenements();
+});
+$("s-liste").addEventListener("click", async (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  const evs = evCache[idEvenements()] || [], trouve = (k) => evs.find((x) => x.id === k);
+  if (b.dataset.evOui || b.dataset.evNon) {
+    const { error } = await sb.rpc("evenement_repondre", { ev: b.dataset.evOui || b.dataset.evNon, accepte: !!b.dataset.evOui });
+    signaler(error ? "Impossible : " + nxErreurEv(error) : b.dataset.evOui ? "Accepté : l'événement est dans ta saison." : "Invitation refusée.");
+    rafraichirEvenements(); return;
+  }
+  if (b.dataset.evModifier) {
+    const ev = trouve(b.dataset.evModifier); if (!ev) return;
+    const r = await nexusFormEvenement({ golfs: etat.golfs, ev, parLicence: true });
+    if (!r) return;
+    try {
+      const { erreurs } = await nexusEnregistrerEvenement({ ev, champs: r.champs, autres: r.autres });
+      signaler("Événement modifié." + (erreurs.length ? " Invitations impossibles — " + erreurs.join(" ; ") : ""));
+    } catch (err) { signaler("Enregistrement impossible : " + nxErreurEv(err)); }
+    rafraichirEvenements(); return;
+  }
+  if (b.dataset.evAnnuler) {
+    const ev = trouve(b.dataset.evAnnuler); if (!ev || !confirm(`Annuler « ${ev.nom} » ? Il restera barré chez tes invités (supprimé s'il n'a encore aucune carte).`)) return;
+    try { signaler((await nexusAnnulerEvenement(ev)) === "supprime" ? "Événement supprimé." : "Événement annulé."); } catch (err) { signaler("Impossible : " + nxErreurEv(err)); }
+    rafraichirEvenements();
+  }
+});
