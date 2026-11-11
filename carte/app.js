@@ -647,7 +647,7 @@ async function rendreDirect() {
     if (j.n) { if (j.ecart !== prec) rang = i + 1; prec = j.ecart; }
     const ouvert = di.ouverts.has(j.cle);
     return `<tr class="di-ligne${ouvert ? " ouvert" : ""}${j.n ? "" : " di-sans"}" data-di="${esc(j.cle)}" tabindex="0" aria-expanded="${ouvert}">
-      <td class="di-rang">${j.n ? rang : ""}</td><td class="di-nom"><b>${esc(j.nom)}</b>${j.der && !j.der.terminee && j.der.b.n ? ` <span class="di-live" title="saisie en cours">●</span>` : ""}</td>
+      <td class="di-rang">${j.n ? rang : ""}</td><td class="di-nom"><b>${esc(j.nom)}</b>${j.der && !j.der.terminee && j.der.b.n ? ` <span class="di-live" title="saisie en cours">●</span>` : ""}${j.cartes.length ? ` <span class="di-voir">${ouvert ? "▾ masquer" : "▸ carte"}</span>` : ""}</td>
       <td class="di-trou" title="trous saisis (F = carte terminée)">${trou(j)}</td>
       <td class="di-ecart ${j.n ? (j.ecart < 0 ? "sous" : j.ecart === 0 ? "par" : "") : ""}">${j.n ? ecartPar(j.ecart) : `<small>${j.cartes.length ? "carte ouverte" : "pas encore de carte"}</small>`}</td>
       ${N > 1 ? Array.from({ length: N }, (_, k) => `<td class="di-t">${tourCol(j, k + 1)}</td>`).join("") : ""}
