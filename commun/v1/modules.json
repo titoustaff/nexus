@@ -56,15 +56,6 @@
    "vueJoueur": true
   },
   {
-   "id": "rencontres",
-   "nom": "Rencontres",
-   "verbe": "Jouer en équipe",
-   "couleur": "#c2410c",
-   "adresse": null,
-   "etat": "bientot",
-   "icone": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 21V4\"/><path d=\"M6 4l6 2.5L6 9z\" fill=\"currentColor\"/><path d=\"M18 21V4\"/><path d=\"M18 4l-6 2.5L18 9z\" fill=\"currentColor\"/><path d=\"M3 21h18\"/><path d=\"M10 14h4\"/></svg>"
-  },
-  {
    "id": "admin",
    "nom": "Admin",
    "verbe": "Administrer",
