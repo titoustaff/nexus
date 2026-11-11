@@ -348,6 +348,15 @@ function sauver(tout = false) {
   const p = etat.partie; p.modifie_le = new Date().toISOString();
   lsSet("carte-brouillon", JSON.stringify(p));
   const ecrire = async () => {
+    // carte d'un événement : le marqueur a pu saisir des scores entre-temps (lien marqueur) ; on reprend ses scores
+    // (trous marqués « m ») avant d'écrire, pour ne jamais les écraser avec une version ancienne
+    if (String(p.tournoi_id || "").startsWith("club:")) {
+      const { data: srv } = await sb.from("carte_parties").select("trous").eq("id", p.id).maybeSingle();
+      for (const ts of srv?.trous || []) {
+        const tl = p.trous.find((x) => x.t === ts.t);
+        if (tl && ts.m && (!tl.m || ts.m > tl.m)) { tl.score = ts.score; tl.m = ts.m; }
+      }
+    }
     // .select : on vérifie qu'une ligne a vraiment été écrite (session expirée → 0 ligne, sans erreur : faux « enregistré »)
     let { data, error } = await sb.from("carte_parties").update({ trous: p.trous, terminee: p.terminee, modifie_le: p.modifie_le }).eq("id", p.id).select("id");
     if (!error && !data?.length) {   // session à rafraîchir, puis un nouvel essai
