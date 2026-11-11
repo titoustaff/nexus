@@ -78,7 +78,8 @@ const dateLongue = (d) => new Date(d + "T12:00:00").toLocaleDateString("fr-FR", 
 function ecran(nom) {
   if (nom === "nouvelle" && etat.vue) nom = "liste";   // pas de saisie pour un joueur suivi (lecture seule)
   etat.ecran = nom;
-  for (const k of ["liste", "nouvelle", "saisie", "voir"]) $("ecran-" + k).hidden = k !== nom;
+  for (const k of ["liste", "nouvelle", "saisie", "voir", "direct"]) $("ecran-" + k).hidden = k !== nom;
+  if (nom !== "direct") { arreterDirect(); if (/(^|[#&])(evt|tournoi)=/.test(location.hash)) history.replaceState(null, "", location.pathname + location.search); }
   for (const b of document.querySelectorAll(".vues button[data-ecran]"))
     if (b.dataset.ecran === nom) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
   $("v-nouvelle").hidden = !!etat.vue;
@@ -91,6 +92,7 @@ function ecran(nom) {
   else if (nom === "nouvelle") preparerNouvelle();
   else if (nom === "saisie") rendreSaisie();
   else if (nom === "voir") rendreVoir();
+  else if (nom === "direct") rendreDirect();
   window.scrollTo({ top: 0 });
 }
 document.addEventListener("click", (e) => {
@@ -112,8 +114,8 @@ async function rendreListe() {
   const attend = etat.vue ? [] : (etat.agenda || []).map((a) => ({ ...a, carte: etat.parties.find((p) => p.tournoi_id === a.t.id && (p.tour || 1) === a.tour) }))
     .filter((a) => !a.carte || !a.carte.terminee);
   const htmlAttend = attend.map((a) => `<div class="li-attend"><span>⛳ <b>Aujourd'hui : ${esc(titre(a.t.nom))}</b>${(a.t.nb_tours || 1) > 1 ? ` · tour ${a.tour}` : ""}
-      <small>${esc(titre(a.t.golf_nom || a.t.golf || ""))}${a.t.categorie ? " · " + esc(a.t.categorie) : ""} · ${a.t.club ? ({ rencontre: "rencontre inter-clubs", interne: "partie demandée par ton coach" }[a.t.type] || "événement ajouté par ton coach") : `dans ta saison (${esc({ envisage: "envisagé", inscrit: "inscrit", joue: "joué" }[a.statut] || a.statut)})`}</small></span>
-      ${a.carte ? `<button type="button" class="btn plein" data-partie="${esc(a.carte.id)}">Reprendre ma carte</button>` : `<button type="button" class="btn plein" data-attend="${esc(a.t.id)}">Ta carte t'attend · commencer</button>`}</div>`).join("");
+      <small>${esc(titre(a.t.golf_nom || a.t.golf || ""))}${a.t.categorie ? " · " + esc(a.t.categorie) : ""} · ${a.t.club ? esc((NX_TYPES_EV[a.t.type] || "événement").toLowerCase()) : `dans ta saison (${esc({ envisage: "envisagé", inscrit: "inscrit", joue: "joué" }[a.statut] || a.statut)})`}</small></span>
+      <span class="li-attend-b">${a.t.ev ? `<button type="button" class="btn" data-direct-evt="${esc(a.t.ev)}">📡 Direct</button>` : ""}${a.carte ? `<button type="button" class="btn plein" data-partie="${esc(a.carte.id)}">Reprendre ma carte</button>` : `<button type="button" class="btn plein" data-attend="${esc(a.t.id)}">Ta carte t'attend · commencer</button>`}</span></div>`).join("");
   if (!etat.parties.length) {
     box.innerHTML = etat.vue ? `<div class="bloc vide">Aucune carte pour ce joueur.</div>`
       : `${htmlAttend}<div class="bloc vide"><p>Aucune partie pour l'instant.</p><button type="button" class="btn plein" data-ecran="nouvelle">+ Noter ma première partie</button></div>`;
@@ -132,6 +134,7 @@ async function rendreListe() {
 document.addEventListener("change", (e) => { if (e.target.id === "li-qui") { etat.vue = e.target.value; nexusJoueurVu.ecrire(Compte.moi?.id, etat.vue, Compte.joueurs.find((j) => j.joueur_id === etat.vue)?.nom); ecran("liste"); } });
 $("li-contenu").addEventListener("click", (e) => {
   const at = e.target.closest("[data-attend]"); if (at) { preremplir(at.dataset.attend); return; }
+  if (e.target.closest("[data-direct-evt]")) return;   // géré plus bas (page En direct)
   const b = e.target.closest("[data-partie]"); if (!b) return;
   etat.partie = etat.parties.find((p) => p.id === b.dataset.partie);
   const m = jsonLs("carte-en-cours");   // reprendre au trou où l'on s'était arrêté, sinon au premier trou sans score
@@ -144,22 +147,23 @@ $("li-contenu").addEventListener("click", (e) => {
 // rien n'est créé tant que le joueur ne l'active pas (08/11, demande de l'utilisateur).
 async function chargerAgenda() {
   etat.agenda = [];
+  // événements (Saison / Club › Calendrier d'équipe, galaxy/MD_DOC/EVENEMENTS.md) que j'ai ACCEPTÉS, non annulés, qui se jouent aujourd'hui
+  const C = await sb.from("club_evenement_joueurs").select("statut,evenement:club_evenements(id,type,nom,golf,golf_nom,debut,fin,nb_tours,categorie,statut,parcours,repere)")
+    .eq("joueur_id", Compte.moi.id).eq("statut", "accepte");
+  for (const r of C.data || []) {
+    const c = r.evenement;
+    if (c?.debut && c.statut !== "annule" && c.debut <= JOUR && JOUR <= (c.fin || c.debut)) {
+      const t = { id: "club:" + c.id, ev: c.id, nom: c.nom, golf: c.golf, golf_nom: c.golf_nom, debut: c.debut, fin: c.fin, nb_tours: c.nb_tours, categorie: c.categorie, club: true, type: c.type, parcours: c.parcours, repere: c.repere };
+      etat.agenda.push({ t, statut: "coach", tour: tourDuJour(t, JOUR) });
+    }
+  }
+  // tournois de mes saisons (Envisagé / Inscrit / Joué) qui se jouent aujourd'hui
   const L = await sb.from("saisons").select("id").eq("user_id", Compte.moi.id);
   const ids = (L.data || []).map((x) => x.id); if (!ids.length) return;
   const I = await sb.from("saison_tournois").select("tournoi_id,statut").in("saison_id", ids);
   for (const r of I.data || []) {
     const t = etat.tournois.find((x) => x.id === r.tournoi_id);
     if (t?.debut && t.debut <= JOUR && JOUR <= (t.fin || t.debut)) etat.agenda.push({ t, statut: r.statut, tour: tourDuJour(t, JOUR) });
-  }
-  // événements organisés par le coach (module Club : club_evenements — compétition hors Mérite, rencontre inter-clubs,
-  // partie interne) auxquels je suis inscrit, qui se jouent aujourd'hui
-  const C = await sb.from("club_evenement_joueurs").select("evenement:club_evenements(id,type,nom,golf,golf_nom,debut,fin,nb_tours,categorie)").eq("joueur_id", Compte.moi.id);
-  for (const r of C.data || []) {
-    const c = r.evenement;
-    if (c?.debut && c.debut <= JOUR && JOUR <= (c.fin || c.debut)) {
-      const t = { id: "club:" + c.id, nom: c.nom, golf: c.golf, golf_nom: c.golf_nom, debut: c.debut, fin: c.fin, nb_tours: c.nb_tours, categorie: c.categorie, club: true, type: c.type };
-      etat.agenda.push({ t, statut: "coach", tour: tourDuJour(t, JOUR) });
-    }
   }
 }
 function preremplir(id) {
@@ -168,6 +172,8 @@ function preremplir(id) {
   ecran("nouvelle");
   $("nv-jour").value = JOUR;
   if (g) { $("nv-golf").value = libGolf(g); majParcours(); }
+  if (g && a.t.parcours && [...$("nv-parcours").options].some((o) => o.value === a.t.parcours)) { $("nv-parcours").value = a.t.parcours; majReperes(); }
+  if (a.t.repere && [...$("nv-repere").options].some((o) => o.value === a.t.repere)) $("nv-repere").value = a.t.repere;
   if (a.t.club) {   // événement du coach : contexte selon son type, carte rattachée à l'événement (club:<id>)
     $("nv-contexte").value = { rencontre: "rencontre", interne: "libre" }[a.t.type] || "competition"; majTournois();
     etat.attente = { ref: a.t.id, tour: a.tour };
@@ -296,7 +302,7 @@ function rendreSaisie() {
       <span class="meta" id="sa-etat"></span>
       ${etat.i < p.trous.length - 1 ? `<button type="button" class="btn plein" data-pas="1">Trou ${p.trous[etat.i + 1].t} →</button>` : `<button type="button" class="btn plein" data-finir>Terminer la partie ✓</button>`}
     </div>
-    <p class="sa-bas"><button type="button" class="lien" data-ecran="liste">← Mes cartes</button> · <button type="button" class="lien" data-voir-carte>Voir la carte</button> · <button type="button" class="lien" data-partager>🔗 Partager en direct</button></p>`;
+    <p class="sa-bas"><button type="button" class="lien" data-ecran="liste">← Mes cartes</button> · <button type="button" class="lien" data-voir-carte>Voir la carte</button> · ${String(p.tournoi_id || "").startsWith("club:") ? `<button type="button" class="lien" data-direct-evt="${esc(p.tournoi_id.slice(5))}">📡 Direct de la partie</button> · ` : ""}<button type="button" class="lien" data-partager>🔗 Partager en direct</button></p>`;
 }
 $("sa-contenu").addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (!b) return;
@@ -429,6 +435,7 @@ async function entrer() {
   try { await chargerAgenda(); } catch { etat.agenda = []; }
   const br = jsonLs("carte-brouillon");
   if (br && br.id && br.user_id === Compte.moi.id) { etat.partie = br; sauver(true); }
+  if (lireDirect()) { ecran("direct"); return; }   // lien « En direct » (Saison, Club, Carte)
   // une partie en cours (déconnecté, page fermée…) : on rouvre la saisie sur le trou où l'on s'était arrêté
   const m = jsonLs("carte-en-cours");
   if (m?.id && m.user === Compte.moi.id) {
@@ -529,6 +536,150 @@ async function modePartage(jeton) {
   window.addEventListener("focus", relire);
 }
 
+// ------------------------------------------------------------------ En direct : toutes les cartes d'un événement ou d'un tournoi sur UNE page (11/11)
+// galaxy/MD_DOC/EVENEMENTS.md. #evt=<id> : événement (fonction carte_direct : participants ayant accepté) ;
+// #tournoi=<id ffgolf> : coach, cartes de SES joueurs suivis rattachées au tournoi (règle « carte : coach lecture ») ;
+// #evtdirect=<jeton> : lien public de l'événement, sans compte (carte_direct_public). Mise à jour toutes les 15 s.
+const di = { src: null, ouverts: new Set(), minuteur: null, publicJeton: null };
+function lireDirect() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  di.src = h.get("evt") ? { evt: h.get("evt") } : h.get("tournoi") ? { tournoi: h.get("tournoi") } : null;
+  return !!di.src;
+}
+function arreterDirect() { clearInterval(di.minuteur); di.minuteur = null; }
+function allerDirect(src) {
+  const h = src.evt ? "evt=" + encodeURIComponent(src.evt) : "tournoi=" + encodeURIComponent(src.tournoi);
+  history.pushState(null, "", location.pathname + location.search + "#" + h);
+  di.src = src; di.ouverts.clear(); ecran("direct");
+}
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-direct-evt]"); if (b) { e.preventDefault(); allerDirect({ evt: b.dataset.directEvt }); }
+});
+addEventListener("hashchange", () => { if (!di.publicJeton && Compte.moi && lireDirect()) { di.ouverts.clear(); ecran("direct"); } });
+
+// lignes { cle, nom, partie_id, tour, trous, nb_trous, terminee, modifie_le } → joueurs { cle, nom, cartes[] }, classés
+function joueursDirect(L) {
+  const J = new Map();
+  for (const r of L) {
+    const j = J.get(r.cle) || { cle: r.cle, nom: r.nom, cartes: [] }; J.set(r.cle, j);
+    if (r.trous) j.cartes.push({ ...r, b: bilan(r) });
+  }
+  for (const j of J.values()) {
+    j.cartes.sort((a, b) => (a.tour || 1) - (b.tour || 1) || String(a.jour).localeCompare(String(b.jour)));
+    j.n = j.cartes.reduce((s, c) => s + c.b.n, 0);
+    j.ecart = j.cartes.reduce((s, c) => s + (c.b.n ? c.b.ecart : 0), 0);
+    j.score = j.cartes.reduce((s, c) => s + (c.b.n ? c.b.score : 0), 0);
+    j.der = j.cartes[j.cartes.length - 1] || null;   // carte du tour en cours (ou du dernier tour)
+    j.maj = j.cartes.reduce((m, c) => (c.modifie_le > m ? c.modifie_le : m), "");
+  }
+  return [...J.values()].sort((a, b) => (b.n > 0) - (a.n > 0) || a.ecart - b.ecart || b.n - a.n || a.nom.localeCompare(b.nom, "fr"));
+}
+// la carte d'un tour, en petit (trou, par, score), pour la ligne dépliée
+function miniCarte(c) {
+  const T = c.trous || [], moities = T.length > 9 ? [T.slice(0, 9), T.slice(9)] : [T];
+  const som = (M, k) => M.filter((t) => t.score).reduce((s, t) => s + (+t[k] || 0), 0) || "—";
+  return moities.map((M, k) => `<div class="defile"><table class="vo-table di-mini"><thead><tr><th>Trou</th>${M.map((t) => `<th>${t.t}</th>`).join("")}<th>${moities.length > 1 ? (k ? "Retour" : "Aller") : "Total"}</th></tr></thead>
+    <tbody><tr><th>Par</th>${M.map((t) => `<td>${t.par}</td>`).join("")}<td><b>${M.reduce((s, t) => s + t.par, 0)}</b></td></tr><tr class="vo-score"><th>Score</th>${M.map((t) => `<td><span class="nt ${notation(t)}">${t.score || "·"}</span></td>`).join("")}<td><b>${som(M, "score")}</b></td></tr>
+    <tr><th>Putts</th>${M.map((t) => `<td>${t.putts ?? "·"}</td>`).join("")}<td>${som(M, "putts")}</td></tr></tbody></table></div>`).join("");
+}
+async function chargerDirect() {
+  if (di.publicJeton) {
+    const { data, error } = await sb.rpc("carte_direct_public", { j: di.publicJeton });
+    if (error) throw error;
+    if (!data?.length) return null;
+    const e = data[0];
+    return { titre: e.ev_nom, sous: [titre(e.ev_golf_nom || ""), e.ev_debut && dateLongue(e.ev_debut)].filter(Boolean).join(" · "), nbTours: e.ev_nb_tours || 1, statut: e.ev_statut, lignes: data, debut: e.ev_debut, fin: e.ev_fin };
+  }
+  if (di.src?.evt) {
+    const { data, error } = await sb.rpc("carte_direct", { ev: di.src.evt });
+    if (error) throw error;
+    if (!data?.length) return null;
+    const e = data[0];
+    return { evt: di.src.evt, titre: e.ev_nom, sous: [titre(e.ev_golf_nom || ""), e.ev_debut && dateLongue(e.ev_debut)].filter(Boolean).join(" · "), nbTours: e.ev_nb_tours || 1,
+      statut: e.ev_statut, organisateur: e.organisateur, jeton: e.ev_jeton, lignes: data, debut: e.ev_debut, fin: e.ev_fin };
+  }
+  // tournoi ffgolf : cartes de mes joueurs suivis rattachées au tournoi
+  const t = etat.tournois.find((x) => x.id === di.src.tournoi), suivis = Compte.joueurs || [];
+  if (!suivis.length) return { titre: t ? titre(t.nom) : "Tournoi", sous: "", nbTours: 1, lignes: [], vide: "Le direct d'un tournoi ffgolf est réservé aux coachs, pour leurs joueurs suivis." };
+  const { data, error } = await sb.from("carte_parties").select("id,user_id,tour,jour,nb_trous,trous,terminee,modifie_le,parcours_nom,repere")
+    .eq("tournoi_id", di.src.tournoi).in("user_id", suivis.map((j) => j.joueur_id));
+  if (error) throw error;
+  const nom = (id) => { const j = suivis.find((x) => x.joueur_id === id); return j?.nom || j?.libelle || "Joueur"; };
+  const lignes = (data || []).map((c) => ({ ...c, cle: c.user_id, nom: nom(c.user_id), partie_id: c.id }));
+  const nbTours = Math.max(t?.nb_tours || 1, ...lignes.map((c) => c.tour || 1));
+  return { titre: t ? titre(t.nom) : "Tournoi ffgolf", sous: [t && titre(t.golf_nom || ""), t?.debut && dateLongue(t.debut)].filter(Boolean).join(" · "), nbTours, lignes, debut: t?.debut, fin: t?.fin,
+    note: "Tes joueurs suivis qui saisissent leur carte de ce tournoi dans Carte." };
+}
+async function rendreDirect() {
+  const box = $("di-contenu");
+  if (!box.innerHTML.trim()) box.innerHTML = `<p class="meta">Chargement…</p>`;
+  let D;
+  try { D = await chargerDirect(); }
+  catch (e) {
+    box.innerHTML = `<div class="bloc vide">Lecture impossible : ${esc(e.message || String(e))}${/carte_direct|function/.test(e.message || "") ? "<br>La page En direct n'est pas encore installée dans la base (scripts club-evenements-v2.sql puis carte-direct.sql)." : ""}</div>`;
+    return;
+  }
+  if (!D) {
+    box.innerHTML = di.publicJeton ? `<div class="bloc vide"><p><b>Ce lien n'est plus valable.</b></p><p class="meta">L'organisateur a coupé le lien public.</p><a class="btn" href="../">GolfNexus</a></div>`
+      : `<div class="bloc vide"><p><b>Rien à afficher pour l'instant.</b></p><p class="meta">Le direct montre les participants qui ont accepté l'invitation. Si tu n'es ni organisateur ni participant, il n'est pas visible.</p>${Compte.moi ? `<button type="button" class="btn" data-ecran="liste">← Mes cartes</button>` : ""}</div>`;
+    return;
+  }
+  const J = joueursDirect(D.lignes), N = D.nbTours;
+  const enCours = J.some((j) => j.der && !j.der.terminee), fini = J.length && J.every((j) => j.der?.terminee) && J.every((j) => j.cartes.length >= N);
+  const derniere = J.reduce((m, j) => (j.maj > m ? j.maj : m), "");
+  const tourCol = (j, k) => { const c = j.cartes.find((x) => (x.tour || 1) === k); return c && c.b.n ? `<b>${c.b.score}</b> <small>${ecartPar(c.b.ecart)}</small>` : "·"; };
+  const trou = (j) => !j.der ? "—" : j.der.terminee ? "F" : j.der.b.n ? String(j.der.b.n) : "0";
+  let rang = 0, prec = null;
+  const lignes = J.map((j, i) => {
+    if (j.n) { if (j.ecart !== prec) rang = i + 1; prec = j.ecart; }
+    const ouvert = di.ouverts.has(j.cle);
+    return `<tr class="di-ligne${ouvert ? " ouvert" : ""}${j.n ? "" : " di-sans"}" data-di="${esc(j.cle)}" tabindex="0" aria-expanded="${ouvert}">
+      <td class="di-rang">${j.n ? rang : ""}</td><td class="di-nom"><b>${esc(j.nom)}</b>${j.der && !j.der.terminee && j.der.b.n ? ` <span class="di-live" title="saisie en cours">●</span>` : ""}</td>
+      <td class="di-trou" title="trous saisis (F = carte terminée)">${trou(j)}</td>
+      <td class="di-ecart ${j.n ? (j.ecart < 0 ? "sous" : j.ecart === 0 ? "par" : "") : ""}">${j.n ? ecartPar(j.ecart) : `<small>${j.cartes.length ? "carte ouverte" : "pas encore de carte"}</small>`}</td>
+      ${N > 1 ? Array.from({ length: N }, (_, k) => `<td class="di-t">${tourCol(j, k + 1)}</td>`).join("") : ""}
+      <td class="di-total">${j.n ? `<b>${j.score}</b>` : ""}</td></tr>
+      ${ouvert ? `<tr class="di-detail"><td colspan="${5 + (N > 1 ? N : 0)}">${j.cartes.length ? j.cartes.map((c) => `<div class="di-carte"><p class="meta">${N > 1 ? `Tour ${c.tour || 1} · ` : ""}${esc(c.parcours_nom || "")}${c.repere ? " · " + esc(c.repere) : ""} · ${c.terminee ? "terminée" : `${c.b.n}/${c.nb_trous} trous`}</p>${miniCarte(c)}</div>`).join("") : `<p class="meta">Pas encore de carte : le joueur la commence dans Carte (« Ta carte t'attend »).</p>`}</td></tr>` : ""}`;
+  }).join("");
+  const annule = D.statut === "annule";
+  box.innerHTML = `
+    <div class="pt-direct ${!enCours ? "fini" : ""}"><span>${annule ? "✕ Événement annulé" : enCours ? "● En direct" : fini ? "✓ Terminé" : "En attente des premières cartes"}</span>
+      <small>${enCours ? "mise à jour automatique · " : ""}${derniere ? "dernière saisie " + new Date(derniere).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : ""}</small></div>
+    <div class="s-tete"><h2>${esc(D.titre)}</h2><span class="meta">${esc(D.sous)}${N > 1 ? ` · ${N} tours` : ""}</span></div>
+    ${D.vide ? `<div class="bloc vide">${esc(D.vide)}</div>` : !J.length ? `<div class="bloc vide">Aucune carte pour l'instant.${D.note ? `<br><span class="meta">${esc(D.note)}</span>` : ""}</div>` : `
+    <div class="bloc di-bloc"><div class="defile"><table class="di-table"><thead><tr><th></th><th>Joueur</th><th title="trous saisis">Trou</th><th title="score par rapport au par">± Par</th>${N > 1 ? Array.from({ length: N }, (_, k) => `<th>T${k + 1}</th>`).join("") : ""}<th>Total</th></tr></thead>
+      <tbody>${lignes}</tbody></table></div>
+      <p class="meta di-aide">Touche un joueur pour voir sa carte trou par trou.${D.note ? " " + esc(D.note) : ""}</p></div>`}
+    ${D.organisateur && !annule ? `<div class="bloc di-public"><b>Lien public</b> <span class="meta">pour les parents, sans compte : ils voient ce classement (prénom et initiale) et les cartes.</span>
+      <div class="di-public-b">${D.jeton ? `<input id="di-lien" readonly value="${esc(location.origin + location.pathname + "#evtdirect=" + D.jeton)}" aria-label="Lien public"><button type="button" class="btn plein" id="di-copier">Copier</button><button type="button" class="lien vo-suppr" id="di-couper">Couper le lien</button>`
+        : `<button type="button" class="btn" id="di-activer">🔗 Créer le lien public</button>`}</div></div>` : ""}
+    ${di.publicJeton ? `<p class="meta pt-pied">Classement partagé par l'organisateur (lecture seule) · <a href="../">GolfNexus</a></p>` : `<div class="vo-actions"><button type="button" class="btn" data-ecran="liste">← Mes cartes</button></div>`}`;
+  if (!di.minuteur && !annule) di.minuteur = setInterval(() => { if (!document.hidden) rendreDirect(); }, 15000);
+}
+$("di-contenu").addEventListener("click", async (e) => {
+  const l = e.target.closest("[data-di]");
+  if (l) { const k = l.dataset.di; di.ouverts.has(k) ? di.ouverts.delete(k) : di.ouverts.add(k); rendreDirect(); return; }
+  const id = e.target.id;
+  if (id === "di-activer" || id === "di-couper") {
+    if (id === "di-couper" && !confirm("Couper le lien public ? Les personnes qui l'ont ne verront plus rien.")) return;
+    const { error } = await sb.rpc("evenement_lien", { ev: di.src.evt, actif: id === "di-activer" });
+    signaler(error ? "Impossible : " + error.message : id === "di-activer" ? "Lien public créé : copie-le et envoie-le." : "Lien public coupé.");
+    rendreDirect(); return;
+  }
+  if (id === "di-copier") { const v = $("di-lien").value; try { await navigator.clipboard.writeText(v); } catch { $("di-lien").select(); document.execCommand("copy"); } signaler("Lien copié."); }
+});
+$("di-contenu").addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && e.target.closest("[data-di]")) { e.preventDefault(); e.target.click(); } });
+document.addEventListener("visibilitychange", () => { if (!document.hidden && etat.ecran === "direct") rendreDirect(); });
+async function modeDirectPublic(jeton) {
+  di.publicJeton = jeton; etat.ecran = "direct";
+  finReprise(); document.body.classList.remove("verrou"); document.body.classList.add("partage");
+  for (const k of ["liste", "nouvelle", "saisie", "voir"]) $("ecran-" + k).hidden = true;
+  $("ecran-direct").hidden = false;
+  rendreDirect();
+}
+
 const jetonPartage = new URLSearchParams(location.hash.slice(1)).get("direct");
-if (sb && jetonPartage) modePartage(jetonPartage);
+const jetonEvt = new URLSearchParams(location.hash.slice(1)).get("evtdirect");
+if (sb && jetonEvt) modeDirectPublic(jetonEvt);
+else if (sb && jetonPartage) modePartage(jetonPartage);
 else { nexusBrancherAccueil(); if (sb) nexusDemarrer(entrer); }

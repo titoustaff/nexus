@@ -182,3 +182,31 @@ body.partage .vues, body.partage #b-compte { display: none; }
 @media (max-width: 560px) { .st-boite { height: 100%; border-radius: 0; } .st-boite-tete .lien { display: none; } }
 @media (max-width: 560px) { #st-fond { padding: 0; } }
 .vo-gir { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--vert-2); color: #fff; font-size: 12px; font-weight: 800; }
+
+/* ---------------------------------------------------------------- En direct d'un événement ou d'un tournoi (11/11) */
+.li-attend-b { display: flex !important; flex-direction: row !important; gap: 8px; flex-wrap: wrap; }
+.li-attend .btn:not(.plein) { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.35); color: var(--fond); height: 44px; padding: 0 14px; font-weight: 700; }
+.di-bloc { padding: 6px 0 10px; }
+.di-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.di-table th { text-align: left; font-size: 11px; color: var(--doux); font-weight: 600; padding: 8px 10px; border-bottom: 1px solid var(--bord); white-space: nowrap; }
+.di-table td { padding: 10px; border-bottom: 1px solid var(--bord); white-space: nowrap; }
+.di-ligne { cursor: pointer; }
+.di-ligne:hover, .di-ligne.ouvert { background: var(--sauge-pale); }
+.di-ligne:focus-visible { outline: 2px solid var(--jaune); outline-offset: -2px; }
+.di-rang { width: 28px; color: var(--doux); font-variant-numeric: tabular-nums; }
+.di-nom b { font-weight: 700; }
+.di-live { color: #c2410c; font-size: 11px; animation: di-pouls 1.4s ease-in-out infinite; }
+@keyframes di-pouls { 50% { opacity: .3; } }
+.di-trou, .di-ecart, .di-t, .di-total { text-align: center; font-variant-numeric: tabular-nums; }
+.di-ecart { font-weight: 800; font-size: 16px; }
+.di-ecart.sous { color: #c2410c; } .di-ecart.par { color: var(--vert); }
+.di-ecart small, .di-t small { font-weight: 500; color: var(--doux); font-size: 12px; }
+.di-sans td { color: var(--doux); }
+.di-detail td { background: var(--fond); padding: 8px 10px 12px; white-space: normal; }
+.di-carte + .di-carte { margin-top: 10px; }
+.di-mini { font-size: 12px; } .di-mini .nt { width: 22px; height: 22px; font-size: 12px; }
+.di-aide { padding: 8px 12px 0; }
+.di-public { display: flex; flex-direction: column; gap: 8px; }
+.di-public-b { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.di-public-b input { flex: 1 1 260px; min-width: 0; border: 1px solid var(--bord); background: var(--fond); border-radius: 8px; padding: 7px 10px; font-size: 12px; color: var(--texte); }
+@media (prefers-reduced-motion: reduce) { .di-live { animation: none; } }
