@@ -1236,7 +1236,10 @@ function evenementsDe(an) {
     sb.from("club_evenement_joueurs").select("statut,repondu_le,evenement:club_evenements(*)").eq("joueur_id", id)
       .then(({ data, error }) => {
         evCache[id] = error ? [] : (data || []).filter((r) => r.evenement && r.statut !== "refuse").map((r) => ({ ...r.evenement, insc: { statut: r.statut, repondu_le: r.repondu_le } }));
-        if (evCache[id].length && etat.ecran === "saison") rendreSaison(); });
+        const miens = evCache[id].filter((e) => e.cree_par === Saison.moi?.id && e.statut !== "annule");
+        (miens.length ? nexusEvenementsAvecCartes(miens.map((e) => e.id)) : Promise.resolve(new Set())).then((A) => {
+          for (const e of miens) e.aCartes = A.has(e.id);
+          if (evCache[id].length && etat.ecran === "saison") rendreSaison(); }); });
     return [];
   }
   return evCache[id].filter((e) => +e.debut.slice(0, 4) === an)
@@ -1304,7 +1307,7 @@ function rendreSaison() {
             <small class="meta">En acceptant, l'événement entre dans ta saison et tes scores de cet événement sont visibles des participants.</small></div>`
           : invite ? `<div class="meta">invitation pas encore acceptée</div>` : ""}
           ${!invite && !annule && auj && !lecture ? `<div class="s-ctrl"><a class="btn" href="../carte/">Ma carte →</a><a class="btn" href="../carte/#evt=${esc(ev.id)}">📡 En direct</a></div>` : ""}
-          ${orga && !annule ? `<div class="s-ctrl"><button type="button" class="lien" data-ev-modifier="${esc(ev.id)}">Modifier · inviter</button> · <button type="button" class="lien" data-ev-annuler="${esc(ev.id)}">Annuler l'événement</button></div>` : ""}</div></li>`;
+          ${orga && !annule ? `<div class="s-ctrl"><button type="button" class="lien" data-ev-modifier="${esc(ev.id)}">Modifier · inviter</button> · ${ev.aCartes ? `<span class="meta">cartes saisies : suppression impossible</span>` : `<button type="button" class="lien" data-ev-annuler="${esc(ev.id)}">Supprimer l'événement</button>`}</div>` : ""}</div></li>`;
       continue;
     }
     const g = golfDe(t) || {};
@@ -2543,8 +2546,8 @@ $("s-liste").addEventListener("click", async (e) => {
     rafraichirEvenements(); return;
   }
   if (b.dataset.evAnnuler) {
-    const ev = trouve(b.dataset.evAnnuler); if (!ev || !confirm(`Annuler « ${ev.nom} » ? Il restera barré chez tes invités (supprimé s'il n'a encore aucune carte).`)) return;
-    try { signaler((await nexusAnnulerEvenement(ev)) === "supprime" ? "Événement supprimé." : "Événement annulé."); } catch (err) { signaler("Impossible : " + nxErreurEv(err)); }
+    const ev = trouve(b.dataset.evAnnuler); if (!ev || !confirm(`Supprimer « ${ev.nom} » ? Il disparaît du calendrier de tes invités.`)) return;
+    try { await nexusSupprimerEvenement(ev); signaler("Événement supprimé."); } catch (err) { signaler("Impossible : " + nxErreurEv(err)); }
     rafraichirEvenements();
   }
 });
