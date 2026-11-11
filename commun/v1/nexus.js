@@ -327,7 +327,9 @@ const nxDatePlus = (j, n) => { const x = new Date(j + "T12:00:00"); x.setDate(x.
 const nxErreurEv = (e) => { const m = e?.message || String(e);
   return /pas_de_compte/.test(m) ? "aucun compte GolfNexus (on ne peut inviter que des joueurs qui ont déjà un compte)"
     : /pas_ton_joueur/.test(m) ? "ce n'est pas un de tes joueurs suivis" : /annule/.test(m) ? "l'événement est annulé"
-    : /pas_organisateur/.test(m) ? "tu n'es pas l'organisateur" : /pas_invite/.test(m) ? "tu n'es pas invité" : m; };
+    : /termine/.test(m) ? "l'événement est terminé depuis plus de 3 jours : il n'est plus modifiable" : /pas_organisateur/.test(m) ? "tu n'es pas l'organisateur" : /pas_invite/.test(m) ? "tu n'es pas invité" : m; };
+// modifiable jusqu'à 3 jours après la fin (la base fait la même règle, club_evenement_ouvert) ; l'admin toujours
+const nxEvOuvert = (ev, admin = false) => admin || nxDatePlus(ev.fin || ev.debut, 3) >= nxIsoLocal(new Date());
 const nxLibGolf = (g) => `${titre(g.nom)}${g.ville ? " (" + titre(g.ville) + ")" : ""}`;
 
 // ouvre le formulaire ; résout { champs, joueurs: [{id, nom}], autres: ["licence ou e-mail"] }, ou null si annulé
