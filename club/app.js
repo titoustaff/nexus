@@ -536,7 +536,7 @@ async function htmlCalendrierEquipe() {
     <div class="bloc co-filtres"><label>Année <select id="co-cal-an">${annees.map((a) => `<option ${a === co.annee ? "selected" : ""}>${a}</option>`).join("")}</select></label>
     <span class="st-legende"><span><i class="lg s-envisage"></i>envisagé</span><span><i class="lg s-inscrit"></i>inscrit</span><span><i class="lg s-joue"></i>joué</span><span><i class="lg s-evt"></i>événement</span></span>
     <button type="button" class="btn plein co-ev-plus" data-ev-nouveau>+ Ajouter un événement</button></div>`;
-  co.calJoueurs = ok.map((j) => ({ id: j.joueur_id, nom: j.nom || j.libelle || "joueur", info: j.categorie || "" })); co.calIds = eq ? ids : [];
+  co.calJoueurs = ok.map((j) => ({ id: j.joueur_id, nom: j.nom || j.libelle || "joueur", info: j.categorie || "" })); co.calIds = eq ? ids : []; co.calEquipe = eq?.nom || "";
   if (!ids.length) return h + `<div class="bloc vide">Pas de joueur dans ${eq ? "cette équipe" : "ta liste"}.</div>`;
   // événements (galaxy/MD_DOC/EVENEMENTS.md) : ceux du club et ceux que j'ai créés, de l'année ; invités et réponses
   const sidClub = Compte.structure?.id, moi = Compte.moi?.id;
@@ -571,7 +571,7 @@ async function htmlCalendrierEquipe() {
       const I = (ev.club_evenement_joueurs || []).slice().sort((a, b) => nom(a.joueur_id).localeCompare(nom(b.joueur_id)));
       h += `<li class="co-cal-ev${(ev.fin || ev.debut) < jourL ? " passe" : ""}${annule ? " annule" : ""}"><div class="date"><b>${new Date(ev.debut + "T12:00").getDate()}</b><span>${MOIS_COURT[m]}</span></div>
         <div><b class="co-ev-nom">${esc(ev.nom)}</b>${annule ? ` <span class="tag">annulé</span>` : fini ? ` <span class="tag">terminé</span>` : ""}
-        <div class="meta"><span class="tag tag-evt">${esc(NX_TYPES_EV[ev.type] || "Événement")}</span> ${esc(titre(ev.golf_nom || ""))}${ev.heure ? " · " + esc(ev.heure.slice(0, 5)) : ""}${ev.nb_tours > 1 ? ` · ${ev.nb_tours} tours` : ""}${ev.note ? " · " + esc(ev.note) : ""}</div>
+        <div class="meta"><span class="tag tag-evt">${esc(NX_TYPES_EV[ev.type] || "Événement")}</span> ${ev.categorie ? `<span class="tag">${esc(ev.categorie)}</span> ` : ""}${esc(titre(ev.golf_nom || ""))}${ev.heure ? " · " + esc(ev.heure.slice(0, 5)) : ""}${ev.nb_tours > 1 ? ` · ${ev.nb_tours} tours` : ""}${ev.note ? " · " + esc(ev.note) : ""}</div>
         <div class="co-puces">${I.map((x) => `<span class="co-puce ev-${esc(x.statut || "accepte")}" title="${esc({ invite: "invité, pas encore répondu", accepte: "a accepté", refuse: "a refusé" }[x.statut] || "")}">${esc(nom(x.joueur_id))}${x.statut === "invite" ? " <small>?</small>" : x.statut === "refuse" ? " <small>✕</small>" : ""}</span>`).join("") || `<span class="meta">aucun invité</span>`}</div>
         <div class="co-ev-actions">${auj && !annule ? `<a class="btn plein" href="../carte/#evt=${esc(ev.id)}">📡 En direct</a>` : ""}${gere && !annule ? `<button type="button" class="btn" data-ev-modifier="${esc(ev.id)}">Modifier · inviter</button><button type="button" class="lien vo-suppr" data-ev-annuler="${esc(ev.id)}">Annuler</button>` : ""}</div></div></li>`;
       continue;
@@ -593,7 +593,7 @@ $("co-contenu").addEventListener("click", async (e) => {
   if (b.hasAttribute("data-ev-nouveau") || b.dataset.evModifier) {
     const ev = b.dataset.evModifier ? (co.evs || []).find((x) => x.id === b.dataset.evModifier) : null;
     const deja = new Set((ev?.club_evenement_joueurs || []).map((x) => x.joueur_id));
-    const r = await nexusFormEvenement({ golfs: etat.golfs, ev, joueurs: (co.calJoueurs || []).filter((j) => !deja.has(j.id)), coches: ev ? [] : co.calIds || [] });
+    const r = await nexusFormEvenement({ golfs: etat.golfs, ev, joueurs: (co.calJoueurs || []).filter((j) => !deja.has(j.id)), coches: ev ? [] : co.calIds || [], categorie: co.calEquipe || "" });
     if (!r) return;
     if (!ev && Compte.role !== "admin" && !Compte.structure?.id) { signaler("Tu dois être rattaché à un club pour créer un événement."); return; }
     try {
@@ -831,8 +831,8 @@ const VUES_MB = {
       </tbody></table></div><p class="meta">Rang national dans le Mérite ${LISTES_MERITE[mb.liste]} ; évolution par rapport au mois précédent. Clique un joueur pour son historique.</p>` : `<p class="meta">Aucun joueur AS classé dans ce Mérite.</p>`}</div>`;
   },
   async evenements(sid) {
-    const E = await lire("evenements", () => sb.from("club_evenements").select("id,type,nom,golf_nom,debut,fin,nb_tours,categorie").eq("structure_id", sid).order("debut", { ascending: false }));
-    const lib = { competition: "Compétition hors Mérite", rencontre: "Rencontre", interne: "Partie interne" };
+    const E = (await lire("evenements", () => sb.from("club_evenements").select("id,type,nom,golf_nom,debut,fin,nb_tours,categorie,statut").eq("structure_id", sid).order("debut", { ascending: false }))).filter((e) => e.statut !== "annule");
+    const lib = NX_TYPES_EV;
     const L = E.filter((e) => garde("evenements", e.categorie || ""));
     return `<div class="bloc"><h3>Événements du club <small>${L.length}</small></h3>
       ${bulles("evenements", E.map((e) => e.categorie || ""))}
