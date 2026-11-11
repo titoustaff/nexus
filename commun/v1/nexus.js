@@ -327,7 +327,7 @@ const nxDatePlus = (j, n) => { const x = new Date(j + "T12:00:00"); x.setDate(x.
 const nxErreurEv = (e) => { const m = e?.message || String(e);
   return /pas_de_compte/.test(m) ? "aucun compte GolfNexus (on ne peut inviter que des joueurs qui ont déjà un compte)"
     : /pas_ton_joueur/.test(m) ? "ce n'est pas un de tes joueurs suivis" : /annule/.test(m) ? "l'événement est annulé"
-    : /termine/.test(m) ? "l'événement est terminé depuis plus de 3 jours : il n'est plus modifiable" : /pas_organisateur/.test(m) ? "tu n'es pas l'organisateur" : /pas_invite/.test(m) ? "tu n'es pas invité" : m; };
+    : /cartes/.test(m) ? "des cartes ont déjà été saisies : l'événement ne peut plus être supprimé" : /termine/.test(m) ? "l'événement est terminé depuis plus de 3 jours : il n'est plus modifiable" : /pas_organisateur/.test(m) ? "tu n'es pas l'organisateur" : /pas_invite/.test(m) ? "tu n'es pas invité" : m; };
 // modifiable jusqu'à 3 jours après la fin (la base fait la même règle, club_evenement_ouvert) ; l'admin toujours
 const nxEvOuvert = (ev, admin = false) => admin || nxDatePlus(ev.fin || ev.debut, 3) >= nxIsoLocal(new Date());
 const nxLibGolf = (g) => `${titre(g.nom)}${g.ville ? " (" + titre(g.ville) + ")" : ""}`;
@@ -419,11 +419,14 @@ async function nexusEnregistrerEvenement({ ev = null, champs, structure_id = nul
   for (const a of autres) await inv(a.includes("@") ? { p_email: a } : { p_licence: a }, a);
   return { id, erreurs };
 }
-// annuler (cartes et stats gardées) ; supprimer seulement s'il n'y a encore aucune carte
-async function nexusAnnulerEvenement(ev) {
-  const { data: d, error: e1 } = await sb.from("club_evenements").delete().eq("id", ev.id).select("id");
-  if (!e1 && d?.length) return "supprime";
-  const { error } = await sb.from("club_evenements").update({ statut: "annule" }).eq("id", ev.id);
+// supprimer : seulement tant qu'aucune carte n'est saisie (décision utilisateur, 11/11 ; la base refuse sinon)
+async function nexusSupprimerEvenement(ev) {
+  const { data, error } = await sb.from("club_evenements").delete().eq("id", ev.id).select("id");
   if (error) throw error;
-  return "annule";
+  if (!data?.length) throw new Error("cartes");
+}
+// identifiants des événements qui ont au moins une carte saisie (le bouton Supprimer disparaît)
+async function nexusEvenementsAvecCartes(ids) {
+  const R = await Promise.all(ids.map((id) => sb.rpc("club_evenement_a_cartes", { e: id }).then(({ data }) => (data === true ? id : null), () => null)));
+  return new Set(R.filter(Boolean));
 }
