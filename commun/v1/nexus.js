@@ -335,7 +335,8 @@ const nxLibGolf = (g) => `${titre(g.nom)}${g.ville ? " (" + titre(g.ville) + ")"
 // ouvre le formulaire ; résout { champs, joueurs: [{id, nom}], autres: ["licence ou e-mail"] }, ou null si annulé
 // golfs : { slug: golf } (données publiées) ; ev : événement à modifier ; joueurs : [{ id, nom, info }] à cocher (coach) ;
 // coches : identifiants cochés d'office ; parLicence : champ « licences ou e-mails » (joueur)
-function nexusFormEvenement({ golfs = {}, ev = null, joueurs = null, coches = [], parLicence = false, titreForm = "" } = {}) {
+const NX_CATEGORIES_EV = ["Jeunes", "U12", "U14", "U16", "Adultes", "Mid-Amateurs", "Seniors", "Dames", "Messieurs"];
+function nexusFormEvenement({ golfs = {}, ev = null, joueurs = null, coches = [], parLicence = false, titreForm = "", categorie = "" } = {}) {
   return new Promise((fini) => {
     const G = Object.values(golfs).sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
     const g0 = ev?.golf && golfs[ev.golf];
@@ -346,6 +347,7 @@ function nexusFormEvenement({ golfs = {}, ev = null, joueurs = null, coches = []
       <div class="nx-ev-grille">
         <label class="nx-ev-large">Nom <input id="nx-ev-nom" required maxlength="120" value="${esc(ev?.nom || "")}" placeholder="ex. Partie du dimanche, Trophée CD34"></label>
         <label>Type <select id="nx-ev-type">${types.map(([k, v]) => `<option value="${k}" ${k === (ev?.type || (joueurs ? "competition" : "amicale")) ? "selected" : ""}>${esc(v)}</option>`).join("")}</select></label>
+        <label>Catégorie <input id="nx-ev-cat" list="nx-ev-cats" maxlength="40" value="${esc(ev ? ev.categorie || "" : categorie)}" placeholder="ex. Jeunes, U16, Équipe 1 (facultatif)"><datalist id="nx-ev-cats">${NX_CATEGORIES_EV.map((c) => `<option value="${esc(c)}">`).join("")}</datalist></label>
         <label>Date <input id="nx-ev-jour" type="date" required value="${esc(ev?.debut || "")}"></label>
         <label>Heure de départ <input id="nx-ev-heure" type="time" value="${esc((ev?.heure || "").slice(0, 5))}"></label>
         <label>Nombre de tours <select id="nx-ev-tours">${[1, 2, 3, 4].map((n) => `<option ${n === tours ? "selected" : ""}>${n}</option>`).join("")}</select></label>
@@ -394,7 +396,7 @@ function nexusFormEvenement({ golfs = {}, ev = null, joueurs = null, coches = []
       const p = (g.parcours || []).find((x) => x.code === $f("nx-ev-parcours").value), n = +$f("nx-ev-tours").value, jour = $f("nx-ev-jour").value;
       const champs = { nom: $f("nx-ev-nom").value.trim(), type: $f("nx-ev-type").value, debut: jour, fin: n > 1 ? nxDatePlus(jour, n - 1) : null, nb_tours: n,
         heure: $f("nx-ev-heure").value || null, golf: g.slug, golf_nom: g.nom, parcours: p?.code || null, parcours_nom: p?.nom || null,
-        repere: $f("nx-ev-repere").value || null, note: $f("nx-ev-note").value.trim() || null };
+        repere: $f("nx-ev-repere").value || null, note: $f("nx-ev-note").value.trim() || null, categorie: $f("nx-ev-cat").value.trim() || null };
       const J = [...f.querySelectorAll("#nx-ev-liste input:checked")].map((b) => ({ id: b.value, nom: (joueurs || []).find((x) => x.id === b.value)?.nom || "joueur" }));
       const autres = ($f("nx-ev-autres")?.value || "").split(/[\n,;]+/).map((x) => x.trim()).filter(Boolean);
       fermer({ champs, joueurs: J, autres });
