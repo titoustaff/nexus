@@ -544,6 +544,7 @@ async function htmlCalendrierEquipe() {
     .or([sidClub && `structure_id.eq.${sidClub}`, moi && `cree_par.eq.${moi}`].filter(Boolean).join(","))
     .gte("debut", `${co.annee}-01-01`).lte("debut", `${co.annee}-12-31`);
   co.evs = (EV.data || []).filter((e) => !eq || !(e.club_evenement_joueurs || []).length || e.club_evenement_joueurs.some((x) => ids.includes(x.joueur_id)));
+  co.avecCartes = await nexusEvenementsAvecCartes(co.evs.filter((e) => e.statut !== "annule").map((e) => e.id));
   const S = await sb.from("saisons").select("id,user_id,annee").in("user_id", ids).eq("annee", co.annee);
   const sid = (S.data || []).map((x) => x.id), qui = Object.fromEntries((S.data || []).map((x) => [x.id, x.user_id]));
   const [I, R] = await Promise.all([sid.length ? sb.from("saison_tournois").select("saison_id,tournoi_id,statut").in("saison_id", sid) : { data: [] },
@@ -573,7 +574,7 @@ async function htmlCalendrierEquipe() {
         <div><b class="co-ev-nom">${esc(ev.nom)}</b>${annule ? ` <span class="tag">annulé</span>` : fini ? ` <span class="tag">terminé</span>` : ""}
         <div class="meta"><span class="tag tag-evt">${esc(NX_TYPES_EV[ev.type] || "Événement")}</span> ${ev.categorie ? `<span class="tag">${esc(ev.categorie)}</span> ` : ""}${esc(titre(ev.golf_nom || ""))}${ev.heure ? " · " + esc(ev.heure.slice(0, 5)) : ""}${ev.nb_tours > 1 ? ` · ${ev.nb_tours} tours` : ""}${ev.note ? " · " + esc(ev.note) : ""}</div>
         <div class="co-puces">${I.map((x) => `<span class="co-puce ev-${esc(x.statut || "accepte")}" title="${esc({ invite: "invité, pas encore répondu", accepte: "a accepté", refuse: "a refusé" }[x.statut] || "")}">${esc(nom(x.joueur_id))}${x.statut === "invite" ? " <small>?</small>" : x.statut === "refuse" ? " <small>✕</small>" : ""}</span>`).join("") || `<span class="meta">aucun invité</span>`}</div>
-        <div class="co-ev-actions">${auj && !annule ? `<a class="btn plein" href="../carte/#evt=${esc(ev.id)}">📡 En direct</a>` : ""}${gere && !annule ? `<button type="button" class="btn" data-ev-modifier="${esc(ev.id)}">Modifier · inviter</button><button type="button" class="lien vo-suppr" data-ev-annuler="${esc(ev.id)}">Annuler</button>` : ""}</div></div></li>`;
+        <div class="co-ev-actions">${auj && !annule ? `<a class="btn plein" href="../carte/#evt=${esc(ev.id)}">📡 En direct</a>` : ""}${gere && !annule ? `<button type="button" class="btn" data-ev-modifier="${esc(ev.id)}">Modifier · inviter</button>${co.avecCartes?.has(ev.id) ? `<span class="meta" title="Des cartes ont été saisies : l'événement ne peut plus être supprimé">cartes saisies</span>` : `<button type="button" class="lien vo-suppr" data-ev-annuler="${esc(ev.id)}">Supprimer</button>`}` : ""}</div></div></li>`;
       continue;
     }
     const m = +t.debut.slice(5, 7) - 1;
@@ -604,8 +605,8 @@ $("co-contenu").addEventListener("click", async (e) => {
   }
   if (b.dataset.evAnnuler) {
     const ev = (co.evs || []).find((x) => x.id === b.dataset.evAnnuler); if (!ev) return;
-    if (!confirm(`Annuler « ${ev.nom} » ? Il restera barré dans les calendriers (supprimé s'il n'a encore aucune carte).`)) return;
-    try { signaler((await nexusAnnulerEvenement(ev)) === "supprime" ? "Événement supprimé." : "Événement annulé."); } catch (err) { signaler("Impossible : " + nxErreurEv(err)); }
+    if (!confirm(`Supprimer « ${ev.nom} » ? Il disparaît du calendrier de tous les invités.`)) return;
+    try { await nexusSupprimerEvenement(ev); signaler("Événement supprimé."); } catch (err) { signaler("Impossible : " + nxErreurEv(err)); }
     rendreCoach(); return;
   }
   if (b.dataset.coOnglet) { co.onglet = b.dataset.coOnglet; rendreCoach(); return; }
