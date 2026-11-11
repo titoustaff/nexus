@@ -542,3 +542,19 @@ html, body { overflow-x: clip; }   /* filet de sécurité : jamais de défilemen
 .co-puce.ev-refuse { text-decoration: line-through; opacity: .6; }
 .co-ev-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
 .co-ev-actions .btn { text-decoration: none; }
+
+/* parties et lien marqueur (11/11) */
+.pa-boite { width: min(760px, 100%); }
+.pa-parties { display: grid; gap: 10px; margin: 10px 0; }
+.pa-partie { border: 1px solid var(--bord); border-radius: 12px; padding: 10px 12px; background: var(--fond); }
+.pa-tete { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.pa-tete label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--doux); font-weight: 600; }
+.pa-tete input, .pa-tete select { width: auto; }
+.pa-tete .vo-suppr { margin-left: auto; }
+.pa-joueurs { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.pa-lien { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pa-lien input { flex: 1 1 260px; min-width: 0; font-size: 12px; }
+.pa-h3 { margin: 16px 0 6px; font-size: 14px; }
+.pa-invites { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 6px 14px; }
+.pa-invites label { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; }
+.pa-invites select { width: auto; }

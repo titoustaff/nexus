@@ -518,6 +518,87 @@ async function htmlEquipes() {
   }
   return h;
 }
+// ---- Parties et lien marqueur d'un événement (11/11, galaxy/MD_DOC/EVENEMENTS.md § 7, club/supabase/club-parties.sql) :
+// le coach compose les parties (heure, départ 1 ou 10), y range les invités, et envoie un LIEN MARQUEUR par partie à qui il
+// veut (parent, joueur…, sans compte) ; le marqueur saisit les scores de la partie dans Carte (#marqueur=<jeton>).
+function lienMarqueur(jeton) { return new URL("../carte/", location.href).href + "#marqueur=" + jeton; }
+// trous joués relevés dans les données publiées (parcours de l'événement, sinon le premier du golf)
+function parsDeLEvenement(ev) {
+  const g = etat.golfs[ev.golf], P = g?.parcours || [], p = P.find((x) => x.code === ev.parcours) || P[0];
+  if (!p) return null;
+  const nb = p.trous === 9 ? 9 : 18, par = p.par_trous || [];
+  return { pars: Array.from({ length: nb }, (_, k) => ({ t: k + 1, par: par[k] || 4 })), nb_trous: nb, parcours: p.code, parcours_nom: p.nom,
+    repere: ev.repere || null, golf: ev.golf, golf_nom: ev.golf_nom || g?.nom || null };
+}
+async function ouvrirParties(ev) {
+  const nomJ = (id) => (co.calJoueurs || []).find((j) => j.id === id)?.nom || "joueur";
+  const f = document.createElement("div"); f.className = "nx-ev-fond";
+  f.innerHTML = `<div class="nx-ev-boite pa-boite" role="dialog" aria-modal="true" aria-labelledby="pa-t"><h2 id="pa-t">Parties · marqueurs</h2><div id="pa-corps"><p class="meta">Chargement…</p></div>
+    <div class="nx-ev-pied"><button type="button" class="btn" id="pa-fermer">Fermer</button></div></div>`;
+  document.body.append(f);
+  const corps = f.querySelector("#pa-corps");
+  const fermer = () => { f.remove(); document.removeEventListener("keydown", touche); rendreCoach(); };
+  const touche = (e) => { if (e.key === "Escape") fermer(); };
+  document.addEventListener("keydown", touche);
+  let P = [], I = [];
+  const rendre = async () => {
+    const [A, B] = await Promise.all([sb.from("club_evenement_parties").select("*").eq("evenement_id", ev.id).order("numero"),
+      sb.from("club_evenement_joueurs").select("joueur_id,statut,partie_id").eq("evenement_id", ev.id)]);
+    if (A.error || B.error) {
+      const m = (A.error || B.error).message;
+      corps.innerHTML = `<div class="bloc vide">Lecture impossible : ${esc(m)}${/club_evenement_parties|partie_id/.test(m) ? "<br>Script <b>club/supabase/club-parties.sql</b> à lancer dans Supabase." : ""}</div>`; return;
+    }
+    P = A.data || []; I = (B.data || []).filter((x) => x.statut !== "refuse").sort((a, b) => nomJ(a.joueur_id).localeCompare(nomJ(b.joueur_id), "fr"));
+    const opt = (x) => `<option value="">— pas de partie</option>${P.map((p) => `<option value="${esc(p.id)}" ${p.id === x.partie_id ? "selected" : ""}>Partie ${p.numero}</option>`).join("")}`;
+    corps.innerHTML = `<p class="meta"><b>${esc(ev.nom)}</b> · ${esc(fmtDate(ev.debut))}. Range chaque invité dans une partie, puis envoie à chaque marqueur (parent, joueur, accompagnateur) le lien de sa partie : il saisit les scores sans compte. Le lien ne marche que pour cette partie et expire après le jour de l'événement.</p>
+      <div class="pa-parties">${P.map((p) => { const J = I.filter((x) => x.partie_id === p.id);
+        return `<div class="pa-partie" data-pa="${esc(p.id)}"><div class="pa-tete"><b>Partie ${p.numero}</b>
+          <label>Heure <input type="time" data-pa-heure value="${esc((p.heure || "").slice(0, 5))}"></label>
+          <label>Départ <select data-pa-depart><option value="1" ${p.depart === 1 ? "selected" : ""}>trou 1</option><option value="10" ${p.depart === 10 ? "selected" : ""}>trou 10</option></select></label>
+          <button type="button" class="lien vo-suppr" data-pa-suppr>Supprimer</button></div>
+          <div class="pa-joueurs">${J.length ? J.map((x) => `<span class="co-puce ev-${esc(x.statut)}">${esc(nomJ(x.joueur_id))}</span>`).join("") : `<span class="meta">aucun joueur : range-les ci-dessous</span>`}</div>
+          <div class="pa-lien">${p.jeton ? `<input readonly value="${esc(lienMarqueur(p.jeton))}" aria-label="Lien marqueur de la partie ${p.numero}"><button type="button" class="btn plein" data-pa-copier>Copier</button>${navigator.share ? `<button type="button" class="btn" data-pa-envoyer>Envoyer…</button>` : ""}<button type="button" class="lien vo-suppr" data-pa-couper>Couper le lien</button>`
+            : `<button type="button" class="btn" data-pa-lien ${J.length ? "" : "disabled"}>🔗 Créer le lien marqueur</button>`}</div></div>`; }).join("")}</div>
+      <button type="button" class="btn" id="pa-plus">+ Ajouter une partie</button>
+      ${I.length ? `<h3 class="pa-h3">Invités</h3><div class="pa-invites">${I.map((x) => `<label><span>${esc(nomJ(x.joueur_id))}${x.statut === "invite" ? " <small>(pas encore répondu)</small>" : ""}</span><select data-pa-joueur="${esc(x.joueur_id)}" ${P.length ? "" : "disabled"}>${opt(x)}</select></label>`).join("")}</div>`
+        : `<p class="meta">Aucun invité : invite d'abord des joueurs (« Modifier · inviter »).</p>`}`;
+  };
+  const err = (e) => signaler("Impossible : " + nxErreurEv(e));
+  f.addEventListener("click", async (e) => {
+    if (e.target === f || e.target.id === "pa-fermer") { fermer(); return; }
+    const b = e.target.closest("button"); if (!b) return;
+    const p = P.find((x) => x.id === b.closest("[data-pa]")?.dataset.pa);
+    if (b.id === "pa-plus") {
+      const { error } = await sb.from("club_evenement_parties").insert({ evenement_id: ev.id, numero: Math.max(0, ...P.map((x) => x.numero)) + 1, heure: ev.heure || null });
+      if (error) err(error); return rendre();
+    }
+    if (!p) return;
+    if (b.hasAttribute("data-pa-suppr")) {
+      if (!confirm(`Supprimer la partie ${p.numero} ? Ses joueurs n'auront plus de partie et son lien marqueur ne marchera plus.`)) return;
+      const { error } = await sb.from("club_evenement_parties").delete().eq("id", p.id); if (error) err(error); return rendre();
+    }
+    if (b.hasAttribute("data-pa-lien")) {
+      const g = parsDeLEvenement(ev);
+      if (!g) { signaler("Parcours inconnu pour ce golf : impossible de préparer la carte du marqueur."); return; }
+      const u = await sb.from("club_evenement_parties").update(g).eq("id", p.id); if (u.error) { err(u.error); return; }
+      const { error } = await sb.rpc("partie_lien", { p: p.id, actif: true }); if (error) err(error); else signaler("Lien marqueur créé : copie-le et envoie-le au marqueur.");
+      return rendre();
+    }
+    if (b.hasAttribute("data-pa-couper")) {
+      if (!confirm("Couper ce lien ? Le marqueur ne pourra plus saisir (les scores déjà saisis restent).")) return;
+      const { error } = await sb.rpc("partie_lien", { p: p.id, actif: false }); if (error) err(error); return rendre();
+    }
+    if (b.hasAttribute("data-pa-copier")) { const v = lienMarqueur(p.jeton); try { await navigator.clipboard.writeText(v); } catch { b.parentElement.querySelector("input").select(); document.execCommand("copy"); } signaler("Lien copié."); return; }
+    if (b.hasAttribute("data-pa-envoyer")) { navigator.share({ title: `Marqueur · ${ev.nom}`, text: `Lien marqueur de la partie ${p.numero} (${ev.nom}) : saisis les scores de ta partie.`, url: lienMarqueur(p.jeton) }).catch(() => {}); }
+  });
+  f.addEventListener("change", async (e) => {
+    const t = e.target, p = P.find((x) => x.id === t.closest("[data-pa]")?.dataset.pa);
+    if (t.dataset.paJoueur) { const { error } = await sb.rpc("partie_affecter", { ev: ev.id, p_joueur: t.dataset.paJoueur, p_partie: t.value || null }); if (error) err(error); return rendre(); }
+    if (p && t.hasAttribute("data-pa-heure")) { const { error } = await sb.from("club_evenement_parties").update({ heure: t.value || null }).eq("id", p.id); if (error) err(error); }
+    if (p && t.hasAttribute("data-pa-depart")) { const { error } = await sb.from("club_evenement_parties").update({ depart: +t.value }).eq("id", p.id); if (error) err(error); }
+  });
+  rendre();
+}
 // ---- Calendrier d'équipe : les saisons des joueurs superposées, par tournoi (qui y va, avec quel statut, quelle place)
 async function htmlCalendrierEquipe() {
   const [E, J] = await Promise.all([sb.from("equipes").select("id,nom,equipe_joueurs(joueur_id)").order("nom"), sb.rpc("mes_joueurs")]);
@@ -574,7 +655,7 @@ async function htmlCalendrierEquipe() {
         <div><b class="co-ev-nom">${esc(ev.nom)}</b>${annule ? ` <span class="tag">annulé</span>` : fini ? ` <span class="tag">terminé</span>` : ""}
         <div class="meta"><span class="tag tag-evt">${esc(NX_TYPES_EV[ev.type] || "Événement")}</span> ${ev.categorie ? `<span class="tag">${esc(ev.categorie)}</span> ` : ""}${esc(titre(ev.golf_nom || ""))}${ev.heure ? " · " + esc(ev.heure.slice(0, 5)) : ""}${ev.nb_tours > 1 ? ` · ${ev.nb_tours} tours` : ""}${ev.note ? " · " + esc(ev.note) : ""}</div>
         <div class="co-puces">${I.map((x) => `<span class="co-puce ev-${esc(x.statut || "accepte")}" title="${esc({ invite: "invité, pas encore répondu", accepte: "a accepté", refuse: "a refusé" }[x.statut] || "")}">${esc(nom(x.joueur_id))}${x.statut === "invite" ? " <small>?</small>" : x.statut === "refuse" ? " <small>✕</small>" : ""}</span>`).join("") || `<span class="meta">aucun invité</span>`}</div>
-        <div class="co-ev-actions">${auj && !annule ? `<a class="btn plein" href="../carte/#evt=${esc(ev.id)}">📡 En direct</a>` : ""}${gere && !annule ? `<button type="button" class="btn" data-ev-modifier="${esc(ev.id)}">Modifier · inviter</button>${co.avecCartes?.has(ev.id) ? `<span class="meta" title="Des cartes ont été saisies : l'événement ne peut plus être supprimé">cartes saisies</span>` : `<button type="button" class="lien vo-suppr" data-ev-annuler="${esc(ev.id)}">Supprimer</button>`}` : ""}</div></div></li>`;
+        <div class="co-ev-actions">${auj && !annule ? `<a class="btn plein" href="../carte/#evt=${esc(ev.id)}">📡 En direct</a>` : ""}${gere && !annule ? `<button type="button" class="btn" data-ev-modifier="${esc(ev.id)}">Modifier · inviter</button><button type="button" class="btn" data-ev-parties="${esc(ev.id)}">Parties · marqueurs</button>${co.avecCartes?.has(ev.id) ? `<span class="meta" title="Des cartes ont été saisies : l'événement ne peut plus être supprimé">cartes saisies</span>` : `<button type="button" class="lien vo-suppr" data-ev-annuler="${esc(ev.id)}">Supprimer</button>`}` : ""}</div></div></li>`;
       continue;
     }
     const m = +t.debut.slice(5, 7) - 1;
@@ -603,6 +684,7 @@ $("co-contenu").addEventListener("click", async (e) => {
     } catch (err) { signaler("Enregistrement impossible : " + nxErreurEv(err) + (/column|relation|check/.test(err.message || "") ? " (script club-evenements-v2.sql à lancer)" : "")); }
     rendreCoach(); return;
   }
+  if (b.dataset.evParties) { const ev = (co.evs || []).find((x) => x.id === b.dataset.evParties); if (ev) ouvrirParties(ev); return; }
   if (b.dataset.evAnnuler) {
     const ev = (co.evs || []).find((x) => x.id === b.dataset.evAnnuler); if (!ev) return;
     if (!confirm(`Supprimer « ${ev.nom} » ? Il disparaît du calendrier de tous les invités.`)) return;
