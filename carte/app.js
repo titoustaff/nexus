@@ -78,7 +78,7 @@ const dateLongue = (d) => new Date(d + "T12:00:00").toLocaleDateString("fr-FR", 
 function ecran(nom) {
   if (nom === "nouvelle" && etat.vue) nom = "liste";   // pas de saisie pour un joueur suivi (lecture seule)
   etat.ecran = nom;
-  for (const k of ["liste", "nouvelle", "saisie", "voir", "direct", "lives"]) $("ecran-" + k).hidden = k !== nom;
+  for (const k of ["liste", "nouvelle", "saisie", "voir", "direct", "lives", "marqueur"]) $("ecran-" + k).hidden = k !== nom;
   if (nom !== "direct") { arreterDirect(); if (/(^|[#&])(evt|tournoi)=/.test(location.hash)) history.replaceState(null, "", location.pathname + location.search); }
   for (const b of document.querySelectorAll(".vues button[data-ecran]"))
     if (b.dataset.ecran === nom) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
@@ -302,7 +302,7 @@ function rendreSaisie() {
     <div class="sa-trous" role="tablist" aria-label="Trous">${p.trous.map((x, k) => `<button type="button" class="${classeScore(x)}${k === etat.i ? " actif" : ""}" data-aller="${k}" aria-label="Trou ${x.t}">${x.t}<small>${x.score || ""}</small></button>`).join("")}</div>
     <div class="bloc sa-trou">
       <div class="sa-num"><span>Trou <b>${t.t}</b></span><span class="sa-par">Par <b>${t.par}</b></span></div>
-      <h3>Score</h3>${choix("score", scores, nomScore, true)}
+      <h3>Score</h3>${t.m ? choix("score", scores, nomScore, false).replace(/<button /g, "<button disabled ") + `<p class="sa-marqueur">🔒 Score saisi par le marqueur${(() => { const d = new Date(t.m); return isNaN(d) ? "" : " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }); })()} : complète seulement tes détails (putts, mise en jeu…).</p>` : choix("score", scores, nomScore, true)}
       ${t.score && (t.putts || 0) + (t.pen || 0) > t.score - 1 ? `<p class="sa-alerte">⚠ ${t.putts || 0} putt${t.putts > 1 ? "s" : ""}${t.pen ? ` + ${t.pen} pénalité${t.pen > 1 ? "s" : ""}` : ""} pour un score de ${t.score} : il manque au moins le coup de départ. Vérifie le score ou les putts.</p>` : ""}
       <div class="sa-ligne"><div><h3>Putts</h3>${choix("putts", [0, 1, 2, 3, 4], undefined, true)}</div><div><h3>Pénalités</h3>${choix("pen", [0, 1, 2, 3], undefined, true)}</div></div>
       ${t.par > 3 ? `<h3>Mise en jeu : où a fini ton départ ?</h3>${terrainFw(t.fw)}` : ""}
@@ -318,6 +318,7 @@ function rendreSaisie() {
 $("sa-contenu").addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (!b) return;
   const p = etat.partie, t = p.trous[etat.i];
+  if (t.m && (b.dataset.cle === "score" || b.dataset.plus === "score")) return;   // score du marqueur : verrouillé (écran seulement, V1)
   if (b.dataset.cle) {
     const v = b.dataset.cle === "bunker" ? b.dataset.val === "true" : b.dataset.cle === "fw" ? b.dataset.val : +b.dataset.val;
     t[b.dataset.cle] = t[b.dataset.cle] === v && b.dataset.cle !== "score" ? null : v;   // second clic : on efface (sauf le score)
@@ -738,6 +739,113 @@ $("lv-contenu").addEventListener("click", (e) => {
   const b = e.target.closest(".lv-ligne"); if (!b) return;
   allerDirect(b.dataset.lvEvt ? { evt: b.dataset.lvEvt } : { tournoi: b.dataset.lvTournoi });
 });
+// ------------------------------------------------------------------ lien marqueur (11/11, galaxy/MD_DOC/EVENEMENTS.md § 7)
+// #marqueur=<jeton> : sans compte, le marqueur (parent, joueur, accompagnateur) saisit les scores de chaque joueur de SA partie.
+// Fonctions marqueur_partie / marqueur_saisir (club/supabase/club-parties.sql) : la base contrôle le jeton (cette partie,
+// jusqu'au jour de l'événement) et fusionne trou par trou dans la carte de chaque joueur, qui la complète ensuite.
+const mq = { jeton: null, D: null, i: 0, complet: false, envoi: new Map(), minuteur: null, etat: "", erreur: false };
+try { mq.complet = localStorage.getItem("carte-marqueur-complet") === "1"; } catch { /* */ }
+async function chargerMarqueur() {
+  const { data, error } = await sb.rpc("marqueur_partie", { j: mq.jeton });
+  if (error) throw error;
+  if (!data?.length) return null;
+  const e = data[0], pars = Array.isArray(e.pars) ? e.pars : [];
+  const tour = tourDuJour({ debut: e.ev_debut, nb_tours: e.ev_nb_tours || 1 }, JOUR);
+  const J = new Map();
+  for (const r of data) {
+    const j = J.get(r.cle) || { cle: r.cle, nom: r.nom, trous: pars.map((x) => ({ t: x.t, par: x.par })) }; J.set(r.cle, j);
+    if (r.trous && (r.tour || 1) === tour) j.trous = pars.map((x) => ({ t: x.t, par: x.par, ...((r.trous || []).find((y) => y.t === x.t) || {}) }));
+  }
+  // départ du trou 10 : on commence au 10 et on finit par le 9
+  const ordre = pars.map((_, k) => k); const k10 = pars.findIndex((x) => x.t === 10);
+  if (e.depart === 10 && k10 > 0) ordre.push(...ordre.splice(0, k10));
+  return { nom: e.ev_nom, golf: titre(e.ev_golf_nom || ""), numero: e.numero, heure: e.heure, depart: e.depart, parcours: e.parcours_nom, repere: e.repere,
+    nbTours: e.ev_nb_tours || 1, tour, pars, ordre, joueurs: [...J.values()] };
+}
+function rendreMarqueur() {
+  const box = $("mq-contenu"), D = mq.D;
+  if (!D.pars.length) { box.innerHTML = `<div class="bloc vide">La partie n'a pas encore de trous : demande au coach de recréer le lien marqueur.</div>`; return; }
+  const k = D.ordre[mq.i] ?? 0, P = D.pars[k];
+  const tot = (j) => { const T = j.trous.filter((t) => t.score); return { n: T.length, s: T.reduce((a, t) => a + t.score, 0), e: T.reduce((a, t) => a + t.score - t.par, 0) }; };
+  const fait = (kk) => D.joueurs.length && D.joueurs.every((j) => j.trous[kk]?.score);
+  const bouton = (cle, cleJ, v, lib, actif) => `<button type="button" data-mq-cle="${cle}" data-mq-j="${esc(cleJ)}" data-val="${v}" aria-pressed="${actif}">${lib}</button>`;
+  box.innerHTML = `
+    <div class="mq-tete"><div><h2>${esc(D.nom)}</h2><p class="meta">Partie ${D.numero}${D.heure ? " · " + esc(D.heure.slice(0, 5)) : ""} · départ du ${D.depart} · ${esc(D.golf)}${D.parcours ? " · " + esc(D.parcours) : ""}${D.repere ? " · " + esc(D.repere) : ""}${D.nbTours > 1 ? ` · tour ${D.tour}` : ""}</p></div>
+      <span class="mq-etat ${mq.erreur ? "err" : ""}" id="mq-etat">${esc(mq.etat || "marqueur")}</span></div>
+    <div class="seg mq-mode" role="group" aria-label="Saisie"><button type="button" data-mq-mode="0" aria-pressed="${!mq.complet}">Score seul</button><button type="button" data-mq-mode="1" aria-pressed="${mq.complet}">Saisie complète</button></div>
+    <div class="sa-trous mq-trous" role="tablist" aria-label="Trous">${D.ordre.map((kk, n) => `<button type="button" class="${n === mq.i ? "actif" : ""} ${fait(kk) ? "mq-fait" : ""}" data-mq-aller="${n}">${D.pars[kk].t}</button>`).join("")}</div>
+    <div class="mq-trou"><span>Trou <b>${P.t}</b></span><span>Par <b>${P.par}</b></span></div>
+    <div class="mq-joueurs">${D.joueurs.map((j) => {
+      const t = j.trous[k] || {}, T = tot(j), sc = [P.par - 1, P.par, P.par + 1, P.par + 2].filter((v) => v >= 1);
+      if (t.score && !sc.includes(t.score)) sc.push(t.score);
+      sc.sort((a, b) => a - b);
+      const nomS = (v) => { const d = v - P.par; return d <= -2 ? "eagle" : d === -1 ? "birdie" : d === 0 ? "par" : d === 1 ? "bogey" : d === 2 ? "double" : "+" + d; };
+      return `<div class="bloc mq-j"><div class="mq-j-tete"><b>${esc(j.nom)}</b><span class="meta">${T.n ? `${T.s} · ${ecartPar(T.e)} · ${T.n} trou${T.n > 1 ? "s" : ""}` : "pas encore de score"}</span></div>
+        <div class="sa-choix mq-scores">${sc.map((v) => bouton("score", j.cle, v, `<b>${v}</b><small>${nomS(v)}</small>`, t.score === v)).join("")}<button type="button" class="sa-plus" data-mq-plus data-mq-j="${esc(j.cle)}" aria-label="Score plus élevé">+</button></div>
+        ${mq.complet ? `<div class="mq-details"><div><h3>Putts</h3><div class="sa-choix">${[0, 1, 2, 3, 4].map((v) => bouton("putts", j.cle, v, v, t.putts === v)).join("")}</div></div>
+          <div><h3>Pénalités</h3><div class="sa-choix">${[0, 1, 2, 3].map((v) => bouton("pen", j.cle, v, v, t.pen === v)).join("")}</div></div>
+          <div><h3>Bunker</h3><div class="sa-choix">${bouton("bunker", j.cle, false, "Non", t.bunker === false)}${bouton("bunker", j.cle, true, "Oui", t.bunker === true)}</div></div>
+          ${P.par > 3 ? `<div class="mq-fw" data-mq-fw="${esc(j.cle)}"><h3>Mise en jeu</h3>${terrainFw(t.fw)}</div>` : ""}</div>` : ""}</div>`; }).join("")}</div>
+    <div class="sa-nav mq-nav"><button type="button" class="btn" data-mq-pas="-1" ${mq.i === 0 ? "disabled" : ""}>← Trou ${mq.i ? D.pars[D.ordre[mq.i - 1]].t : ""}</button>
+      ${mq.i < D.ordre.length - 1 ? `<button type="button" class="btn plein" data-mq-pas="1">Trou ${D.pars[D.ordre[mq.i + 1]].t} →</button>` : `<span class="meta">Dernier trou</span>`}</div>
+    <p class="meta pt-pied">Lien marqueur de la partie ${D.numero} : il ne sert que pour cette partie et expire après le jour de l'événement. Chaque joueur complète ensuite sa carte (putts, mise en jeu…). · <a href="../">GolfNexus</a></p>`;
+}
+function etatMarqueur(txt, err = false) { mq.etat = txt; mq.erreur = err; const e = $("mq-etat"); if (e) { e.textContent = txt; e.classList.toggle("err", err); } }
+// envoi groupé par joueur (anti-rebond court) ; en cas d'échec réseau, on garde et on renvoie
+function envoyerMarqueur(cleJ, t) {
+  const L = mq.envoi.get(cleJ) || new Map(); L.set(t.t, { ...(L.get(t.t) || {}), ...t }); mq.envoi.set(cleJ, L);
+  etatMarqueur("enregistrement…");
+  clearTimeout(mq.minuteur); mq.minuteur = setTimeout(viderMarqueur, 400);
+}
+async function viderMarqueur() {
+  const lots = [...mq.envoi.entries()]; mq.envoi.clear();
+  let echec = false;
+  for (const [cle, L] of lots) {
+    const { error } = await sb.rpc("marqueur_saisir", { j: mq.jeton, cle, tour: mq.D.tour, trous: [...L.values()] });
+    if (error) {
+      echec = true;
+      if (/lien/.test(error.message)) { etatMarqueur("lien expiré ou coupé", true); return; }
+      const R = mq.envoi.get(cle) || new Map(); for (const [k, v] of L) R.set(k, { ...v, ...(R.get(k) || {}) }); mq.envoi.set(cle, R);
+    }
+  }
+  if (echec) { etatMarqueur("hors ligne : nouvel essai…", true); clearTimeout(mq.minuteur); mq.minuteur = setTimeout(viderMarqueur, 5000); }
+  else etatMarqueur("✓ enregistré");
+}
+async function modeMarqueur(jeton) {
+  mq.jeton = jeton; etat.ecran = "marqueur";
+  finReprise(); document.body.classList.remove("verrou"); document.body.classList.add("partage", "marqueur");
+  for (const k of ["liste", "nouvelle", "saisie", "voir", "direct", "lives"]) $("ecran-" + k).hidden = true;
+  $("ecran-marqueur").hidden = false;
+  const box = $("mq-contenu"); box.innerHTML = `<p class="meta">Chargement…</p>`;
+  try { mq.D = await chargerMarqueur(); }
+  catch (e) { box.innerHTML = `<div class="bloc vide">Lecture impossible : ${esc(e.message || String(e))}</div>`; return; }
+  if (!mq.D) { box.innerHTML = `<div class="bloc vide"><p><b>Ce lien marqueur n'est plus valable.</b></p><p class="meta">Il a expiré (il ne sert que jusqu'au jour de l'événement) ou le coach l'a coupé. Demande-lui un nouveau lien.</p><a class="btn" href="../">GolfNexus</a></div>`; return; }
+  // reprendre au premier trou où il manque un score
+  const n = mq.D.ordre.findIndex((kk) => mq.D.joueurs.some((j) => !j.trous[kk]?.score));
+  mq.i = n < 0 ? 0 : n;
+  rendreMarqueur();
+  addEventListener("online", () => { if (mq.envoi.size) viderMarqueur(); });
+}
+$("mq-contenu").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b || !mq.D) return;
+  const D = mq.D, k = D.ordre[mq.i];
+  if (b.dataset.mqMode != null) { mq.complet = b.dataset.mqMode === "1"; try { localStorage.setItem("carte-marqueur-complet", mq.complet ? "1" : "0"); } catch { /* */ } rendreMarqueur(); return; }
+  if (b.dataset.mqAller != null) { mq.i = +b.dataset.mqAller; rendreMarqueur(); return; }
+  if (b.dataset.mqPas) { mq.i = Math.max(0, Math.min(D.ordre.length - 1, mq.i + +b.dataset.mqPas)); rendreMarqueur(); window.scrollTo({ top: 0 }); return; }
+  // le joueur : sur le bouton (data-mq-j) ou sur la zone de mise en jeu (data-mq-fw)
+  const cleJ = b.dataset.mqJ || b.closest("[data-mq-fw]")?.dataset.mqFw; if (!cleJ) return;
+  const j = D.joueurs.find((x) => x.cle === cleJ), t = j?.trous[k]; if (!t) return;
+  let cle = b.dataset.mqCle || (b.dataset.cle === "fw" ? "fw" : null), v;
+  if ("mqPlus" in b.dataset) { cle = "score"; v = Math.max(t.score || 0, t.par + 2) + 1; }
+  else if (cle === "bunker") v = b.dataset.val === "true";
+  else if (cle === "fw") v = t.fw === b.dataset.val ? null : b.dataset.val;
+  else if (cle) v = +b.dataset.val;
+  if (!cle) return;
+  if (cle !== "score" && cle !== "fw" && t[cle] === v) v = null;   // second appui : on efface (sauf le score)
+  t[cle] = v;
+  envoyerMarqueur(cleJ, { t: t.t, [cle]: v });
+  rendreMarqueur();
+});
 async function modeDirectPublic(jeton) {
   di.publicJeton = jeton; etat.ecran = "direct";
   finReprise(); document.body.classList.remove("verrou"); document.body.classList.add("partage");
@@ -748,6 +856,8 @@ async function modeDirectPublic(jeton) {
 
 const jetonPartage = new URLSearchParams(location.hash.slice(1)).get("direct");
 const jetonEvt = new URLSearchParams(location.hash.slice(1)).get("evtdirect");
-if (sb && jetonEvt) modeDirectPublic(jetonEvt);
+const jetonMarqueur = new URLSearchParams(location.hash.slice(1)).get("marqueur");
+if (sb && jetonMarqueur) modeMarqueur(jetonMarqueur);
+else if (sb && jetonEvt) modeDirectPublic(jetonEvt);
 else if (sb && jetonPartage) modePartage(jetonPartage);
 else { nexusBrancherAccueil(); if (sb) nexusDemarrer(entrer); }
