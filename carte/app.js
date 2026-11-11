@@ -363,20 +363,25 @@ function sauver(tout = false) {
   if (tout) ecrire(); else minuteurSauve = setTimeout(ecrire, 600);
 }
 
+// carte de score (Voir, direct) ; complet = false : par, score, putts seulement (lien public sans l'option « carte complète »)
+const sommeCarte = (T, k) => T.filter((t) => t.score).reduce((s, t) => s + (+t[k] || 0), 0);
+function tableauCarte(T, nom, complet = true) {
+  const somme = sommeCarte;
+  return `<table class="vo-table"><thead><tr><th>Trou</th>${T.map((t) => `<th>${t.t}</th>`).join("")}<th>${nom}</th></tr></thead><tbody>
+    <tr><th>Par</th>${T.map((t) => `<td>${t.par}</td>`).join("")}<td><b>${T.reduce((s, t) => s + t.par, 0)}</b></td></tr>
+    <tr class="vo-score"><th>Score</th>${T.map((t) => `<td><span class="nt ${notation(t)}">${t.score || "·"}</span></td>`).join("")}<td><b>${somme(T, "score") || "—"}</b></td></tr>
+    <tr><th>Putts</th>${T.map((t) => `<td class="${t.putts >= 3 ? "pt-mal" : t.putts === 1 ? "pt-bon" : ""}">${t.putts ?? "·"}</td>`).join("")}<td>${somme(T, "putts") || "—"}</td></tr>
+    ${complet ? `<tr><th>Pén.</th>${T.map((t) => `<td>${t.pen ? `<span class="pen">${t.pen}</span>` : "·"}</td>`).join("")}<td>${somme(T, "pen") || "—"}</td></tr>` : ""}
+    ${complet ? `<tr><th>Départ</th>${T.map((t) => `<td title="${esc(t.fw || "")}">${t.par === 3 ? "" : t.fw ? miniFw(t.fw) : "·"}</td>`).join("")}<td title="Fairways touchés (par 4 et 5)">${(() => { const F = T.filter((t) => t.score && t.par > 3 && t.fw); return F.length ? `${F.filter((t) => t.fw === "fairway").length}/${F.length}` : "—"; })()}</td></tr>` : ""}
+    ${complet ? `<tr><th title="Green en régulation : green atteint en (par − 2) coups ou moins">GIR</th>${T.map((t) => `<td>${t.score && t.putts != null ? (gir(t) ? `<span class="vo-gir" title="Green en régulation">✓</span>` : "·") : ""}</td>`).join("")}<td title="Greens en régulation">${(() => { const C = T.filter((t) => t.score && t.putts != null); return C.length ? `${C.filter(gir).length}/${C.length}` : "—"; })()}</td></tr>` : ""}
+    ${complet ? `<tr><th>Bunker</th>${T.map((t) => `<td>${t.bunker ? SABLE : "·"}</td>`).join("")}<td></td></tr>` : ""}</tbody></table>`;
+}
 // ------------------------------------------------------------------ Voir : la carte de score complète
 function rendreVoir() { rendreVoir0(); controleFfgolf().catch(() => {}); }
 function rendreVoir0() {
   const p = etat.partie, b = bilan(p), lecture = etat.partage || !!etat.vue || p.user_id !== Compte.moi?.id;
   const moities = p.nb_trous === 18 ? [p.trous.slice(0, 9), p.trous.slice(9)] : [p.trous];
-  const somme = (T, k) => T.filter((t) => t.score).reduce((s, t) => s + (+t[k] || 0), 0);
-  const tableau = (T, nom) => `<table class="vo-table"><thead><tr><th>Trou</th>${T.map((t) => `<th>${t.t}</th>`).join("")}<th>${nom}</th></tr></thead><tbody>
-    <tr><th>Par</th>${T.map((t) => `<td>${t.par}</td>`).join("")}<td><b>${T.reduce((s, t) => s + t.par, 0)}</b></td></tr>
-    <tr class="vo-score"><th>Score</th>${T.map((t) => `<td><span class="nt ${notation(t)}">${t.score || "·"}</span></td>`).join("")}<td><b>${somme(T, "score") || "—"}</b></td></tr>
-    <tr><th>Putts</th>${T.map((t) => `<td class="${t.putts >= 3 ? "pt-mal" : t.putts === 1 ? "pt-bon" : ""}">${t.putts ?? "·"}</td>`).join("")}<td>${somme(T, "putts") || "—"}</td></tr>
-    <tr><th>Pén.</th>${T.map((t) => `<td>${t.pen ? `<span class="pen">${t.pen}</span>` : "·"}</td>`).join("")}<td>${somme(T, "pen") || "—"}</td></tr>
-    <tr><th>Départ</th>${T.map((t) => `<td title="${esc(t.fw || "")}">${t.par === 3 ? "" : t.fw ? miniFw(t.fw) : "·"}</td>`).join("")}<td title="Fairways touchés (par 4 et 5)">${(() => { const F = T.filter((t) => t.score && t.par > 3 && t.fw); return F.length ? `${F.filter((t) => t.fw === "fairway").length}/${F.length}` : "—"; })()}</td></tr>
-    <tr><th title="Green en régulation : green atteint en (par − 2) coups ou moins">GIR</th>${T.map((t) => `<td>${t.score && t.putts != null ? (gir(t) ? `<span class="vo-gir" title="Green en régulation">✓</span>` : "·") : ""}</td>`).join("")}<td title="Greens en régulation">${(() => { const C = T.filter((t) => t.score && t.putts != null); return C.length ? `${C.filter(gir).length}/${C.length}` : "—"; })()}</td></tr>
-    <tr><th>Bunker</th>${T.map((t) => `<td>${t.bunker ? SABLE : "·"}</td>`).join("")}<td></td></tr></tbody></table>`;
+  const tableau = (T, nom) => tableauCarte(T, nom);
   $("vo-contenu").innerHTML = `
     ${etat.partage ? `<div class="pt-direct ${p.terminee ? "fini" : ""}"><span>${p.terminee ? "✓ Partie terminée" : "● En direct"}${p.prenom ? ` · la carte de <b>${esc(p.prenom)}</b>` : ""}</span>
       <small>${p.terminee ? "" : "mise à jour automatique · "}dernière saisie ${new Date(p.modifie_le).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</small></div>` : ""}
@@ -588,12 +593,9 @@ function joueursDirect(L) {
   return [...J.values()].sort((a, b) => (b.n > 0) - (a.n > 0) || a.ecart - b.ecart || b.n - a.n || a.nom.localeCompare(b.nom, "fr"));
 }
 // la carte d'un tour, en petit (trou, par, score), pour la ligne dépliée
-function miniCarte(c) {
+function miniCarte(c, complet) {
   const T = c.trous || [], moities = T.length > 9 ? [T.slice(0, 9), T.slice(9)] : [T];
-  const som = (M, k) => M.filter((t) => t.score).reduce((s, t) => s + (+t[k] || 0), 0) || "—";
-  return moities.map((M, k) => `<div class="defile"><table class="vo-table di-mini"><thead><tr><th>Trou</th>${M.map((t) => `<th>${t.t}</th>`).join("")}<th>${moities.length > 1 ? (k ? "Retour" : "Aller") : "Total"}</th></tr></thead>
-    <tbody><tr><th>Par</th>${M.map((t) => `<td>${t.par}</td>`).join("")}<td><b>${M.reduce((s, t) => s + t.par, 0)}</b></td></tr><tr class="vo-score"><th>Score</th>${M.map((t) => `<td><span class="nt ${notation(t)}">${t.score || "·"}</span></td>`).join("")}<td><b>${som(M, "score")}</b></td></tr>
-    <tr><th>Putts</th>${M.map((t) => `<td>${t.putts ?? "·"}</td>`).join("")}<td>${som(M, "putts")}</td></tr></tbody></table></div>`).join("");
+  return moities.map((M, k) => `<div class="defile">${tableauCarte(M, moities.length > 1 ? (k ? "Retour" : "Aller") : "Total", complet).replace('class="vo-table"', 'class="vo-table di-mini"')}</div>`).join("");
 }
 async function chargerDirect() {
   if (di.publicJeton) {
@@ -601,7 +603,7 @@ async function chargerDirect() {
     if (error) throw error;
     if (!data?.length) return null;
     const e = data[0];
-    return { titre: e.ev_nom, sous: [titre(e.ev_golf_nom || ""), e.ev_debut && dateLongue(e.ev_debut)].filter(Boolean).join(" · "), nbTours: e.ev_nb_tours || 1, statut: e.ev_statut, lignes: data, debut: e.ev_debut, fin: e.ev_fin };
+    return { titre: e.ev_nom, sous: [titre(e.ev_golf_nom || ""), e.ev_debut && dateLongue(e.ev_debut)].filter(Boolean).join(" · "), nbTours: e.ev_nb_tours || 1, statut: e.ev_statut, lignes: data, debut: e.ev_debut, fin: e.ev_fin, complet: !!e.public_complet };
   }
   if (di.src?.evt) {
     const { data, error } = await sb.rpc("carte_direct", { ev: di.src.evt });
@@ -609,7 +611,7 @@ async function chargerDirect() {
     if (!data?.length) return null;
     const e = data[0];
     return { evt: di.src.evt, titre: e.ev_nom, sous: [titre(e.ev_golf_nom || ""), e.ev_debut && dateLongue(e.ev_debut)].filter(Boolean).join(" · "), nbTours: e.ev_nb_tours || 1,
-      statut: e.ev_statut, organisateur: e.organisateur, jeton: e.ev_jeton, lignes: data, debut: e.ev_debut, fin: e.ev_fin };
+      statut: e.ev_statut, organisateur: e.organisateur, jeton: e.ev_jeton, complet: !!e.public_complet, lignes: data, debut: e.ev_debut, fin: e.ev_fin };
   }
   // tournoi ffgolf : cartes de mes joueurs suivis rattachées au tournoi
   const t = etat.tournois.find((x) => x.id === di.src.tournoi), suivis = Compte.joueurs || [];
@@ -652,7 +654,7 @@ async function rendreDirect() {
       <td class="di-ecart ${j.n ? (j.ecart < 0 ? "sous" : j.ecart === 0 ? "par" : "") : ""}">${j.n ? ecartPar(j.ecart) : `<small>${j.cartes.length ? "carte ouverte" : "pas encore de carte"}</small>`}</td>
       ${N > 1 ? Array.from({ length: N }, (_, k) => `<td class="di-t">${tourCol(j, k + 1)}</td>`).join("") : ""}
       <td class="di-total">${j.n ? `<b>${j.score}</b>` : ""}</td></tr>
-      ${ouvert ? `<tr class="di-detail"><td colspan="${5 + (N > 1 ? N : 0)}">${j.cartes.length ? j.cartes.map((c) => `<div class="di-carte"><p class="meta">${N > 1 ? `Tour ${c.tour || 1} · ` : ""}${esc(c.parcours_nom || "")}${c.repere ? " · " + esc(c.repere) : ""} · ${c.terminee ? "terminée" : `${c.b.n}/${c.nb_trous} trous`}</p>${miniCarte(c)}</div>`).join("") : `<p class="meta">Pas encore de carte : le joueur la commence dans Carte (« Ta carte t'attend »).</p>`}</td></tr>` : ""}`;
+      ${ouvert ? `<tr class="di-detail"><td colspan="${5 + (N > 1 ? N : 0)}">${j.cartes.length ? j.cartes.map((c) => `<div class="di-carte"><p class="meta">${N > 1 ? `Tour ${c.tour || 1} · ` : ""}${esc(c.parcours_nom || "")}${c.repere ? " · " + esc(c.repere) : ""} · ${c.terminee ? "terminée" : `${c.b.n}/${c.nb_trous} trous`}</p>${miniCarte(c, !di.publicJeton || D.complet)}</div>`).join("") : `<p class="meta">Pas encore de carte : le joueur la commence dans Carte (« Ta carte t'attend »).</p>`}</td></tr>` : ""}`;
   }).join("");
   const annule = D.statut === "annule";
   box.innerHTML = `
@@ -665,7 +667,8 @@ async function rendreDirect() {
       <p class="meta di-aide">Touche un joueur pour voir sa carte trou par trou.${D.note ? " " + esc(D.note) : ""}</p></div>`}
     ${D.organisateur && !annule ? `<div class="bloc di-public"><b>Lien public</b> <span class="meta">pour les parents, sans compte : ils voient ce classement (prénom et initiale) et les cartes.</span>
       <div class="di-public-b">${D.jeton ? `<input id="di-lien" readonly value="${esc(location.origin + location.pathname + "#evtdirect=" + D.jeton)}" aria-label="Lien public"><button type="button" class="btn plein" id="di-copier">Copier</button><button type="button" class="lien vo-suppr" id="di-couper">Couper le lien</button>`
-        : `<button type="button" class="btn" id="di-activer">🔗 Créer le lien public</button>`}</div></div>` : ""}
+        : `<button type="button" class="btn" id="di-activer">🔗 Créer le lien public</button>`}</div>
+      <label class="di-option"><input type="checkbox" id="di-complet" ${D.complet ? "checked" : ""}> Carte complète sur le lien public <small class="meta">(sinon : score et putts seulement ; fairways, greens en régulation, pénalités et bunkers restent réservés aux coachs et aux participants)</small></label></div>` : ""}
     ${di.publicJeton ? `<p class="meta pt-pied">Classement partagé par l'organisateur (lecture seule) · <a href="../">GolfNexus</a></p>` : `<div class="vo-actions"><button type="button" class="btn" data-ecran="lives">← Tous les directs</button><button type="button" class="btn" data-ecran="liste">← Mes cartes</button></div>`}`;
   if (!di.minuteur && !annule) di.minuteur = setInterval(() => { if (!document.hidden) rendreDirect(); }, 15000);
 }
@@ -677,6 +680,11 @@ $("di-contenu").addEventListener("click", async (e) => {
     if (id === "di-couper" && !confirm("Couper le lien public ? Les personnes qui l'ont ne verront plus rien.")) return;
     const { error } = await sb.rpc("evenement_lien", { ev: di.src.evt, actif: id === "di-activer" });
     signaler(error ? "Impossible : " + error.message : id === "di-activer" ? "Lien public créé : copie-le et envoie-le." : "Lien public coupé.");
+    rendreDirect(); return;
+  }
+  if (id === "di-complet") {
+    const { error } = await sb.from("club_evenements").update({ public_complet: e.target.checked }).eq("id", di.src.evt);
+    signaler(error ? "Impossible : " + error.message : e.target.checked ? "Le lien public montre maintenant la carte complète." : "Le lien public ne montre plus que le score et les putts.");
     rendreDirect(); return;
   }
   if (id === "di-copier") { const v = $("di-lien").value; try { await navigator.clipboard.writeText(v); } catch { $("di-lien").select(); document.execCommand("copy"); } signaler("Lien copié."); }
