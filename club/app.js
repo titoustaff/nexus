@@ -566,10 +566,11 @@ async function htmlCalendrierEquipe() {
     if (ev) {   // événement créé dans GolfNexus
       const m = +ev.debut.slice(5, 7) - 1;
       if (m !== mois) { if (mois >= 0) h += "</ol>"; h += `<h4 class="s-mois">${MOIS[m]}</h4><ol class="co-cal">`; mois = m; }
-      const auj = ev.debut <= jourL && jourL <= (ev.fin || ev.debut), annule = ev.statut === "annule", gere = ev.cree_par === moi || (sidClub && ev.structure_id === sidClub);
+      const auj = ev.debut <= jourL && jourL <= (ev.fin || ev.debut), annule = ev.statut === "annule";
+      const gere = (ev.cree_par === moi || (sidClub && ev.structure_id === sidClub)) && nxEvOuvert(ev, Compte.role === "admin"), fini = (ev.fin || ev.debut) < jourL;
       const I = (ev.club_evenement_joueurs || []).slice().sort((a, b) => nom(a.joueur_id).localeCompare(nom(b.joueur_id)));
       h += `<li class="co-cal-ev${(ev.fin || ev.debut) < jourL ? " passe" : ""}${annule ? " annule" : ""}"><div class="date"><b>${new Date(ev.debut + "T12:00").getDate()}</b><span>${MOIS_COURT[m]}</span></div>
-        <div><b class="co-ev-nom">${esc(ev.nom)}</b>${annule ? ` <span class="tag">annulé</span>` : ""}
+        <div><b class="co-ev-nom">${esc(ev.nom)}</b>${annule ? ` <span class="tag">annulé</span>` : fini ? ` <span class="tag">terminé</span>` : ""}
         <div class="meta"><span class="tag tag-evt">${esc(NX_TYPES_EV[ev.type] || "Événement")}</span> ${esc(titre(ev.golf_nom || ""))}${ev.heure ? " · " + esc(ev.heure.slice(0, 5)) : ""}${ev.nb_tours > 1 ? ` · ${ev.nb_tours} tours` : ""}${ev.note ? " · " + esc(ev.note) : ""}</div>
         <div class="co-puces">${I.map((x) => `<span class="co-puce ev-${esc(x.statut || "accepte")}" title="${esc({ invite: "invité, pas encore répondu", accepte: "a accepté", refuse: "a refusé" }[x.statut] || "")}">${esc(nom(x.joueur_id))}${x.statut === "invite" ? " <small>?</small>" : x.statut === "refuse" ? " <small>✕</small>" : ""}</span>`).join("") || `<span class="meta">aucun invité</span>`}</div>
         <div class="co-ev-actions">${auj && !annule ? `<a class="btn plein" href="../carte/#evt=${esc(ev.id)}">📡 En direct</a>` : ""}${gere && !annule ? `<button type="button" class="btn" data-ev-modifier="${esc(ev.id)}">Modifier · inviter</button><button type="button" class="lien vo-suppr" data-ev-annuler="${esc(ev.id)}">Annuler</button>` : ""}</div></div></li>`;
