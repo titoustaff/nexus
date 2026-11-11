@@ -115,7 +115,7 @@ async function rendreListe() {
   const attend = etat.vue ? [] : (etat.agenda || []).map((a) => ({ ...a, carte: etat.parties.find((p) => p.tournoi_id === a.t.id && (p.tour || 1) === a.tour) }))
     .filter((a) => !a.carte || !a.carte.terminee);
   const htmlAttend = attend.map((a) => `<div class="li-attend"><span>⛳ <b>Aujourd'hui : ${esc(titre(a.t.nom))}</b>${(a.t.nb_tours || 1) > 1 ? ` · tour ${a.tour}` : ""}
-      <small>${esc(titre(a.t.golf_nom || a.t.golf || ""))}${a.t.categorie ? " · " + esc(a.t.categorie) : ""} · ${a.t.club ? esc((NX_TYPES_EV[a.t.type] || "événement").toLowerCase()) : `dans ta saison (${esc({ envisage: "envisagé", inscrit: "inscrit", joue: "joué" }[a.statut] || a.statut)})`}</small></span>
+      <small>${esc(titre(a.t.golf_nom || a.t.golf || ""))}${a.t.categorie ? " · " + esc(a.t.categorie) : ""}${a.t.invite ? " · invitation pas encore acceptée : commencer ta carte vaut acceptation" : ""} · ${a.t.club ? esc((NX_TYPES_EV[a.t.type] || "événement").toLowerCase()) : `dans ta saison (${esc({ envisage: "envisagé", inscrit: "inscrit", joue: "joué" }[a.statut] || a.statut)})`}</small></span>
       <span class="li-attend-b">${a.t.ev ? `<button type="button" class="btn" data-direct-evt="${esc(a.t.ev)}">📡 Direct</button>` : ""}${a.carte ? `<button type="button" class="btn plein" data-partie="${esc(a.carte.id)}">Reprendre ma carte</button>` : `<button type="button" class="btn plein" data-attend="${esc(a.t.id)}">Ta carte t'attend · commencer</button>`}</span></div>`).join("");
   if (!etat.parties.length) {
     box.innerHTML = etat.vue ? `<div class="bloc vide">Aucune carte pour ce joueur.</div>`
@@ -133,8 +133,17 @@ async function rendreListe() {
     </button>`; }).join("")}</div>`;
 }
 document.addEventListener("change", (e) => { if (e.target.id === "li-qui") { etat.vue = e.target.value; nexusJoueurVu.ecrire(Compte.moi?.id, etat.vue, Compte.joueurs.find((j) => j.joueur_id === etat.vue)?.nom); ecran("liste"); } });
-$("li-contenu").addEventListener("click", (e) => {
-  const at = e.target.closest("[data-attend]"); if (at) { preremplir(at.dataset.attend); return; }
+$("li-contenu").addEventListener("click", async (e) => {
+  const at = e.target.closest("[data-attend]");
+  if (at) {   // invitation pas encore acceptée : commencer sa carte vaut acceptation
+    const a = (etat.agenda || []).find((x) => x.t.id === at.dataset.attend);
+    if (a?.t.invite) {
+      const { error } = await sb.rpc("evenement_repondre", { ev: a.t.ev, accepte: true });
+      if (error) { signaler("Impossible d'accepter l'invitation : " + error.message); return; }
+      a.t.invite = false; signaler("Invitation acceptée : tes scores de cet événement sont visibles des participants.");
+    }
+    preremplir(at.dataset.attend); return;
+  }
   if (e.target.closest("[data-direct-evt]")) return;   // géré plus bas (page En direct)
   const b = e.target.closest("[data-partie]"); if (!b) return;
   etat.partie = etat.parties.find((p) => p.id === b.dataset.partie);
@@ -148,13 +157,14 @@ $("li-contenu").addEventListener("click", (e) => {
 // rien n'est créé tant que le joueur ne l'active pas (08/11, demande de l'utilisateur).
 async function chargerAgenda() {
   etat.agenda = [];
-  // événements (Saison / Club › Calendrier d'équipe, galaxy/MD_DOC/EVENEMENTS.md) que j'ai ACCEPTÉS, non annulés, qui se jouent aujourd'hui
+  // événements (Saison / Club › Calendrier d'équipe, galaxy/MD_DOC/EVENEMENTS.md) acceptés OU pas encore répondus (pas refusés),
+  // non annulés, qui se jouent aujourd'hui : commencer sa carte vaut acceptation (décision utilisateur, 11/11)
   const C = await sb.from("club_evenement_joueurs").select("statut,evenement:club_evenements(id,type,nom,golf,golf_nom,debut,fin,nb_tours,categorie,statut,parcours,repere)")
-    .eq("joueur_id", Compte.moi.id).eq("statut", "accepte");
+    .eq("joueur_id", Compte.moi.id).in("statut", ["accepte", "invite"]);
   for (const r of C.data || []) {
     const c = r.evenement;
     if (c?.debut && c.statut !== "annule" && c.debut <= JOUR && JOUR <= (c.fin || c.debut)) {
-      const t = { id: "club:" + c.id, ev: c.id, nom: c.nom, golf: c.golf, golf_nom: c.golf_nom, debut: c.debut, fin: c.fin, nb_tours: c.nb_tours, categorie: c.categorie, club: true, type: c.type, parcours: c.parcours, repere: c.repere };
+      const t = { id: "club:" + c.id, ev: c.id, nom: c.nom, golf: c.golf, golf_nom: c.golf_nom, debut: c.debut, fin: c.fin, nb_tours: c.nb_tours, categorie: c.categorie, club: true, type: c.type, parcours: c.parcours, repere: c.repere, invite: r.statut === "invite" };
       etat.agenda.push({ t, statut: "coach", tour: tourDuJour(t, JOUR) });
     }
   }
