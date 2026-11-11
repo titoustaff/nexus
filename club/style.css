@@ -530,3 +530,15 @@ html, body { overflow-x: clip; }   /* filet de sécurité : jamais de défilemen
 .b-club .nx-vue-choix { background: transparent; border: 0; color: #fff; font-size: 13px; padding: 3px 6px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .b-club .nx-vue-choix:hover { background: rgba(255,255,255,.08); }
 .b-club .nx-vue-pop { left: auto; right: 0; color: var(--texte); }
+
+/* événements du Calendrier d'équipe (11/11) */
+.co-ev-plus { margin-left: auto; }
+.lg.s-evt { background: #c2410c; }
+.co-cal-ev { border-left: 3px solid #c2410c; }
+.co-cal-ev.annule .co-ev-nom { text-decoration: line-through; color: var(--doux); }
+.tag-evt { background: color-mix(in srgb, #c2410c 14%, var(--carte)); color: #9a3412; }
+.co-puce.ev-accepte { border-color: var(--vert-2); }
+.co-puce.ev-invite { border-style: dashed; opacity: .85; }
+.co-puce.ev-refuse { text-decoration: line-through; opacity: .6; }
+.co-ev-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+.co-ev-actions .btn { text-decoration: none; }

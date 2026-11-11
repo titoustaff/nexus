@@ -5,7 +5,7 @@
 // S'appuie sur les briques communes (../commun/v1/nexus.js : sb, esc, signaler, accueil, profil, panneau du compte).
 // Ce qui affiche une saison ou un tournoi renvoie vers Saison (../saison/#vue=<joueur>, ../saison/#t=<tournoi>).
 
-const etat = { tournois: [], parId: new Map(), clubs: [], ecran: "coach" };
+const etat = { tournois: [], parId: new Map(), clubs: [], golfs: {}, ecran: "coach" };
 const $ = (id) => document.getElementById(id);
 const tournoiDe = (id) => etat.parId.get(id);
 const STRUCTURES = { club: "club", ligue: "ligue", academie: "académie", pole: "pôle / comité", independant: "coach indépendant" };
@@ -534,8 +534,16 @@ async function htmlCalendrierEquipe() {
     <div class="co-eq-onglets co-eq-mobile"><select id="co-cal-eq" aria-label="Équipe"><option value="">Tous les joueurs (${ok.length})</option>${eqs.map((e) =>
     `<option value="${esc(e.id)}" ${e.id === co.equipe ? "selected" : ""}>${esc(e.nom)} (${nb(e)})</option>`).join("")}</select></div>
     <div class="bloc co-filtres"><label>Année <select id="co-cal-an">${annees.map((a) => `<option ${a === co.annee ? "selected" : ""}>${a}</option>`).join("")}</select></label>
-    <span class="st-legende"><span><i class="lg s-envisage"></i>envisagé</span><span><i class="lg s-inscrit"></i>inscrit</span><span><i class="lg s-joue"></i>joué</span></span></div>`;
+    <span class="st-legende"><span><i class="lg s-envisage"></i>envisagé</span><span><i class="lg s-inscrit"></i>inscrit</span><span><i class="lg s-joue"></i>joué</span><span><i class="lg s-evt"></i>événement</span></span>
+    <button type="button" class="btn plein co-ev-plus" data-ev-nouveau>+ Ajouter un événement</button></div>`;
+  co.calJoueurs = ok.map((j) => ({ id: j.joueur_id, nom: j.nom || j.libelle || "joueur", info: j.categorie || "" })); co.calIds = eq ? ids : [];
   if (!ids.length) return h + `<div class="bloc vide">Pas de joueur dans ${eq ? "cette équipe" : "ta liste"}.</div>`;
+  // événements (galaxy/MD_DOC/EVENEMENTS.md) : ceux du club et ceux que j'ai créés, de l'année ; invités et réponses
+  const sidClub = Compte.structure?.id, moi = Compte.moi?.id;
+  const EV = await sb.from("club_evenements").select("*,club_evenement_joueurs(joueur_id,statut)")
+    .or([sidClub && `structure_id.eq.${sidClub}`, moi && `cree_par.eq.${moi}`].filter(Boolean).join(","))
+    .gte("debut", `${co.annee}-01-01`).lte("debut", `${co.annee}-12-31`);
+  co.evs = (EV.data || []).filter((e) => !eq || !(e.club_evenement_joueurs || []).length || e.club_evenement_joueurs.some((x) => ids.includes(x.joueur_id)));
   const S = await sb.from("saisons").select("id,user_id,annee").in("user_id", ids).eq("annee", co.annee);
   const sid = (S.data || []).map((x) => x.id), qui = Object.fromEntries((S.data || []).map((x) => [x.id, x.user_id]));
   const [I, R] = await Promise.all([sid.length ? sb.from("saison_tournois").select("saison_id,tournoi_id,statut").in("saison_id", sid) : { data: [] },
@@ -550,21 +558,55 @@ async function htmlCalendrierEquipe() {
   h += `<div class="st-tuiles petites">${tuileSt(ids.length, "joueurs")}${tuileSt(liste.length, `tournois en ${co.annee}`)}${tuileSt(communs, "tournois à plusieurs", "rendez-vous de l'équipe")}${tuileSt(avenir.length, "à venir")}</div>`;
   const quoi = te && (te.circuit || te.sexe) ? ` ${[te.circuit ? CIRCUITS[te.circuit] : "", te.sexe === "H" ? "messieurs" : te.sexe === "D" ? "dames" : ""].filter(Boolean).join(" ")}` : "";
   if (quoi) h += `<p class="meta">Équipe « ${esc(eq.nom)} » : seulement les tournois${esc(quoi)} de ses joueurs.</p>`;
-  if (!liste.length) return h + `<div class="bloc vide">Aucun tournoi${esc(quoi)} prévu par ces joueurs en ${co.annee}.</div>`;
+  const jourL = nxIsoLocal(new Date());
+  const tout = [...liste, ...co.evs.map((ev) => ({ ev, t: { debut: ev.debut, fin: ev.fin || ev.debut } }))].sort((a, b) => a.t.debut.localeCompare(b.t.debut));
+  if (!tout.length) return h + `<div class="bloc vide">Aucun tournoi${esc(quoi)} ni événement prévu par ces joueurs en ${co.annee}.</div>`;
   let mois = -1; h += `<div class="bloc">`;
-  for (const { t, j } of liste) {
+  for (const { t, j, ev } of tout) {
+    if (ev) {   // événement créé dans GolfNexus
+      const m = +ev.debut.slice(5, 7) - 1;
+      if (m !== mois) { if (mois >= 0) h += "</ol>"; h += `<h4 class="s-mois">${MOIS[m]}</h4><ol class="co-cal">`; mois = m; }
+      const auj = ev.debut <= jourL && jourL <= (ev.fin || ev.debut), annule = ev.statut === "annule", gere = ev.cree_par === moi || (sidClub && ev.structure_id === sidClub);
+      const I = (ev.club_evenement_joueurs || []).slice().sort((a, b) => nom(a.joueur_id).localeCompare(nom(b.joueur_id)));
+      h += `<li class="co-cal-ev${(ev.fin || ev.debut) < jourL ? " passe" : ""}${annule ? " annule" : ""}"><div class="date"><b>${new Date(ev.debut + "T12:00").getDate()}</b><span>${MOIS_COURT[m]}</span></div>
+        <div><b class="co-ev-nom">${esc(ev.nom)}</b>${annule ? ` <span class="tag">annulé</span>` : ""}
+        <div class="meta"><span class="tag tag-evt">${esc(NX_TYPES_EV[ev.type] || "Événement")}</span> ${esc(titre(ev.golf_nom || ""))}${ev.heure ? " · " + esc(ev.heure.slice(0, 5)) : ""}${ev.nb_tours > 1 ? ` · ${ev.nb_tours} tours` : ""}${ev.note ? " · " + esc(ev.note) : ""}</div>
+        <div class="co-puces">${I.map((x) => `<span class="co-puce ev-${esc(x.statut || "accepte")}" title="${esc({ invite: "invité, pas encore répondu", accepte: "a accepté", refuse: "a refusé" }[x.statut] || "")}">${esc(nom(x.joueur_id))}${x.statut === "invite" ? " <small>?</small>" : x.statut === "refuse" ? " <small>✕</small>" : ""}</span>`).join("") || `<span class="meta">aucun invité</span>`}</div>
+        <div class="co-ev-actions">${auj && !annule ? `<a class="btn plein" href="../carte/#evt=${esc(ev.id)}">📡 En direct</a>` : ""}${gere && !annule ? `<button type="button" class="btn" data-ev-modifier="${esc(ev.id)}">Modifier · inviter</button><button type="button" class="lien vo-suppr" data-ev-annuler="${esc(ev.id)}">Annuler</button>` : ""}</div></div></li>`;
+      continue;
+    }
     const m = +t.debut.slice(5, 7) - 1;
     if (m !== mois) { if (mois >= 0) h += "</ol>"; h += `<h4 class="s-mois">${MOIS[m]}</h4><ol class="co-cal">`; mois = m; }
     h += `<li class="${t.fin < AUJ ? "passe" : ""} ${j.length > 1 ? "commun" : ""}"><div class="date"><b>${new Date(t.debut + "T12:00").getDate()}</b><span>${MOIS_COURT[m]}</span></div>
       <div><button type="button" class="s-nom" data-co-ouvrir="${esc(t.id)}">${esc(titre(t.nom))}</button>
       <div class="meta">${esc(titre(t.golf_nom))} · ${esc(t.departement || "")} · <span class="tag circuit c-${circuitDe(t)}">${esc(circuitLib(t))}</span></div>
       <div class="co-puces">${j.sort((a, b) => nom(a.id).localeCompare(nom(b.id))).map((x) => { const r = res[x.id + "|" + t.id];
-        return `<span class="co-puce s-${x.statut}">${esc(nom(x.id))}${r ? ` <small>${esc(String(r.place).replace(/^(\d+)/, "$1ᵉ"))}${r.classes ? "/" + r.classes : ""}</small>` : ""}</span>`; }).join("")}</div></div></li>`;
+        return `<span class="co-puce s-${x.statut}">${esc(nom(x.id))}${r ? ` <small>${esc(String(r.place).replace(/^(\d+)/, "$1ᵉ"))}${r.classes ? "/" + r.classes : ""}</small>` : ""}</span>`; }).join("")}</div>
+      ${t.debut <= jourL && jourL <= (t.fin || t.debut) ? `<div class="co-ev-actions"><a class="btn plein" href="../carte/#tournoi=${encodeURIComponent(t.id)}">📡 En direct</a></div>` : ""}</div></li>`;
   }
   return h + "</ol></div>";
 }
 $("co-contenu").addEventListener("click", async (e) => {
   const b = e.target.closest("button"); if (!b) return;
+  // événements du Calendrier d'équipe (11/11, galaxy/MD_DOC/EVENEMENTS.md)
+  if (b.hasAttribute("data-ev-nouveau") || b.dataset.evModifier) {
+    const ev = b.dataset.evModifier ? (co.evs || []).find((x) => x.id === b.dataset.evModifier) : null;
+    const deja = new Set((ev?.club_evenement_joueurs || []).map((x) => x.joueur_id));
+    const r = await nexusFormEvenement({ golfs: etat.golfs, ev, joueurs: (co.calJoueurs || []).filter((j) => !deja.has(j.id)), coches: ev ? [] : co.calIds || [] });
+    if (!r) return;
+    if (!ev && Compte.role !== "admin" && !Compte.structure?.id) { signaler("Tu dois être rattaché à un club pour créer un événement."); return; }
+    try {
+      const { erreurs } = await nexusEnregistrerEvenement({ ev, champs: r.champs, structure_id: Compte.structure?.id || null, joueurs: r.joueurs });
+      signaler((ev ? "Événement modifié." : "Événement créé : les joueurs l'acceptent dans leur Saison.") + (erreurs.length ? " Invitations impossibles — " + erreurs.join(" ; ") : ""));
+    } catch (err) { signaler("Enregistrement impossible : " + nxErreurEv(err) + (/column|relation|check/.test(err.message || "") ? " (script club-evenements-v2.sql à lancer)" : "")); }
+    rendreCoach(); return;
+  }
+  if (b.dataset.evAnnuler) {
+    const ev = (co.evs || []).find((x) => x.id === b.dataset.evAnnuler); if (!ev) return;
+    if (!confirm(`Annuler « ${ev.nom} » ? Il restera barré dans les calendriers (supprimé s'il n'a encore aucune carte).`)) return;
+    try { signaler((await nexusAnnulerEvenement(ev)) === "supprime" ? "Événement supprimé." : "Événement annulé."); } catch (err) { signaler("Impossible : " + nxErreurEv(err)); }
+    rendreCoach(); return;
+  }
   if (b.dataset.coOnglet) { co.onglet = b.dataset.coOnglet; rendreCoach(); return; }
   if (b.dataset.referent) {
     const { error } = await sb.rpc("changer_referent", { j: b.dataset.referent });
@@ -675,7 +717,7 @@ async function entrer() {
   let D;
   try { D = await telechargerDonnees(); }
   catch (e) { demarre = false; $("accueil").classList.remove("chargement"); msgAccueil("Données inaccessibles : " + (e.message || e), true); return; }
-  etat.tournois = D.tournois || []; etat.clubs = D.clubs || []; etat.parId = new Map(etat.tournois.map((t) => [t.id, t]));
+  etat.tournois = D.tournois || []; etat.clubs = D.clubs || []; etat.golfs = Object.fromEntries((D.golfs || []).map((g) => [g.slug, g])); etat.parId = new Map(etat.tournois.map((t) => [t.id, t]));
   const { data } = await sb.auth.getSession();
   try { await Compte.connecter(data.session.user); } catch (e) { signaler("Lecture du compte impossible : " + (e.message || e)); }
   document.body.classList.remove("verrou");
