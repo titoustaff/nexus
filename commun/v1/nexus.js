@@ -316,3 +316,110 @@ async function inviter(email, role, nom, licence = "") {
   const msg = error ? (await error.context?.json?.().catch(() => null))?.erreur || error.message : data?.erreur;
   return msg || null;
 }
+
+// ------------------------------------------------------------------ événements (11/11/2026, galaxy/MD_DOC/EVENEMENTS.md)
+// Formulaire commun à Saison (le joueur crée une partie, invite par licence / e-mail) et à Club (le coach crée pour ses
+// joueurs / une équipe). Tables club_evenements / club_evenement_joueurs ; invitations par la fonction evenement_inviter.
+const NX_TYPES_EV = { amicale: "Partie amicale", competition: "Compétition hors Mérite", entrainement: "Entraînement", stage: "Stage",
+  interne: "Partie interne", rencontre: "Rencontre inter-clubs" };
+const nxIsoLocal = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const nxDatePlus = (j, n) => { const x = new Date(j + "T12:00:00"); x.setDate(x.getDate() + n); return nxIsoLocal(x); };
+const nxErreurEv = (e) => { const m = e?.message || String(e);
+  return /pas_de_compte/.test(m) ? "aucun compte GolfNexus (on ne peut inviter que des joueurs qui ont déjà un compte)"
+    : /pas_ton_joueur/.test(m) ? "ce n'est pas un de tes joueurs suivis" : /annule/.test(m) ? "l'événement est annulé"
+    : /pas_organisateur/.test(m) ? "tu n'es pas l'organisateur" : /pas_invite/.test(m) ? "tu n'es pas invité" : m; };
+const nxLibGolf = (g) => `${titre(g.nom)}${g.ville ? " (" + titre(g.ville) + ")" : ""}`;
+
+// ouvre le formulaire ; résout { champs, joueurs: [{id, nom}], autres: ["licence ou e-mail"] }, ou null si annulé
+// golfs : { slug: golf } (données publiées) ; ev : événement à modifier ; joueurs : [{ id, nom, info }] à cocher (coach) ;
+// coches : identifiants cochés d'office ; parLicence : champ « licences ou e-mails » (joueur)
+function nexusFormEvenement({ golfs = {}, ev = null, joueurs = null, coches = [], parLicence = false, titreForm = "" } = {}) {
+  return new Promise((fini) => {
+    const G = Object.values(golfs).sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
+    const g0 = ev?.golf && golfs[ev.golf];
+    const tours = ev?.nb_tours || 1, types = Object.entries(NX_TYPES_EV).filter(([k]) => k !== "rencontre" || ev?.type === "rencontre");
+    const f = document.createElement("div"); f.className = "nx-ev-fond";
+    f.innerHTML = `<form class="nx-ev-boite" role="dialog" aria-modal="true" aria-labelledby="nx-ev-t" autocomplete="off">
+      <h2 id="nx-ev-t">${esc(titreForm || (ev ? "Modifier l'événement" : "Nouvel événement"))}</h2>
+      <div class="nx-ev-grille">
+        <label class="nx-ev-large">Nom <input id="nx-ev-nom" required maxlength="120" value="${esc(ev?.nom || "")}" placeholder="ex. Partie du dimanche, Trophée CD34"></label>
+        <label>Type <select id="nx-ev-type">${types.map(([k, v]) => `<option value="${k}" ${k === (ev?.type || (joueurs ? "competition" : "amicale")) ? "selected" : ""}>${esc(v)}</option>`).join("")}</select></label>
+        <label>Date <input id="nx-ev-jour" type="date" required value="${esc(ev?.debut || "")}"></label>
+        <label>Heure de départ <input id="nx-ev-heure" type="time" value="${esc((ev?.heure || "").slice(0, 5))}"></label>
+        <label>Nombre de tours <select id="nx-ev-tours">${[1, 2, 3, 4].map((n) => `<option ${n === tours ? "selected" : ""}>${n}</option>`).join("")}</select></label>
+        <label class="nx-ev-large">Golf <input id="nx-ev-golf" list="nx-ev-golfs" required value="${esc(g0 ? nxLibGolf(g0) : ev?.golf_nom || "")}" placeholder="Tape le nom ou la ville du golf"><datalist id="nx-ev-golfs">${G.map((g) => `<option value="${esc(nxLibGolf(g))}">`).join("")}</datalist></label>
+        <label>Parcours <select id="nx-ev-parcours"></select></label>
+        <label>Marques de départ <select id="nx-ev-repere"></select></label>
+        <label class="nx-ev-large">Note <input id="nx-ev-note" maxlength="500" value="${esc(ev?.note || "")}" placeholder="ex. rendez-vous 9 h au practice (facultatif)"></label>
+      </div>
+      ${joueurs ? `<fieldset class="nx-ev-inv"><legend>${ev ? "Inviter d'autres joueurs" : "Invités"}</legend>
+        <div class="nx-ev-inv-tete"><input type="search" id="nx-ev-q" placeholder="Chercher un joueur…" aria-label="Chercher un joueur"><button type="button" class="lien" id="nx-ev-tout">Tout cocher</button></div>
+        <div class="nx-ev-liste" id="nx-ev-liste">${joueurs.length ? joueurs.map((j) => `<label data-nom="${esc(plier(j.nom + " " + (j.info || "")))}"><input type="checkbox" value="${esc(j.id)}" ${coches.includes(j.id) ? "checked" : ""}> ${esc(j.nom)}${j.info ? ` <small>${esc(j.info)}</small>` : ""}</label>`).join("") : `<p class="meta">Aucun joueur suivi.</p>`}</div></fieldset>` : ""}
+      ${parLicence ? `<fieldset class="nx-ev-inv"><legend>${ev ? "Inviter d'autres joueurs" : "Invités"}</legend>
+        <textarea id="nx-ev-autres" rows="3" placeholder="Licence ffgolf ou e-mail de chaque invité, un par ligne"></textarea>
+        <p class="meta">Seuls les joueurs qui ont déjà un compte GolfNexus peuvent être invités. Chacun accepte l'invitation dans sa Saison.</p></fieldset>` : ""}
+      <p class="nx-ev-msg" id="nx-ev-msg" role="alert"></p>
+      <div class="nx-ev-pied"><button type="button" class="btn" id="nx-ev-annuler">Annuler</button><button type="submit" class="btn plein">${ev ? "Enregistrer" : "Créer l'événement"}</button></div></form>`;
+    document.body.append(f);
+    const $f = (id) => f.querySelector("#" + id);
+    const golfChoisi = () => { const v = $f("nx-ev-golf").value.trim().toLowerCase(); return G.find((g) => nxLibGolf(g).toLowerCase() === v || g.nom.toLowerCase() === v) || null; };
+    const majParcours = (garder) => {
+      const g = golfChoisi(), P = g ? g.parcours || [] : [];
+      $f("nx-ev-parcours").innerHTML = P.length ? P.map((p) => `<option value="${esc(p.code)}" ${p.code === garder ? "selected" : ""}>${esc(p.nom)} · ${p.trous} trous${p.par ? " · par " + p.par : ""}</option>`).join("") : `<option value="">${g ? "parcours inconnu" : "choisis d'abord le golf"}</option>`;
+      majReperes(ev?.repere);
+    };
+    const majReperes = (garder) => {
+      const g = golfChoisi(), p = g && (g.parcours || []).find((x) => x.code === $f("nx-ev-parcours").value), R = p ? p.reperes || [] : [];
+      $f("nx-ev-repere").innerHTML = `<option value="">—</option>` + R.map((r) => `<option value="${esc(r.couleur)}" ${r.couleur === garder ? "selected" : ""}>${esc(r.couleur)}${r.distance ? " · " + r.distance + " m" : ""}</option>`).join("");
+    };
+    majParcours(ev?.parcours);
+    $f("nx-ev-golf").addEventListener("change", () => majParcours());
+    $f("nx-ev-golf").addEventListener("input", () => { if (golfChoisi()) majParcours(); });
+    $f("nx-ev-parcours").addEventListener("change", () => majReperes());
+    $f("nx-ev-q")?.addEventListener("input", (e) => { const q = plier(e.target.value); for (const l of f.querySelectorAll("#nx-ev-liste label")) l.hidden = !!q && !l.dataset.nom.includes(q); });
+    $f("nx-ev-tout")?.addEventListener("click", (e) => {
+      const B = [...f.querySelectorAll("#nx-ev-liste label:not([hidden]) input")], tous = B.every((b) => b.checked);
+      for (const b of B) b.checked = !tous; e.target.textContent = tous ? "Tout cocher" : "Tout décocher";
+    });
+    const fermer = (v) => { f.remove(); document.removeEventListener("keydown", touche); fini(v); };
+    const touche = (e) => { if (e.key === "Escape") fermer(null); };
+    document.addEventListener("keydown", touche);
+    $f("nx-ev-annuler").addEventListener("click", () => fermer(null));
+    f.addEventListener("click", (e) => { if (e.target === f) fermer(null); });
+    f.querySelector("form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const g = golfChoisi(); if (!g) { $f("nx-ev-msg").textContent = "Choisis le golf dans la liste proposée."; $f("nx-ev-golf").focus(); return; }
+      const p = (g.parcours || []).find((x) => x.code === $f("nx-ev-parcours").value), n = +$f("nx-ev-tours").value, jour = $f("nx-ev-jour").value;
+      const champs = { nom: $f("nx-ev-nom").value.trim(), type: $f("nx-ev-type").value, debut: jour, fin: n > 1 ? nxDatePlus(jour, n - 1) : null, nb_tours: n,
+        heure: $f("nx-ev-heure").value || null, golf: g.slug, golf_nom: g.nom, parcours: p?.code || null, parcours_nom: p?.nom || null,
+        repere: $f("nx-ev-repere").value || null, note: $f("nx-ev-note").value.trim() || null };
+      const J = [...f.querySelectorAll("#nx-ev-liste input:checked")].map((b) => ({ id: b.value, nom: (joueurs || []).find((x) => x.id === b.value)?.nom || "joueur" }));
+      const autres = ($f("nx-ev-autres")?.value || "").split(/[\n,;]+/).map((x) => x.trim()).filter(Boolean);
+      fermer({ champs, joueurs: J, autres });
+    });
+    $f("nx-ev-nom").focus();
+  });
+}
+// crée (ou modifie) l'événement puis envoie les invitations ; renvoie { id, erreurs: ["qui : pourquoi"] }
+async function nexusEnregistrerEvenement({ ev = null, champs, structure_id = null, joueurs = [], autres = [], moi = null }) {
+  let id = ev?.id;
+  if (id) { const { error } = await sb.from("club_evenements").update(champs).eq("id", id); if (error) throw error; }
+  else {
+    const { data, error } = await sb.from("club_evenements").insert({ ...champs, structure_id }).select("id").single();
+    if (error) throw error; id = data.id;
+  }
+  const erreurs = [];
+  const inv = async (args, lib) => { const { error } = await sb.rpc("evenement_inviter", { ev: id, ...args }); if (error) erreurs.push(`${lib} : ${nxErreurEv(error)}`); };
+  if (moi && !ev) await inv({ p_joueur: moi }, "toi");
+  for (const j of joueurs) await inv({ p_joueur: j.id }, j.nom);
+  for (const a of autres) await inv(a.includes("@") ? { p_email: a } : { p_licence: a }, a);
+  return { id, erreurs };
+}
+// annuler (cartes et stats gardées) ; supprimer seulement s'il n'y a encore aucune carte
+async function nexusAnnulerEvenement(ev) {
+  const { data: d, error: e1 } = await sb.from("club_evenements").delete().eq("id", ev.id).select("id");
+  if (!e1 && d?.length) return "supprime";
+  const { error } = await sb.from("club_evenements").update({ statut: "annule" }).eq("id", ev.id);
+  if (error) throw error;
+  return "annule";
+}

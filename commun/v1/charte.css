@@ -240,3 +240,24 @@ body.reprise #accueil::after { content: ""; position: absolute; left: 50%; top: 
 .nx-vue-pop li small { color: var(--doux, #6b6b6b); font-weight: 500; }
 .nx-vue-pop li[aria-selected="true"], .nx-vue-pop li:hover { background: var(--sauge-pale, #e8f0e6); }
 .nx-vue-pop li.vide { color: var(--doux, #6b6b6b); cursor: default; font-weight: 500; }
+
+/* ---------------------------------------------------------------- formulaire d'événement (Saison, Club — 11/11) */
+.nx-ev-fond { position: fixed; inset: 0; z-index: 1500; background: rgba(10, 20, 14, .45); display: grid; place-items: center; padding: 16px; overflow-y: auto; }
+.nx-ev-boite { background: var(--carte); color: var(--texte); border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,.3); width: min(640px, 100%); padding: 20px 22px; max-height: calc(100vh - 32px); overflow-y: auto; box-sizing: border-box; }
+.nx-ev-boite h2 { margin: 0 0 14px; color: var(--vert); font-size: 20px; font-weight: 800; }
+.nx-ev-grille { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; }
+.nx-ev-grille label, .nx-ev-inv { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--doux); }
+.nx-ev-large { grid-column: 1 / -1; }
+.nx-ev-boite input, .nx-ev-boite select, .nx-ev-boite textarea { font: inherit; font-size: 14px; font-weight: 400; color: var(--texte); background: var(--fond); border: 1px solid var(--bord); border-radius: 8px; padding: 8px 10px; min-width: 0; box-sizing: border-box; width: 100%; }
+.nx-ev-boite input:focus-visible, .nx-ev-boite select:focus-visible, .nx-ev-boite textarea:focus-visible { outline: 2px solid var(--vert-2); outline-offset: 1px; }
+.nx-ev-inv { border: 1px solid var(--bord); border-radius: 12px; padding: 10px 12px; margin: 14px 0 0; }
+.nx-ev-inv legend { padding: 0 6px; color: var(--texte); font-weight: 700; }
+.nx-ev-inv-tete { display: flex; gap: 10px; align-items: center; }
+.nx-ev-liste { max-height: 200px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 2px 10px; margin-top: 6px; }
+.nx-ev-liste label { flex-direction: row; align-items: center; gap: 6px; font-weight: 500; color: var(--texte); font-size: 13px; padding: 3px 0; }
+.nx-ev-liste label[hidden] { display: none; }
+.nx-ev-liste input { width: auto; }
+.nx-ev-liste small { color: var(--doux); }
+.nx-ev-msg { color: #b91c1c; font-size: 13px; min-height: 18px; margin: 10px 0 0; }
+.nx-ev-pied { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+@media (max-width: 520px) { .nx-ev-grille { grid-template-columns: 1fr; } .nx-ev-boite { padding: 16px; } }
