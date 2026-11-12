@@ -305,7 +305,7 @@ function rendreSaisie() {
     <div class="sa-trous" role="tablist" aria-label="Trous">${p.trous.map((x, k) => `<button type="button" class="${classeScore(x)}${k === etat.i ? " actif" : ""}" data-aller="${k}" aria-label="Trou ${x.t}">${x.t}<small>${x.score || ""}</small></button>`).join("")}</div>
     <div class="bloc sa-trou">
       <div class="sa-num"><span>Trou <b>${t.t}</b></span><span class="sa-par">Par <b>${t.par}</b></span></div>
-      <h3>Score</h3>${t.m ? choix("score", scores, nomScore, false).replace(/<button /g, "<button disabled ") + `<p class="sa-marqueur">🔒 Score saisi par le marqueur${(() => { const d = new Date(t.m); return isNaN(d) ? "" : " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }); })()} : complète seulement tes détails (putts, mise en jeu…).</p>` : choix("score", scores, nomScore, true)}
+      <h3>Score</h3>${choix("score", scores, nomScore, true)}${t.m ? `<p class="sa-marqueur">Score saisi par le marqueur${(() => { const d = new Date(t.m); return isNaN(d) ? "" : " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }); })()} : corrige-le seulement en cas d'erreur.</p>` : ""}
       ${t.score && (t.putts || 0) + (t.pen || 0) > t.score - 1 ? `<p class="sa-alerte">⚠ ${t.putts || 0} putt${t.putts > 1 ? "s" : ""}${t.pen ? ` + ${t.pen} pénalité${t.pen > 1 ? "s" : ""}` : ""} pour un score de ${t.score} : il manque au moins le coup de départ. Vérifie le score ou les putts.</p>` : ""}
       <div class="sa-ligne"><div><h3>Putts</h3>${choix("putts", [0, 1, 2, 3, 4], undefined, true)}</div><div><h3>Pénalités</h3>${choix("pen", [0, 1, 2, 3], undefined, true)}</div></div>
       ${t.par > 3 ? `<h3>Mise en jeu : où a fini ton départ ?</h3>${terrainFw(t.fw)}` : ""}
@@ -321,7 +321,6 @@ function rendreSaisie() {
 $("sa-contenu").addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (!b) return;
   const p = etat.partie, t = p.trous[etat.i];
-  if (t.m && (b.dataset.cle === "score" || b.dataset.plus === "score")) return;   // score du marqueur : verrouillé (écran seulement, V1)
   if (b.dataset.cle) {
     const v = b.dataset.cle === "bunker" ? b.dataset.val === "true" : b.dataset.cle === "fw" ? b.dataset.val : +b.dataset.val;
     t[b.dataset.cle] = t[b.dataset.cle] === v && b.dataset.cle !== "score" ? null : v;   // second clic : on efface (sauf le score)
@@ -352,15 +351,8 @@ function sauver(tout = false) {
   lsSet("carte-brouillon", JSON.stringify(p));
   const ecrire = async () => {
     if (marqueurEnCours(p)) return;   // le marqueur saisit : la base refuserait de toute façon
-    // carte d'un événement : le marqueur a pu saisir des scores entre-temps (lien marqueur) ; on reprend ses scores
-    // (trous marqués « m ») avant d'écrire, pour ne jamais les écraser avec une version ancienne
-    if (String(p.tournoi_id || "").startsWith("club:")) {
-      const { data: srv } = await sb.from("carte_parties").select("trous").eq("id", p.id).maybeSingle();
-      for (const ts of srv?.trous || []) {
-        const tl = p.trous.find((x) => x.t === ts.t);
-        if (tl && ts.m && (!tl.m || ts.m > tl.m)) { tl.score = ts.score; tl.m = ts.m; }
-      }
-    }
+    // (plus de fusion des scores du marqueur : pendant sa saisie la base refuse l'écriture du joueur, cf. plus bas ;
+    // après la fin de partie, le joueur corrige librement)
     // .select : on vérifie qu'une ligne a vraiment été écrite (session expirée → 0 ligne, sans erreur : faux « enregistré »)
     let { data, error } = await sb.from("carte_parties").update({ trous: p.trous, terminee: p.terminee, modifie_le: p.modifie_le }).eq("id", p.id).select("id");
     if (!error && !data?.length) {   // session à rafraîchir, puis un nouvel essai
@@ -406,7 +398,7 @@ function rendreVoir0() {
     ${etat.partage ? `<div class="pt-direct ${p.terminee ? "fini" : ""}"><span>${p.terminee ? "✓ Partie terminée" : "● En direct"}${p.prenom ? ` · la carte de <b>${esc(p.prenom)}</b>` : ""}</span>
       <small>${p.terminee ? "" : "mise à jour automatique · "}dernière saisie ${new Date(p.modifie_le).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</small></div>` : ""}
     <div class="s-tete"><h2>${esc(titre(p.golf_nom || p.golf))}</h2><span class="meta">${esc(p.parcours_nom || "")}${p.repere ? " · " + esc(p.repere) : ""} · ${dateLongue(p.jour)} · ${CONTEXTES[p.contexte] || ""}</span></div>
-    ${!etat.partage && !lecture && carteMarqueur(p) ? (p.terminee ? `<div class="bloc vo-marqueur ok">✓ <b>Le marqueur a terminé la partie.</b> Ses scores font foi ; touche « Compléter mes stats » pour ajouter tes putts, ta mise en jeu, tes pénalités et tes bunkers.</div>`
+    ${!etat.partage && !lecture && carteMarqueur(p) ? (p.terminee ? `<div class="bloc vo-marqueur ok">✓ <b>Le marqueur a terminé la partie.</b> Touche « Compléter mes stats » pour ajouter tes putts, ta mise en jeu, tes pénalités et tes bunkers (et corriger un score en cas d'erreur).</div>`
       : `<div class="bloc vo-marqueur">🔒 <b>Le marqueur saisit ta carte.</b> Tu pourras la compléter (putts, mise en jeu…) quand il aura terminé la partie. <button type="button" class="lien" data-recharger-carte>Actualiser</button></div>`) : ""}
     <div class="st-tuiles">${tuileSt(b.n ? b.score : "—", "score", b.n ? ecartPar(b.ecart) + (b.n < p.nb_trous ? ` sur ${b.n} trous` : "") : "")}${tuileSt(b.putts ?? "—", "putts")}${tuileSt(b.fairways, "fairways touchés")}${tuileSt(b.gir, "greens en régulation")}${tuileSt(b.pen, "pénalités")}</div>
     ${b.n ? `<button type="button" class="vo-stats" data-stats-tour><span aria-hidden="true">📊</span> <b>Stats du tour</b><small>${etat.partage ? "répartition, putting, mises en jeu…" : `comparées à ta moyenne${p.tournoi_id ? " · tournoi tour par tour" : ""}`}</small></button>` : ""}
@@ -415,7 +407,7 @@ function rendreVoir0() {
     ${p.contexte === "tournoi" && p.tournoi_id && !String(p.tournoi_id).startsWith("club:") && !etat.partage ? `<div id="vo-ffgolf"></div>` : ""}
     ${p.note ? `<div class="bloc"><b>Note</b> <span>${esc(p.note)}</span></div>` : ""}
     ${etat.partage ? `<p class="meta pt-pied">Carte partagée par lien (lecture seule) · <a href="../">GolfNexus</a></p>` : `<div class="vo-actions"><button type="button" class="btn" data-ecran="liste">← ${etat.vue ? "Cartes du joueur" : "Mes cartes"}</button>
-      ${lecture ? `<span class="meta">Lecture seule</span>` : marqueurEnCours(p) ? `<span class="meta">🔒 Le marqueur saisit ta carte</span>` : `<button type="button" class="btn plein" data-partager>🔗 Partager en direct</button><button type="button" class="btn" data-modifier>${carteMarqueur(p) ? "Compléter mes stats" : "Modifier la saisie"}</button>${carteMarqueur(p) ? "" : `<button type="button" class="lien vo-suppr" data-supprimer>Supprimer la partie</button>`}`}</div>`}`;
+      ${lecture ? `<span class="meta">Lecture seule</span>` : marqueurEnCours(p) ? `<span class="meta">🔒 Le marqueur saisit ta carte</span>` : `<button type="button" class="btn plein" data-partager>🔗 Partager en direct</button><button type="button" class="btn" data-modifier>${carteMarqueur(p) ? "Compléter mes stats" : "Modifier la saisie"}</button><button type="button" class="lien vo-suppr" data-supprimer>Supprimer la partie</button>`}</div>`}`;
 }
 // Contrôle ffgolf : le trou par trou relevé par la ffgolf (resultats_perso, après le tournoi) comparé à la carte.
 // La saisie reste la source immédiate (le joueur a besoin de ses chiffres entre deux tours) ; ici on signale seulement
@@ -860,7 +852,7 @@ function rendreMarqueur() {
           <div><h3>Pénalités</h3><div class="sa-choix">${[0, 1, 2, 3].map((v) => bouton("pen", j.cle, v, v, t.pen === v)).join("")}</div></div>
           <div><h3>Bunker</h3><div class="sa-choix">${bouton("bunker", j.cle, false, "Non", t.bunker === false)}${bouton("bunker", j.cle, true, "Oui", t.bunker === true)}</div></div>
           ${P.par > 3 ? `<div class="mq-fw" data-mq-fw="${esc(j.cle)}"><h3>Mise en jeu</h3>${terrainFw(t.fw)}</div>` : ""}</div>` : ""}</div>`; }).join("")}</div>
-    <div class="mq-fin">${D.fini ? `<p><b>✓ Partie terminée.</b> Les joueurs peuvent maintenant compléter leurs stats (putts, mise en jeu…). Les scores sont verrouillés.</p><button type="button" class="lien" data-mq-terminer="0">Rouvrir pour corriger un score</button>`
+    <div class="mq-fin">${D.fini ? `<p><b>✓ Partie terminée.</b> Les joueurs peuvent maintenant compléter leurs stats (putts, mise en jeu…) et corriger un score en cas d'erreur.</p><button type="button" class="lien" data-mq-terminer="0">Rouvrir pour corriger un score</button>`
       : `<button type="button" class="btn ${D.ordre.every(fait) ? "plein" : ""}" data-mq-terminer="1">✓ Terminer la partie</button><small class="meta">Tant que la partie n'est pas terminée, les joueurs ne peuvent pas modifier leur carte.</small>`}</div>
     <div class="sa-nav mq-nav"><button type="button" class="btn" data-mq-pas="-1" ${mq.i === 0 ? "disabled" : ""}>← Trou ${mq.i ? D.pars[D.ordre[mq.i - 1]].t : ""}</button>
       ${mq.i < D.ordre.length - 1 ? `<button type="button" class="btn plein" data-mq-pas="1">Trou ${D.pars[D.ordre[mq.i + 1]].t} →</button>` : `<span class="meta">Dernier trou</span>`}</div>
@@ -892,7 +884,7 @@ async function terminerMarqueur(fini) {
   if (fini) {
     const manque = D.joueurs.reduce((s, j) => s + D.ordre.filter((kk) => !j.trous[kk]?.score).length, 0);
     if (!confirm(manque ? `Il manque ${manque} score${manque > 1 ? "s" : ""}. Terminer quand même ? Les joueurs pourront alors compléter leurs stats.`
-      : "Terminer la partie ? Les scores seront verrouillés et chaque joueur pourra compléter ses stats.")) return;
+      : "Terminer la partie ? Chaque joueur pourra alors compléter ses stats.")) return;
   }
   if (mq.envoi.size) { clearTimeout(mq.minuteur); await viderMarqueur(); }
   const { error } = await sb.rpc("marqueur_terminer", { j: mq.jeton, tour: D.tour, fini });
