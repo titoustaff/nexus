@@ -301,8 +301,11 @@ const CPC = (() => {
     const txt = (gg, x, y, v, taille, coul) => { const e = el("text", { "text-anchor": "middle", x, y, "font-size": taille, "font-weight": 800, fill: coul, "font-family": "inherit" }); e.textContent = v; gg.append(e); };
     W.coups.forEach((c, k) => {
       const a = Rp.rot(O[k]), q = Rp.rot(c.p), hl = c.pos === "Hors limites";
-      svg.append(el("line", { x1: a[0], y1: a[1], x2: q[0], y2: q[1], stroke: hl ? "#ff6b6b" : "#ffd23f", "stroke-width": 3, "stroke-linecap": "round", "stroke-dasharray": hl ? "8 6" : "none" }));
-      etiquettes.push([(a[0] + q[0]) / 2, (a[1] + q[1]) / 2, Math.round(metres(G, O[k], c.p)) + " m"]);
+      // trajectoire en arc (vue du dessus) : courbure proportionnelle à la longueur, nulle pour un putt / coup très court
+      const dx = q[0] - a[0], dy = q[1] - a[1], L = Math.hypot(dx, dy) || 1, f = L < 30 ? 0 : Math.min(L * .14, 46);
+      const cx = (a[0] + q[0]) / 2 + dy / L * f, cy = (a[1] + q[1]) / 2 - dx / L * f;
+      svg.append(el("path", { d: `M${a[0]},${a[1]} Q${cx},${cy} ${q[0]},${q[1]}`, fill: "none", stroke: hl ? "#ff6b6b" : "#ffd23f", "stroke-width": 3, "stroke-linecap": "round", "stroke-dasharray": hl ? "8 6" : "none" }));
+      etiquettes.push([(a[0] + 2 * cx + q[0]) / 4, (a[1] + 2 * cy + q[1]) / 4, Math.round(metres(G, O[k], c.p)) + " m"]);
       if (c.pos === "Zone à pénalité" && c.drop) { const r = Rp.rot(c.drop); svg.append(el("line", { x1: q[0], y1: q[1], x2: r[0], y2: r[1], stroke: "#8fd3ff", "stroke-width": 2.5, "stroke-dasharray": "4 5" })); }
     });
     for (const [x, y, v] of etiquettes) {
