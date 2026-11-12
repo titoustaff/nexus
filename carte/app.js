@@ -643,6 +643,19 @@ async function chargerDirect() {
   return { titre: t ? titre(t.nom) : "Tournoi ffgolf", sous: [t && titre(t.golf_nom || ""), t?.debut && dateLongue(t.debut)].filter(Boolean).join(" · "), nbTours, lignes, debut: t?.debut, fin: t?.fin,
     note: "Tes joueurs suivis qui saisissent leur carte de ce tournoi dans Carte." };
 }
+// Mise à jour sans tout redessiner : seuls les blocs qui ont changé sont remplacés (le classement, l'heure de dernière
+// saisie) ; le titre, le lien public et les cases restent en place, le défilement du tableau est gardé.
+function majBlocs(box, html) {
+  const neuf = document.createElement("div"); neuf.innerHTML = html;
+  const A = [...box.children], N = [...neuf.children];
+  if (A.length !== N.length || A.some((x, i) => x.tagName !== N[i].tagName || x.className.split(" ")[0] !== N[i].className.split(" ")[0])) { box.replaceChildren(...N); return; }
+  N.forEach((n, i) => {
+    if (A[i].outerHTML === n.outerHTML) return;
+    const g = [...A[i].querySelectorAll(".defile")].map((d) => d.scrollLeft);
+    A[i].replaceWith(n);
+    n.querySelectorAll(".defile").forEach((d, k) => { if (g[k]) d.scrollLeft = g[k]; });
+  });
+}
 async function rendreDirect() {
   const box = $("di-contenu");
   // mise à jour automatique dès l'ouverture, même si le premier chargement échoue ou ne trouve encore rien
@@ -677,7 +690,7 @@ async function rendreDirect() {
       ${ouvert ? `<tr class="di-detail"><td colspan="${5 + (N > 1 ? N : 0)}">${j.cartes.length ? j.cartes.map((c) => `<div class="di-carte"><p class="meta">${N > 1 ? `Tour ${c.tour || 1} · ` : ""}${esc(c.parcours_nom || "")}${c.repere ? " · " + esc(c.repere) : ""} · ${c.terminee ? "terminée" : `${c.b.n}/${c.nb_trous} trous`}</p>${miniCarte(c, !di.publicJeton || D.complet)}</div>`).join("") : `<p class="meta">Pas encore de carte : le joueur la commence dans Carte (« Ta carte t'attend »).</p>`}</td></tr>` : ""}`;
   }).join("");
   const annule = D.statut === "annule";
-  box.innerHTML = `
+  majBlocs(box, `
     <div class="pt-direct ${!enCours ? "fini" : ""}"><span>${annule ? "✕ Événement annulé" : enCours ? "● En direct" : fini ? "✓ Terminé" : "En attente des premières cartes"}</span>
       <small>${enCours ? "mise à jour automatique · " : ""}${derniere ? "dernière saisie " + new Date(derniere).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : ""}</small></div>
     <div class="s-tete"><h2>${esc(D.titre)}</h2><span class="meta">${esc(D.sous)}${N > 1 ? ` · ${N} tours` : ""}</span></div>
@@ -689,7 +702,7 @@ async function rendreDirect() {
       <div class="di-public-b">${D.jeton ? `<input id="di-lien" readonly value="${esc(location.origin + location.pathname + "#evtdirect=" + D.jeton)}" aria-label="Lien public"><button type="button" class="btn plein" id="di-copier">Copier</button><button type="button" class="lien vo-suppr" id="di-couper">Couper le lien</button>`
         : `<button type="button" class="btn" id="di-activer">🔗 Créer le lien public</button>`}</div>
       <label class="di-option"><input type="checkbox" id="di-complet" ${D.complet ? "checked" : ""}> Carte complète sur le lien public <small class="meta">(sinon : score et putts seulement ; fairways, greens en régulation, pénalités et bunkers restent réservés aux coachs et aux participants)</small></label></div>` : ""}
-    ${di.publicJeton ? `<p class="meta pt-pied">Classement partagé par l'organisateur (lecture seule) · <a href="../">GolfNexus</a></p>` : `<div class="vo-actions"><button type="button" class="btn" data-ecran="lives">← Tous les directs</button><button type="button" class="btn" data-ecran="liste">← Mes cartes</button></div>`}`;
+    ${di.publicJeton ? `<p class="meta pt-pied">Classement partagé par l'organisateur (lecture seule) · <a href="../">GolfNexus</a></p>` : `<div class="vo-actions"><button type="button" class="btn" data-ecran="lives">← Tous les directs</button><button type="button" class="btn" data-ecran="liste">← Mes cartes</button></div>`}`);
   if (annule) arreterDirect();
 }
 $("di-contenu").addEventListener("click", async (e) => {
@@ -747,12 +760,12 @@ async function rendreLives() {
   try { L = await chargerLives(); } catch (e) { box.innerHTML = `<div class="bloc vide">Lecture impossible : ${esc(e.message || String(e))}</div>`; return; }
   majBadgeLives(L);
   const heure = (d) => new Date(d).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-  box.innerHTML = L.length ? `<div class="lv-liste">${L.map((x) => `<button type="button" class="lv-ligne${x.enCours ? " live" : ""}" ${x.evt ? `data-lv-evt="${esc(x.evt)}"` : `data-lv-tournoi="${esc(x.tournoi)}"`}>
+  majBlocs(box, L.length ? `<div class="lv-liste">${L.map((x) => `<button type="button" class="lv-ligne${x.enCours ? " live" : ""}" ${x.evt ? `data-lv-evt="${esc(x.evt)}"` : `data-lv-tournoi="${esc(x.tournoi)}"`}>
       <span class="lv-etat">${x.enCours ? "● En direct" : x.maj ? "Terminé ou en pause" : "Pas encore commencé"}</span>
       <b>${esc(x.nom)}</b><small>${esc(x.quoi)}${x.lieu ? " · " + esc(x.lieu) : ""}</small>
       <small>${x.saisissent} joueur${x.saisissent > 1 ? "s" : ""} avec une carte${x.inscrits != null ? ` sur ${x.inscrits}` : ""}${x.maj ? ` · dernière saisie ${heure(x.maj)}` : ""}</small>
       <span class="lv-aller">Ouvrir le direct →</span></button>`).join("")}</div>`
-    : `<div class="bloc vide"><p><b>Rien ne se joue aujourd'hui.</b></p><p class="meta">Ici s'affichent les événements du jour${(Compte.joueurs || []).length ? " et les tournois ffgolf où tes joueurs saisissent leur carte" : " auxquels tu participes"}.</p></div>`;
+    : `<div class="bloc vide"><p><b>Rien ne se joue aujourd'hui.</b></p><p class="meta">Ici s'affichent les événements du jour${(Compte.joueurs || []).length ? " et les tournois ffgolf où tes joueurs saisissent leur carte" : " auxquels tu participes"}.</p></div>`);
 }
 $("lv-contenu").addEventListener("click", (e) => {
   const b = e.target.closest(".lv-ligne"); if (!b) return;
