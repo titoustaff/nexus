@@ -279,11 +279,11 @@ function initCarte() {
     },
   }).addTo(carte);
   coucheRef = L.layerGroup().addTo(carte);
-  // Vue golfs : la liste suit la zone affichée (sauf pendant une recherche, qui déplace elle-même la carte).
+  // La liste (golfs ou tournois) suit la zone affichée, sauf pendant une recherche, qui déplace elle-même la carte.
   let minuteur;
   carte.on("moveend", () => {
-    if (etat.vue !== "golfs" || plier($("l-cherche").value)) return;
-    clearTimeout(minuteur); minuteur = setTimeout(listeGolfs, 150);
+    if (plier($("l-cherche").value)) return;
+    clearTimeout(minuteur); minuteur = setTimeout(() => (etat.vue === "golfs" ? listeGolfs : listeTournois)(), 150);
   });
 }
 // Carte centrée sur les pays actifs : ceux qui ont des tournois dans les données ET un contour (site/pays.json).
@@ -350,8 +350,6 @@ function rendre() {
   enBref();
   if (etat.vue === "golfs") return rendreGolfs();
   const liste = filtrer();
-  $("compte").textContent = `${liste.length} tournoi${liste.length > 1 ? "s" : ""}` +
-    (etat.ref ? ` · distances depuis ${esc(etat.ref.nom)}` : "");
   $("legende").innerHTML = [["--vert-2", "à venir"], ["--jaune", "inscriptions ouvertes", "var(--jaune-trait)"], ["--passe", "passé"]]
     .map(([v, l, b]) => `<span><span class="pastille" style="background:var(${v})${b ? ";border-color:" + b : ""}"></span>${l}</span>`).join("");
 
@@ -370,7 +368,20 @@ function rendre() {
     m.addTo(couche); etat.marqueurs.set(t.id, m); pts.push([p.lat, p.lon]);
   }
   refEtCadre(pts);
-
+  etat.tournoisListe = liste;
+  listeTournois();
+  $("l-prochain-lib").hidden = false; $("l-place-lib").hidden = false;
+}
+// Liste des tournois limitée à la zone affichée : rechargée à chaque zoom / déplacement de la carte.
+function listeTournois() {
+  const tous = etat.tournoisListe || [];
+  const b = carte.getBounds();
+  const placables = tous.filter((t) => posDe(t));
+  const vus = placables.filter((t) => { const p = posDe(t); return b.contains([p.lat, p.lon]); });
+  const zoome = vus.length < placables.length;
+  const liste = zoome ? vus : tous;                      // vue d'ensemble : on garde aussi les tournois sans position
+  $("compte").textContent = (zoome ? `${liste.length} tournoi${liste.length > 1 ? "s" : ""} dans la zone affichée (sur ${tous.length})`
+    : `${tous.length} tournoi${tous.length > 1 ? "s" : ""}`) + (etat.ref ? ` · distances depuis ${esc(etat.ref.nom)}` : "");
   $("liste").innerHTML = liste.length ? liste.map((t) => {
     const ouvert = t.cloture && t.cloture >= AUJ && t.fin >= AUJ;
     return `<li class="item ${t.fin < AUJ ? "passe" : ""}" tabindex="0" data-id="${esc(t.id)}" data-q="${esc(plier(t.nom + " " + t.golf_nom + " " + (t.ville || "")))}">${etoile(t.id)}
@@ -379,11 +390,10 @@ function rendre() {
         <div class="meta">${esc(titre(t.golf_nom))} · ${esc(t.departement || titre(t.ville))}${t._km != null ? ` · <b>${Math.round(t._km)} km</b>` : ""}</div>
         <div class="meta">${t.sexe !== "Mixte" ? `<span class="tag">${esc(t.sexe)}</span>` : ""}<span class="tag circuit c-${circuitDe(t)}">${esc(circuitLib(t))}</span><span class="tag">${t.nb_tours} tours</span>${t.index_max_h ? `<span class="tag">idx H ≤ ${t.index_max_h}</span>` : ""}${ouvert ? `<span class="tag ok">inscriptions jusqu'au ${fmtDate(t.cloture)}</span>` : ""}${t.resultats ? `<span class="tag">résultats</span>` : ""}${tagPlace(t)}</div>
       </div></li>`;
-  }).join("") : `<li class="vide">Aucun tournoi pour ces critères.</li>`;
+  }).join("") : `<li class="vide">${tous.length ? "Aucun tournoi dans la zone affichée : dézoomez la carte." : "Aucun tournoi pour ces critères."}</li>`;
   // repère « aujourd'hui » avant le premier tournoi non terminé (s'il y a du passé au-dessus)
   const i = liste.findIndex((t) => t.fin >= AUJ);
   if (i > 0) $("liste").children[i].insertAdjacentHTML("beforebegin", `<li class="auj" aria-hidden="true"><span>Aujourd'hui</span></li>`);
-  $("l-prochain-lib").hidden = false; $("l-place-lib").hidden = false;
   allerAuProchain(false);
   chercher(false);
 }
