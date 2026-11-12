@@ -75,6 +75,15 @@ async function charger() {
     const i = etat.golfInfo[t.golf] ||= { ligue: t.ligue, departement: t.departement, pays: t.pays || "France", n: 0 };
     i.n++;
   }
+  // golfs sans tournoi (tout le guide ffgolf, 12/11/2026) : département et ligue déduits du code postal, d'après les golfs
+  // déjà connus du même département (97x : 3 chiffres ; Corse 20 : pris tel quel), pour que filtres et listes les gardent
+  const parCp = {}, cpDe = (cp) => (cp || "").slice(0, cp?.startsWith("97") ? 3 : 2);
+  for (const [slug, i] of Object.entries(etat.golfInfo)) { const k = cpDe(etat.golfs[slug]?.cp); if (k && i.departement) parCp[k] ||= i; }
+  for (const g of Object.values(etat.golfs)) {
+    if (etat.golfInfo[g.slug]) continue;
+    const r = parCp[cpDe(g.cp)];
+    etat.golfInfo[g.slug] = { ligue: r?.ligue, departement: r?.departement, pays: r ? r.pays : "France", n: 0 };
+  }
   if (meta && meta.date) $("maj").textContent = "Données du " + new Date(meta.date).toLocaleDateString("fr-FR");
   initFiltres();
   initCarte();
