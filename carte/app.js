@@ -833,10 +833,10 @@ function rendreMarqueur() {
     <div class="sa-trous mq-trous" role="tablist" aria-label="Trous">${D.ordre.map((kk, n) => `<button type="button" class="${n === mq.i ? "actif" : ""} ${fait(kk) ? "mq-fait" : ""}" data-mq-aller="${n}">${D.pars[kk].t}</button>`).join("")}</div>
     <div class="mq-trou"><span>Trou <b>${P.t}</b></span><span>Par <b>${P.par}</b></span></div>
     <div class="mq-joueurs">${D.joueurs.map((j) => {
-      const t = j.trous[k] || {}, T = tot(j), sc = [P.par - 1, P.par, P.par + 1, P.par + 2].filter((v) => v >= 1);
+      const t = j.trous[k] || {}, T = tot(j), sc = Array.from({ length: P.par + 2 }, (_, i) => i + 1);   // de 1 (trou en un, eagle…) à double bogey ; « + » au-delà
       if (t.score && !sc.includes(t.score)) sc.push(t.score);
       sc.sort((a, b) => a - b);
-      const nomS = (v) => { const d = v - P.par; return d <= -2 ? "eagle" : d === -1 ? "birdie" : d === 0 ? "par" : d === 1 ? "bogey" : d === 2 ? "double" : "+" + d; };
+      const nomS = (v) => { const d = v - P.par; return v === 1 ? "trou en 1" : d <= -3 ? "albatros" : d === -2 ? "eagle" : d === -1 ? "birdie" : d === 0 ? "par" : d === 1 ? "bogey" : d === 2 ? "double" : "+" + d; };
       return `<div class="bloc mq-j"><div class="mq-j-tete"><b>${esc(j.nom)}</b><span class="meta">${T.n ? `${T.s} · ${ecartPar(T.e)} · ${T.n} trou${T.n > 1 ? "s" : ""}` : "pas encore de score"}</span></div>
         <div class="sa-choix mq-scores">${sc.map((v) => bouton("score", j.cle, v, `<b>${v}</b><small>${nomS(v)}</small>`, t.score === v)).join("")}<button type="button" class="sa-plus" data-mq-plus data-mq-j="${esc(j.cle)}" aria-label="Score plus élevé">+</button></div>
         ${mq.complet ? `<div class="mq-details"><div><h3>Putts</h3><div class="sa-choix">${[0, 1, 2, 3, 4].map((v) => bouton("putts", j.cle, v, v, t.putts === v)).join("")}</div></div>
