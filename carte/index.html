@@ -12,6 +12,12 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="../commun/v1/charte.css">
   <link rel="stylesheet" href="style.css">
+  <!-- lien « ? Aide » dans la barre des écrans : même style que Club (club/page/style.css, .vues .vers-module) -->
+  <style>
+    .vues .vers-module { color: #d6e6da; font-weight: 600; font-size: 14px; padding: 6px 14px; border-radius: 999px; text-decoration: none; white-space: nowrap; }
+    .vues .vers-module:hover { color: #fff; background: rgba(255,255,255,.08); }
+    .vues .vers-module:focus-visible { outline: 2px solid var(--jaune); outline-offset: 2px; }
+  </style>
 </head>
 <body class="verrou">
   <script>try { if (localStorage.getItem("gn-auth")) document.body.classList.add("reprise"); } catch { /* */ }</script>   <!-- déjà connecté : écran de chargement (charte.css, nexus.js) -->
@@ -71,6 +77,7 @@
         <button type="button" data-ecran="liste" aria-current="page">Mes cartes</button>
         <button type="button" data-ecran="lives" id="v-lives">📡 En direct <span class="nb" id="v-lives-nb" hidden></span></button>
         <button type="button" data-ecran="sac">🎒 Mon sac</button>
+        <a class="vers-module" href="aide.html" title="Notice de Carte">? Aide</a>
       </nav>
       <div class="b-compte" id="b-compte" aria-live="polite"></div>
     </div>
