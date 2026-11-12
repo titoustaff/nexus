@@ -19,6 +19,8 @@ const CPC = (() => {
     plans: new Map(),     // clé partie → { etat: "chargement" | "ok" | "absent" | "erreur", G: [plan par trou], info }
     travail: new Map(),   // clé partie:trou → coups en pixels locaux (balles, drops, visées)
     sel: null, panneau: null, geste: null,
+    vue: null,            // zoom de la photo { i, x, y, w, h, base: [x, y, w, h] } (la page, elle, ne zoome pas sur la photo)
+    doigts: new Map(), pince: null,
   };
 
   // ---------------------------------------------------------------- projection Web Mercator (zoom 18) ↔ latitude / longitude
@@ -280,7 +282,8 @@ const CPC = (() => {
   function dessiner(i) {
     const svg = $("cpc-svg"); if (!svg) return;
     const W = travail(i), G = W.G, Rp = repere(G), mode = S.mode;
-    svg.setAttribute("viewBox", Rp.view.map((v) => v.toFixed(1)).join(" "));
+    if (!S.vue || S.vue.i !== i) S.vue = { i, x: Rp.view[0], y: Rp.view[1], w: Rp.view[2], h: Rp.view[3], base: Rp.view };
+    appliquerVue();
     svg.replaceChildren();
     const g = el("g", { transform: `rotate(${Rp.deg.toFixed(2)} ${Rp.cx} ${Rp.cy})`, id: "cpc-photo" });
     for (const [tx, ty] of G.tuiles) g.append(el("image", { href: tuile(tx, ty), x: tx * 256 - G.o[0], y: ty * 256 - G.o[1], width: 256.6, height: 256.6, preserveAspectRatio: "none" }));
@@ -368,6 +371,7 @@ const CPC = (() => {
     return `<div class="cpc">
       <p class="cpc-aide" aria-live="polite">${aide(i)}</p>
       <div class="cpc-carte"><svg id="cpc-svg" role="img" aria-label="Photo aérienne du trou ${t.t}, départ en bas, green en haut"></svg>
+        <div class="cpc-zoom"><button type="button" data-cpc-zoom="1.6" aria-label="Rapprocher la photo">+</button><button type="button" data-cpc-zoom="0.625" aria-label="Éloigner la photo">−</button></div>
         <span class="cpc-long">${Math.round(lg)} m</span></div>
       <div class="cpc-outils">${S.mode === "visee" && !fini ? `<button type="button" class="btn" data-cpc-drapeau>🎯 Le drapeau</button>` : ""}<button type="button" class="btn" data-cpc-gps>📍 Ma balle est ici</button><button type="button" class="btn" data-cpc-annuler ${C.length || W.viseEnCours ? "" : "disabled"}>Annuler le dernier coup</button></div>
       ${C.length ? `<ol class="cpc-liste">${lignes}</ol>` : ""}
@@ -442,6 +446,7 @@ const CPC = (() => {
     if (d.aller != null || d.pas != null) { S.sel = null; S.panneau = null; return false; }   // changement de trou : géré par Carte
     if (!actif(i)) return false;
     const W = travail(i), C = W.coups;
+    if (d.cpcZoom != null) { zoomer(+d.cpcZoom); return true; }
     if (d.cpcFermer != null) { S.panneau = null; S.sel = null; rendreSaisie(); return true; }
     if (d.cpcDeplacer != null) { S.sel = +d.cpcDeplacer; S.panneau = null; rendreSaisie(); signaler(`Fais glisser la balle ${S.sel + 1}, ou touche la photo là où elle a fini.`); return true; }
     if (d.cpcSuppr != null) { C.splice(+d.cpcSuppr, 1); S.sel = null; S.panneau = null; majTrou(i); return true; }
@@ -475,16 +480,58 @@ const CPC = (() => {
     if (d.cle && aDesCoups(i) && ["score", "pen", "fw", "bunker"].includes(d.cle)) return true;   // champs calculés
     return false;
   }
+  // zoom de la photo seule (pincer, glisser un doigt, boutons + −) : la page ne zoome pas, le volet garde sa taille
+  function appliquerVue() { const svg = $("cpc-svg"), v = S.vue; if (svg && v) svg.setAttribute("viewBox", [v.x, v.y, v.w, v.h].map((n) => n.toFixed(1)).join(" ")); }
+  function zoomer(f, cx, cy) {   // f > 1 : on rapproche ; (cx, cy) : point fixe, en unités de la photo
+    const v = S.vue; if (!v) return;
+    const [bx, by, bw, bh] = v.base, w = Math.max(bw / 8, Math.min(bw, v.w / f)), k = w / v.w;
+    cx ??= v.x + v.w / 2; cy ??= v.y + v.h / 2;
+    v.x = cx - (cx - v.x) * k; v.y = cy - (cy - v.y) * k; v.w = w; v.h = v.h * k;
+    borner(); appliquerVue();
+  }
+  function borner() {
+    const v = S.vue, [bx, by, bw, bh] = v.base;
+    if (v.w >= bw - 0.5) { v.x = bx; v.y = by; v.w = bw; v.h = bh; return; }
+    v.x = Math.max(bx, Math.min(bx + bw - v.w, v.x)); v.y = Math.max(by, Math.min(by + bh - v.h, v.y));
+  }
+  const zoome = () => S.vue && S.vue.w < S.vue.base[2] - 0.5;
+  const unites = (svg) => S.vue.w / svg.getBoundingClientRect().width;   // unités de photo par pixel d'écran
+  const versVue = (svg, x, y) => { const r = svg.getBoundingClientRect(); return [S.vue.x + (x - r.left) * unites(svg), S.vue.y + (y - r.top) * unites(svg)]; };
   // gestes sur la photo
   const versPhoto = (e) => { const svg = $("cpc-svg"), pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; const q = pt.matrixTransform($("cpc-photo").getScreenCTM().inverse()); return [q.x, q.y]; };
   function brancher(box) {
     box.addEventListener("pointerdown", (e) => {
       const svg = e.target.closest("#cpc-svg"); if (!svg) return;
+      if (e.isPrimary) S.doigts.clear();   // premier doigt : on repart de zéro (photo redessinée entre-temps)
+      S.doigts.set(e.pointerId, [e.clientX, e.clientY]);
+      try { svg.setPointerCapture(e.pointerId); } catch { /* */ }
+      if (S.doigts.size === 2) {   // deux doigts : on pince, plus de touche ni de glissé de balle
+        const [[x1, y1], [x2, y2]] = [...S.doigts.values()];
+        S.pince = { d: Math.hypot(x2 - x1, y2 - y1) || 1, m: [(x1 + x2) / 2, (y1 + y2) / 2] }; S.geste = null; e.preventDefault(); return;
+      }
+      if (S.doigts.size > 2) return;
       const balle = e.target.closest("[data-balle]"), dep = e.target.closest("[data-depart]"), drop = e.target.closest("[data-drop]"), vis = e.target.closest("[data-vise]"), visA = e.target.closest("[data-vise-attente]");
       S.geste = { k: balle ? +balle.dataset.balle : null, dep: !!dep, drop: drop ? +drop.dataset.drop : null, vis: vis ? +vis.dataset.vise : null, visA: !!visA, x: e.clientX, y: e.clientY, bouge: false, id: e.pointerId };
       if (balle || dep || drop || vis || visA) { svg.setPointerCapture(e.pointerId); e.preventDefault(); }
     });
     box.addEventListener("pointermove", (e) => {
+      if (S.doigts.has(e.pointerId)) S.doigts.set(e.pointerId, [e.clientX, e.clientY]);
+      const svg = $("cpc-svg");
+      if (S.pince && S.doigts.size >= 2 && svg) {
+        const [[x1, y1], [x2, y2]] = [...S.doigts.values()], d = Math.hypot(x2 - x1, y2 - y1) || 1, m = [(x1 + x2) / 2, (y1 + y2) / 2];
+        const u = unites(svg); S.vue.x -= (m[0] - S.pince.m[0]) * u; S.vue.y -= (m[1] - S.pince.m[1]) * u;   // les deux doigts déplacent
+        const [cx, cy] = versVue(svg, m[0], m[1]); zoomer(d / S.pince.d, cx, cy);
+        S.pince = { d, m }; e.preventDefault(); return;
+      }
+      const g0 = S.geste;
+      if (g0 && e.pointerId === g0.id && g0.k == null && !g0.dep && g0.drop == null && g0.vis == null && !g0.visA && svg) {   // un doigt sur la photo
+        const dx = e.clientX - (g0.lx ?? g0.x), dy = e.clientY - (g0.ly ?? g0.y);
+        if (!g0.glisse && Math.hypot(e.clientX - g0.x, e.clientY - g0.y) < 8) return;
+        g0.glisse = true; g0.lx = e.clientX; g0.ly = e.clientY;
+        if (zoome()) { const u = unites(svg); S.vue.x -= dx * u; S.vue.y -= dy * u; borner(); appliquerVue(); }
+        else window.scrollBy(0, -dy);   // photo entière : le doigt fait défiler la page
+        return;
+      }
       const g = S.geste; if (!g || (g.k == null && !g.dep && g.drop == null && g.vis == null && !g.visA) || e.pointerId !== g.id) return;
       if (!g.bouge && Math.hypot(e.clientX - g.x, e.clientY - g.y) < 6) return;
       g.bouge = true;
@@ -492,7 +539,10 @@ const CPC = (() => {
       if (g.vis != null) W.coups[g.vis].vise = q; else if (g.visA) W.viseEnCours = q; else if (g.dep) W.dep = q; else if (g.drop != null) W.coups[g.drop].drop = q; else { S.sel = g.k; W.coups[g.k].p = q; }
       dessiner(etat.i);
     });
+    const fin = (e) => { S.doigts.delete(e.pointerId); if (S.pince && S.doigts.size < 2) { S.pince = null; S.geste = null; return true; } return false; };
+    box.addEventListener("pointercancel", (e) => { fin(e); S.geste = null; });
     box.addEventListener("pointerup", (e) => {
+      if (fin(e)) return;
       const g = S.geste; if (!g || e.pointerId !== g.id) { S.geste = null; return; }
       S.geste = null;
       if (!e.target.closest("#cpc-svg") && g.k == null && !g.dep && g.drop == null && g.vis == null && !g.visA) return;
@@ -507,7 +557,7 @@ const CPC = (() => {
         else { S.sel = g.k; S.panneau = { type: "coup", k: g.k }; rendreSaisie(); }            // simple touche : les questions
         return;
       }
-      if (Math.hypot(e.clientX - g.x, e.clientY - g.y) > 10) return;   // défilement, pas une touche
+      if (g.glisse || Math.hypot(e.clientX - g.x, e.clientY - g.y) > 10) return;   // déplacement de la photo, pas une touche
       poser(i, versPhoto(e));
     });
   }
