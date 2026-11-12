@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <title>GolfNexus · Notice de Stats</title>
+  <link rel="icon" type="image/svg+xml" href="../saison/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="../commun/v1/charte.css">
+  <!-- Notice de Stats (12/11/2026) : page statique, sans base ni connexion. Menu généré depuis les <h2>, recherche dans le texte
+       (sans accents) : les sections sans résultat sont masquées, les mots trouvés surlignés. Pour modifier la notice : éditer
+       les <section> ci-dessous (une section = un id = une entrée du menu). -->
+  <style>
+    .bandeau-in { display: flex; }
+    .vues a { color: #d6e6da; font-weight: 600; font-size: 14px; padding: 6px 14px; border-radius: 999px; text-decoration: none; white-space: nowrap; }
+    .vues a:hover { color: #fff; background: rgba(255,255,255,.08); }
+    .ai { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 24px; align-items: start; padding-bottom: 60px; }
+    .ai-menu { position: sticky; top: 12px; background: var(--carte); border: 1px solid var(--bord); border-radius: 14px; padding: 14px; box-shadow: var(--ombre); }
+    .ai-q { width: 100%; box-sizing: border-box; border: 1px solid var(--bord); background: var(--fond); border-radius: 10px; padding: 9px 12px; font-size: 14px; color: var(--texte); }
+    .ai-q:focus-visible { outline: 2px solid var(--vert-2); outline-offset: 1px; }
+    .ai-nb { margin: 6px 2px 10px; font-size: 12px; color: var(--doux); min-height: 18px; }
+    .ai-menu ol { list-style: none; margin: 0; padding: 0; counter-reset: s; }
+    .ai-menu li { counter-increment: s; }
+    .ai-menu a { display: flex; gap: 8px; padding: 6px 8px; border-radius: 8px; color: var(--texte); text-decoration: none; font-weight: 500; }
+    .ai-menu a::before { content: counter(s); color: var(--doux); font-variant-numeric: tabular-nums; min-width: 14px; }
+    .ai-menu a:hover { background: var(--sauge-pale); }
+    .ai-menu a[aria-current] { background: var(--sauge-pale); color: var(--vert); font-weight: 700; }
+    .ai-menu li.vide a { opacity: .35; pointer-events: none; }
+    .ai-menu .b { font-size: 11px; background: var(--jaune); color: var(--jaune-texte); border-radius: 999px; padding: 0 6px; margin-left: auto; align-self: center; }
+    .ai-corps h1 { color: var(--vert); font-size: 28px; font-weight: 800; letter-spacing: -.02em; margin: 4px 0 4px; }
+    .ai-corps > .sous { color: var(--doux); margin: 0 0 18px; }
+    .ai-corps section { background: var(--carte); border: 1px solid var(--bord); border-radius: 14px; padding: 18px 22px; margin: 0 0 16px; box-shadow: var(--ombre); scroll-margin-top: 12px; }
+    .ai-corps section[hidden] { display: none; }
+    .ai-corps h2 { margin: 0 0 10px; color: var(--vert); font-size: 20px; font-weight: 800; letter-spacing: -.01em; }
+    .ai-corps h3 { margin: 16px 0 6px; font-size: 15px; }
+    .ai-corps p, .ai-corps li { line-height: 1.6; }
+    .ai-corps ul, .ai-corps ol { padding-left: 22px; }
+    .ai-corps li { margin: 3px 0; }
+    .ai-corps table { border-collapse: collapse; width: 100%; font-size: 13px; margin: 10px 0; }
+    .ai-corps th, .ai-corps td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--bord); }
+    .ai-corps th { color: var(--doux); font-weight: 600; font-size: 12px; }
+    .ai-tab { overflow-x: auto; }
+    .ai-corps code { background: var(--fond); border: 1px solid var(--bord); border-radius: 6px; padding: 1px 5px; font-size: 12px; }
+    .ai-corps mark { background: var(--jaune); color: var(--jaune-texte); border-radius: 3px; padding: 0 1px; }
+    .ai-allers { display: flex; flex-wrap: wrap; gap: 6px; margin: -2px 0 12px; }
+    .ai-aller { display: inline-block; font-size: 12px; font-weight: 600; color: var(--vert); background: var(--sauge-pale); border: 1px solid var(--bord);
+      border-radius: 999px; padding: 3px 10px; text-decoration: none; vertical-align: middle; margin-left: 4px; white-space: nowrap; }
+    .ai-allers .ai-aller { margin-left: 0; }
+    .ai-aller:hover { border-color: var(--sauge); }
+    .ai-aller:focus-visible { outline: 2px solid var(--vert-2); outline-offset: 2px; }
+    .ai-rien { text-align: center; color: var(--doux); padding: 30px; }
+    .ai-rien[hidden] { display: none; }
+    @media (max-width: 800px) {
+      .ai { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+      .ai > * { min-width: 0; }
+      .ai-menu { position: static; }
+      .ai-menu ol { display: flex; flex-wrap: wrap; gap: 4px; }
+      .ai-menu a { padding: 4px 10px; border: 1px solid var(--bord); border-radius: 999px; font-size: 13px; }
+      .ai-corps section { padding: 14px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="bandeau">
+    <div class="bandeau-in">
+      <div class="marque">
+        <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#f4f7f2"/><ellipse cx="30" cy="52" rx="20" ry="5" fill="#cfe3d3"/><path d="M22 10v41" stroke="#14532d" stroke-width="4.5" stroke-linecap="round"/><path d="M24 10l22 8-22 8z" fill="#f0b400"/><circle cx="43" cy="45" r="7" fill="#fff" stroke="#14532d" stroke-width="2"/></svg>
+        <div><div class="nom">Golf<span>Nexus</span> · Aide</div><p class="devise">Notice de Stats</p></div>
+      </div>
+      <nav class="vues" aria-label="Retour"><a href="./">← Stats</a></nav>
+    </div>
+  </header>
+
+  <div class="ai">
+    <aside class="ai-menu" aria-label="Sommaire">
+      <input type="search" id="ai-q" class="ai-q" placeholder="Rechercher dans la notice…" aria-label="Rechercher dans la notice" autocomplete="off">
+      <p class="ai-nb" id="ai-nb" aria-live="polite"></p>
+      <ol id="ai-sommaire"></ol>
+    </aside>
+
+    <main class="ai-corps" id="ai-corps">
+      <h1>Notice de Stats</h1>
+      <p class="sous">Mise à jour le 12/11/2026 · tape un mot dans la recherche (ex. « putts », « fairway », « tournoi »). Le bouton vert « … → » t'emmène directement à l'écran expliqué.</p>
+
+      <section id="bienvenue">
+        <h2>Bienvenue</h2>
+        <p>Stats t'aide à comprendre ton jeu pour progresser. Il <b>analyse</b> tes parties : il ne saisit rien.</p>
+        <p>Tes chiffres viennent de <b>tes cartes de score</b>, notées trou par trou dans <b>Carte</b> (entraînement, partie libre, rencontre, tournoi). Dès qu'une carte est saisie, tes stats sont à jour : tu peux les regarder entre deux tours d'un tournoi.</p>
+        <div class="ai-tab"><table>
+          <thead><tr><th>Module</th><th>Son rôle</th></tr></thead>
+          <tbody>
+            <tr><td><b>Carte</b></td><td>tu y notes tes scores, putts, fairways, bunkers et pénalités</td></tr>
+            <tr><td><b>Stats</b></td><td>tu y lis l'analyse de ces cartes</td></tr>
+            <tr><td><b>Saison</b></td><td>tes tournois, tes résultats ffgolf et le Mérite</td></tr>
+          </tbody>
+        </table></div>
+        <p>Les résultats ffgolf (le score seul, sans le détail des trous) ne sont pas utilisés ici : ils restent dans Saison.</p>
+        <p>Tes stats ne sont vues que par toi et par les coachs dont tu as accepté le suivi.</p>
+      </section>
+
+      <section id="ecran">
+        <h2>L'écran « Mes stats »</h2>
+        <p class="ai-allers"><a class="ai-aller" href="./">Ouvrir Mes stats →</a></p>
+        <p>Connecte-toi avec ton e-mail et ton mot de passe. Tu arrives sur <b>Mes stats</b>. De haut en bas :</p>
+        <ol>
+          <li>les <b>filtres</b> : période et contextes ;</li>
+          <li>une ligne qui dit sur combien de parties et de trous portent les chiffres ;</li>
+          <li>cinq <b>tuiles</b> : écart au par, putts, fairways, greens en régulation, pénalités ;</li>
+          <li>les <b>blocs</b> : évolution, répartition des scores, par 3 / 4 / 5, putting, mises en jeu, bunkers, selon la pression ;</li>
+          <li>le <b>tableau des parties</b>.</li>
+        </ol>
+        <p>Le lien <b>Carte</b>, en haut, t'emmène saisir une nouvelle partie.</p>
+        <p>Sur les graphiques, passe la souris (ou touche du doigt) une marque : une bulle affiche le détail.</p>
+      </section>
+
+      <section id="filtres">
+        <h2>Filtres : période et contextes</h2>
+        <h3>Période</h3>
+        <p>Choisis <b>3 mois</b>, <b>12 mois</b> (par défaut) ou <b>Tout</b>. Seules les parties jouées dans la période comptent.</p>
+        <h3>Contextes</h3>
+        <p>Chaque carte a un contexte, choisi dans Carte. Ils sont rangés du plus calme au plus exigeant :</p>
+        <ul>
+          <li><b>Entraînement</b></li>
+          <li><b>Partie libre</b></li>
+          <li><b>Rencontre</b></li>
+          <li><b>Hors Mérite</b> (compétition qui ne compte pas pour le Mérite)</li>
+          <li><b>Tournoi ffgolf</b></li>
+        </ul>
+        <p>Touche un contexte pour l'enlever ou le remettre. Au départ, tous sont actifs. Il en reste toujours au moins un.</p>
+        <h3>Parties prises en compte</h3>
+        <p>Une partie compte si au moins <b>9 trous</b> sont saisis. Les moyennes sont <b>ramenées à 18 trous</b> : un 9 trous et un 18 trous se comparent.</p>
+      </section>
+
+      <section id="indicateurs">
+        <h2>Les indicateurs (tuiles)</h2>
+        <div class="ai-tab"><table>
+          <thead><tr><th>Tuile</th><th>Ce que ça veut dire</th></tr></thead>
+          <tbody>
+            <tr><td><b>Écart au par</b></td><td>combien de coups au-dessus (+) ou en dessous (−) du par tu joues, en moyenne par partie, ramené à 18 trous. Dessous : ta <b>meilleure carte</b> sur 18 trous.</td></tr>
+            <tr><td><b>Putts par partie</b></td><td>nombre moyen de putts sur 18 trous. Dessous : la moyenne par trou.</td></tr>
+            <tr><td><b>Fairways touchés</b></td><td>part des départs de par 4 et par 5 où ta balle a fini sur le fairway. Les par 3 ne comptent pas.</td></tr>
+            <tr><td><b>Greens en régulation</b> (GIR)</td><td>part des trous où tu es sur le green en (par − 2) coups ou moins : 1 coup sur un par 3, 2 sur un par 4, 3 sur un par 5.</td></tr>
+            <tr><td><b>Pénalités par partie</b></td><td>nombre moyen de coups de pénalité sur 18 trous.</td></tr>
+          </tbody>
+        </table></div>
+        <p>Le GIR se déduit de ta carte : score − putts − pénalités. Il faut donc avoir noté les putts.</p>
+        <p>Un trou incohérent (par exemple 3 coups avec 3 putts) est écarté du putting et du GIR. Il compte quand même pour le score.</p>
+        <p>Un tiret « — » veut dire : pas assez de données (par exemple aucun putt noté).</p>
+      </section>
+
+      <section id="blocs">
+        <h2>Les graphiques et blocs</h2>
+        <h3>Évolution</h3>
+        <p>Une courbe de ton écart au par, partie après partie (ramené à 18 trous). La ligne « par » sert de repère. Il faut au moins deux parties.</p>
+        <h3>Répartition des scores</h3>
+        <p>Une barre qui montre la part de tes trous en <b>eagle ou mieux</b>, <b>birdie</b>, <b>par</b>, <b>bogey</b>, <b>double ou pire</b>. Mêmes couleurs que la carte de score : orange sous le par, gris au par, bleu au-dessus.</p>
+        <h3>Par 3, par 4, par 5</h3>
+        <p>Ton écart moyen au par, par trou, selon le type de trou. Tu vois où tu perds le plus de coups.</p>
+        <h3>Putting</h3>
+        <ul>
+          <li><b>1 putt ou moins</b> : part des trous terminés en 0 ou 1 putt ;</li>
+          <li><b>3 putts ou plus</b> : part des trous où tu as fait 3 putts ou plus ;</li>
+          <li><b>Par trou</b> : nombre moyen de putts par trou.</li>
+        </ul>
+        <h3>Mises en jeu</h3>
+        <p>Un fairway vu de dessus, avec la part de tes départs (par 4 et 5) dans chaque zone : <b>fairway</b>, <b>gauche</b>, <b>droite</b>, <b>court</b>, <b>long</b>. Il se remplit avec la zone touchée que tu notes dans Carte.</p>
+        <h3>Bunkers</h3>
+        <ul>
+          <li><b>Trous avec bunker</b> : nombre de trous où tu es allé dans un bunker ;</li>
+          <li><b>Par ou mieux malgré le bunker</b> (sauvetage) : part de ces trous finis en par ou mieux.</li>
+        </ul>
+        <h3>Selon la pression</h3>
+        <p>Ton écart moyen au par (18 trous) pour chaque contexte, du plus calme (entraînement) au plus exigeant (tournoi ffgolf).</p>
+        <p>Si l'écart grandit avec la pression, le souci vient souvent du passage de l'entraînement au jeu, plus que de la technique.</p>
+      </section>
+
+      <section id="tableau">
+        <h2>Le tableau des parties</h2>
+        <p>En bas de l'écran, une ligne par partie, la plus récente en haut : date, golf, contexte, trous, score, écart, putts, fairways, GIR.</p>
+        <p>Les tours d'un même tournoi sont regroupés sur une seule ligne. Touche <b>▸</b> pour voir chaque tour, <b>▾</b> pour replier.</p>
+        <p>Touche le nom d'une partie ou d'un tournoi pour ouvrir ses stats.</p>
+      </section>
+
+      <section id="tour-tournoi">
+        <h2>Stats d'un tour et d'un tournoi</h2>
+        <h3>Stats du tour</h3>
+        <p>Pour une seule carte : golf, date, contexte, parcours, repère, nombre de trous (« en cours » si la partie n'est pas finie). Puis les tuiles (score, putts, fairways, greens en régulation, pénalités) et les blocs (répartition, par 3 / 4 / 5, putting, mises en jeu, bunkers).</p>
+        <p>Les chiffres sont <b>bruts</b> : ils ne sont pas ramenés à 18 trous.</p>
+        <h3>Stats du tournoi</h3>
+        <p>Un tournoi regroupe tes cartes de ce tournoi, rangées par tour. En haut, des onglets <b>Tour 1</b>, <b>Tour 2</b>… et <b>Tournoi</b>.</p>
+        <p>Le tableau <b>Tour par tour</b> met chaque tour côte à côte, puis le <b>Total</b>, puis <b>Ta moyenne</b> sur une partie de 18 trous. En dessous : les tuiles et blocs du total du tournoi.</p>
+        <h3>« Ta moyenne »</h3>
+        <p>Sous chaque chiffre, « ta moyenne » le compare à tes autres parties (au moins 9 trous), ramenées au même nombre de trous. Tu vois tout de suite si ce tour est meilleur ou moins bon que d'habitude.</p>
+        <p>Pour revenir à l'écran principal : <b>← Toutes les stats</b>.</p>
+        <h3>Lien de partage en direct</h3>
+        <p>Quand tu partages ta carte en direct depuis Carte, la fenêtre « Stats du tour » montre les stats de ce tour seul, sans comparaison. Elles se mettent à jour toutes les 15 secondes. Si le lien a expiré ou que tu as arrêté le partage, la page l'indique.</p>
+      </section>
+
+      <section id="coach">
+        <h2>Coach et joueur suivi</h2>
+        <p>Un coach dont tu as <b>accepté le suivi</b> peut voir tes stats. Il les voit en <b>lecture seule</b> : il ne modifie jamais tes cartes.</p>
+        <p>Côté coach :</p>
+        <ul>
+          <li>en haut de l'écran, une liste « Mes stats / Stats de … » permet de choisir un joueur suivi ;</li>
+          <li>une bande jaune rappelle le joueur regardé, avec « lecture seule », et des liens vers ses autres modules (Saison, Carte) ;</li>
+          <li>le joueur choisi dans un autre module reste choisi en arrivant dans Stats ;</li>
+          <li>le titre devient « Stats du joueur » ; s'il n'a aucune carte, le message « Ce joueur n'a encore saisi aucune carte » s'affiche.</li>
+        </ul>
+        <p>Pour revenir à ses propres stats, le coach choisit « Mes stats » dans la liste.</p>
+      </section>
+
+      <section id="faq">
+        <h2>Questions fréquentes</h2>
+        <h3>Pourquoi mes stats sont vides ?</h3>
+        <p>Stats lit uniquement tes cartes. Si tu n'as rien saisi, note ta prochaine partie dans Carte (bouton « Ouvrir Carte »).</p>
+        <h3>J'ai des cartes, mais « Aucune partie pour ces filtres ».</h3>
+        <p>Vérifie la période (essaie « Tout ») et les contextes actifs. Une partie doit aussi avoir au moins 9 trous saisis.</p>
+        <h3>Mon tournoi ffgolf n'apparaît pas.</h3>
+        <p>Les résultats ffgolf ne sont pas lus ici. Saisis ta carte du tournoi dans Carte : elle apparaîtra dans Stats.</p>
+        <h3>Mes greens en régulation ou mes putts affichent « — ».</h3>
+        <p>Il faut noter le nombre de putts sur tes trous dans Carte. Sans putts, ces chiffres ne se calculent pas.</p>
+        <h3>Mes fairways sont à « — ».</h3>
+        <p>Note la zone touchée au départ des par 4 et par 5 dans Carte.</p>
+        <h3>Pourquoi ma meilleure carte n'apparaît pas ?</h3>
+        <p>Elle ne compte que les parties de 18 trous saisis.</p>
+        <h3>Pourquoi un trou ne compte pas dans le putting ?</h3>
+        <p>Il est incohérent : les putts plus les pénalités égalent ou dépassent le score. Corrige la carte dans Carte.</p>
+        <h3>Mon coach ne voit pas mes stats.</h3>
+        <p>Il doit avoir été accepté comme coach. Accepte son invitation dans Mon profil.</p>
+        <h3>La page n'a pas changé après une mise à jour.</h3>
+        <p>Recharge-la complètement : Ctrl + Maj + R sur ordinateur.</p>
+      </section>
+
+      <p class="ai-rien" id="ai-rien" hidden>Aucun résultat. Essaie un autre mot, ou demande à ton coach.</p>
+    </main>
+  </div>
+
+  <script>
+    // menu depuis les sections, recherche sans accents, section courante surlignée dans le menu
+    (() => {
+      const plier = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+      const S = [...document.querySelectorAll("#ai-corps section")];
+      const menu = document.getElementById("ai-sommaire"), q = document.getElementById("ai-q");
+      const nb = document.getElementById("ai-nb"), rien = document.getElementById("ai-rien");
+      menu.innerHTML = S.map((s) => `<li data-id="${s.id}"><a href="#${s.id}">${s.querySelector("h2").textContent}<span class="b" hidden></span></a></li>`).join("");
+      const LI = Object.fromEntries([...menu.children].map((li) => [li.dataset.id, li]));
+      // texte d'origine de chaque nœud texte, pour surligner puis revenir en arrière
+      const noeuds = S.map((s) => { const w = document.createTreeWalker(s, NodeFilter.SHOW_TEXT), L = []; while (w.nextNode()) if (w.currentNode.nodeValue.trim()) L.push(w.currentNode); return L; });
+      const marques = [];
+      function effacer() { for (const m of marques.splice(0)) { const p = m.parentNode; if (p) { p.replaceChild(document.createTextNode(m.textContent), m); p.normalize(); } } }
+      function surligner(n, mots) {
+        const t = n.nodeValue, pt = plier(t); let iv = [];
+        for (const m of mots) { let i = 0; while ((i = pt.indexOf(m, i)) >= 0) { iv.push([i, i + m.length]); i += m.length; } }
+        if (!iv.length) return 0;
+        iv.sort((a, b) => a[0] - b[0]); const F = []; for (const x of iv) { const d = F[F.length - 1]; if (d && x[0] <= d[1]) d[1] = Math.max(d[1], x[1]); else F.push([...x]); }
+        const frag = document.createDocumentFragment(); let k = 0;
+        for (const [a, b] of F) { frag.append(t.slice(k, a)); const mk = document.createElement("mark"); mk.textContent = t.slice(a, b); marques.push(mk); frag.append(mk); k = b; }
+        frag.append(t.slice(k)); n.parentNode.replaceChild(frag, n); return F.length;
+      }
+      function chercher() {
+        effacer();
+        S.forEach((s, i) => { noeuds[i] = []; const w = document.createTreeWalker(s, NodeFilter.SHOW_TEXT); while (w.nextNode()) if (w.currentNode.nodeValue.trim() && !w.currentNode.parentNode.closest(".ai-aller")) noeuds[i].push(w.currentNode); });
+        const mots = plier(q.value).trim().split(/\s+/).filter((m) => m.length > 1);
+        let total = 0, sections = 0;
+        S.forEach((s, i) => {
+          const txt = plier(s.textContent), ok = !mots.length || mots.every((m) => txt.includes(m));
+          s.hidden = !ok; const li = LI[s.id], b = li.querySelector(".b");
+          li.classList.toggle("vide", !ok); b.hidden = true;
+          if (ok && mots.length) { let n = 0; for (const nd of noeuds[i]) n += surligner(nd, mots); total += n; sections++; b.textContent = n; b.hidden = !n; }
+        });
+        nb.textContent = mots.length ? (sections ? `${total} résultat${total > 1 ? "s" : ""} dans ${sections} section${sections > 1 ? "s" : ""}` : "") : "";
+        rien.hidden = !mots.length || sections > 0;
+        try { history.replaceState(null, "", mots.length ? "#q=" + encodeURIComponent(q.value.trim()) : location.pathname); } catch { /* */ }
+      }
+      let minuteur; q.addEventListener("input", () => { clearTimeout(minuteur); minuteur = setTimeout(chercher, 150); });
+      q.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") { q.value = ""; chercher(); }
+        if (e.key === "Enter") { const s = S.find((x) => !x.hidden); (s?.querySelector("mark") || s)?.scrollIntoView({ behavior: "smooth", block: "center" }); }
+      });
+      // section courante dans le menu
+      const vis = new IntersectionObserver((E) => { for (const e of E) if (e.isIntersecting) { for (const li of menu.children) li.firstChild.removeAttribute("aria-current"); LI[e.target.id]?.firstChild.setAttribute("aria-current", "true"); } }, { rootMargin: "-20% 0px -70% 0px" });
+      S.forEach((s) => vis.observe(s));
+      // lien direct : aide.html#q=putts ou aide.html#indicateurs
+      const h = decodeURIComponent(location.hash.slice(1));
+      if (h.startsWith("q=")) { q.value = h.slice(2); chercher(); }
+      else if (h && document.getElementById(h)) document.getElementById(h).scrollIntoView();
+      if (matchMedia("(min-width: 801px)").matches) q.focus();
+    })();
+  </script>
+  <!-- menu des modules sur le logo (12/11) : on lit le rôle du compte connecté pour afficher les mêmes modules qu'ailleurs -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.js"></script>
+  <script src="../commun/v1/nexus.js"></script>
+  <script src="../commun/v1/lanceur.js"></script>
+  <script>sb?.auth.getSession().then(({ data }) => { if (data?.session?.user) nexusLireProfil(data.session.user).catch(() => {}); });</script>
+</body>
+</html>
