@@ -258,6 +258,7 @@ const CPC = (() => {
     if (t.par > 3) { const c = C[0]; t.fw = c.pos === "Fairway" ? "fairway" : c.pos === "Green" || c.pos === "Dans le trou" ? null : cote(G, c.p); }
     if (der === "Dans le trou") { t.putts = 0; t.score = C.length + t.pen; }
     else if (der === "Green") { if (t.putts == null || (t.putts === 0 && !t.puttsVu)) t.putts = 2; t.score = C.length + t.putts + t.pen; }
+    else if (t.puttsVu && t.putts != null && !PEN.includes(der)) t.score = C.length + t.putts + t.pen;   // putts saisis : le dernier coup a fini sur le green
     else t.score = null;
   }
   const actif = (i) => S.mode !== "classique" && !!geo(i);
@@ -468,7 +469,12 @@ const CPC = (() => {
       return true;
     }
     if (d.cpcRetour != null) { retour(i); return true; }
-    if (d.cle && aDesCoups(i) && ["score", "putts", "pen", "fw", "bunker"].includes(d.cle)) return true;   // champs calculés
+    // putts : toujours saisissables (le score se recalcule) ; les autres champs se déduisent des coups
+    if ((d.cle === "putts" || d.plus === "putts") && aDesCoups(i)) {
+      const t = etat.partie.trous[i], v = d.cle ? +d.val : Math.max(typeof t.putts === "number" ? t.putts : +d.max, +d.max) + 1;
+      t.putts = v; t.puttsVu = true; ecrire(i); sauver(); rendreSaisie(); return true;
+    }
+    if (d.cle && aDesCoups(i) && ["score", "pen", "fw", "bunker"].includes(d.cle)) return true;   // champs calculés
     return false;
   }
   // gestes sur la photo

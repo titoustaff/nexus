@@ -312,7 +312,7 @@ function rendreSaisie() {
       ${typeof CPC !== "undefined" ? CPC.bascule(etat.i) + (CPC.actif(etat.i) ? CPC.bloc(etat.i) : "") : ""}
       <h3>Score</h3>${cpcV(choix("score", scores, nomScore, true))}${t.m ? `<p class="sa-marqueur">${corrige(t) ? `Corrigé : le marqueur avait noté <b>${t.sm}</b>. ` : ""}Score saisi par le marqueur${(() => { const d = new Date(t.m); return isNaN(d) ? "" : " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }); })()} : corrige-le seulement en cas d'erreur.</p>` : ""}
       ${t.score && (t.putts || 0) + (t.pen || 0) > t.score - 1 ? `<p class="sa-alerte">⚠ ${t.putts || 0} putt${t.putts > 1 ? "s" : ""}${t.pen ? ` + ${t.pen} pénalité${t.pen > 1 ? "s" : ""}` : ""} pour un score de ${t.score} : il manque au moins le coup de départ. Vérifie le score ou les putts.</p>` : ""}
-      <div class="sa-ligne"><div><h3>Putts</h3>${cpcV(choix("putts", [0, 1, 2, 3, 4], undefined, true))}</div><div><h3>Pénalités</h3>${cpcV(choix("pen", [0, 1, 2, 3], undefined, true))}</div></div>
+      <div class="sa-ligne"><div><h3>Putts</h3>${choix("putts", [0, 1, 2, 3, 4], undefined, true)}</div><div><h3>Pénalités</h3>${cpcV(choix("pen", [0, 1, 2, 3], undefined, true))}</div></div>
       ${t.par > 3 ? `<h3>Mise en jeu : où a fini ton départ ?</h3>${cpcV(terrainFw(t.fw))}` : ""}
       <h3>Bunker</h3>${cpcV(choix("bunker", [false, true], (v) => (v ? "Oui, joué depuis un bunker" : "Non")))}
     </div>
