@@ -356,25 +356,46 @@ body.marqueur .pied { display: none; }
 /* clubs : une couleur par famille (Mon sac, volet du coup) — 12/11/2026 */
 .cl { --cl: #6b7280; border-left: 5px solid var(--cl) !important; }
 .cl[aria-pressed="true"] { background: var(--cl) !important; border-color: var(--cl) !important; color: #fff !important; }
+.sac-filtres .bulle[data-sac-filtre="tous"] { --cl: var(--vert); }
 .cl-bois { --cl: #c2410c; } .cl-hybride { --cl: #a16207; } .cl-fer { --cl: #1e3a8a; } .cl-wedge { --cl: #0369a1; } .cl-putter { --cl: #15803d; }
 .cl-pt { display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: var(--cl); margin-right: 8px; }
 .pan-club { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .pan-club .lien { font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: 0; }
-.sac-fam { margin: 14px 0 6px; font-size: 13px; color: var(--doux); }
-.sac-compte { font-size: 13px; font-weight: 500; color: var(--doux); margin-left: 6px; } .sac-vide { margin: 4px 0; padding: 12px; border: 2px dashed var(--doux); border-radius: 10px; } .sac-note { color: #b91c1c; font-weight: 600; }
-.sac-portees { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px 16px; }
-.sac-portee { display: flex; align-items: center; gap: 6px; font-weight: 600; }
-.sac-portee input { width: 64px !important; flex: none; margin-left: auto; }
-
-/* repères à taille fixe à l'écran (12/11) : les traits ne grossissent pas avec le zoom */
-#cpc-svg line, #cpc-svg path, #cpc-svg polyline, #cpc-svg polygon, #cpc-svg circle, #cpc-svg rect { vector-effect: non-scaling-stroke; }
-/* téléphone : volet des questions en bas de l'écran, la photo reste visible au-dessus */
-@media (max-width: 759px) {
-  .pan.volet { top: auto !important; left: 0; right: 0; bottom: 0; width: auto; max-height: 52vh; overflow-y: auto;
-    border-radius: 16px 16px 0 0; box-shadow: 0 -8px 30px rgba(0,0,0,.3); animation: pan-monte .18s ease-out; padding: 10px 14px 10px; }
-  .pan.volet .pan-pied { position: sticky; bottom: -10px; background: inherit; padding-bottom: 6px; }
-  .pan.volet h3 { margin: 8px 0 4px; }
-  .pan.volet .cpc-puces button { min-height: 36px; padding: 5px 9px; }
+/* Mon sac, version visuelle (12/11) */
+.sac-tete { display: flex; align-items: center; gap: 16px; }
+.sac-jauge { --p: 0%; flex: none; width: 74px; height: 74px; border-radius: 50%; display: grid; place-content: center; text-align: center; line-height: 1;
+  background: radial-gradient(closest-side, var(--carte) 78%, transparent 80%), conic-gradient(var(--vert) var(--p), var(--bord) 0); }
+.sac-jauge b { font-size: 24px; } .sac-jauge span { font-size: 11px; color: var(--doux); }
+.sac-titre { margin: 0 0 4px; font-size: 18px; font-weight: 800; }
+.sac-tete .meta { margin: 0; } .sac-tete .sac-fams { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.sac-fam-n { display: inline-flex; align-items: center; white-space: nowrap; }
+.sac-note { color: #b91c1c; font-weight: 600; margin: 0 0 8px; }
+.sac-liste { display: grid; gap: 6px; }
+.sac-aide { margin: 0 0 4px; }
+.sac-club { display: grid; grid-template-columns: minmax(92px, 130px) 1fr auto auto; align-items: center; gap: 10px;
+  padding: 6px 6px 6px 10px; border-radius: 12px; background: color-mix(in srgb, var(--cl) 7%, var(--carte)); border-left: 4px solid var(--cl); }
+.sac-nom { font-weight: 800; display: flex; align-items: center; white-space: nowrap; }
+.sac-barre { height: 10px; border-radius: 999px; background: color-mix(in srgb, var(--cl) 14%, transparent); overflow: hidden; }
+.sac-barre > span { display: block; height: 100%; border-radius: 999px; background: var(--cl); transition: width .2s; }
+.sac-barre-vide { height: auto; background: none; font-size: 12.5px; color: var(--doux); font-style: italic; grid-column: span 2; }
+.sac-reglage { display: inline-flex; align-items: center; gap: 2px; }
+.sac-reglage b { min-width: 58px; text-align: center; font-size: 15px; font-variant-numeric: tabular-nums; } .sac-reglage small { font-size: 11px; color: var(--doux); }
+.sac-pm, .sac-x { width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--bord); background: var(--carte); color: var(--texte); font: inherit; font-weight: 800; cursor: pointer; display: grid; place-items: center; padding: 0; }
+.sac-pm:hover { border-color: var(--cl); color: var(--cl); }
+.sac-x { border: 0; background: none; color: var(--doux); font-size: 14px; } .sac-x:hover { color: #b91c1c; }
+.sac-filtres { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
+.sac-filtres .bulle { font: inherit; font-size: 13px; font-weight: 700; padding: 5px 12px; border-radius: 999px; border: 1.5px solid color-mix(in srgb, var(--cl) 45%, var(--bord)); background: var(--carte); color: var(--texte); cursor: pointer; }
+.sac-filtres .bulle[aria-pressed="true"] { background: var(--cl); border-color: var(--cl); color: #fff; }
+.sac-ajout { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 6px; }
+.sac-plus { white-space: nowrap; }
+.sac-plus { display: flex; align-items: center; gap: 8px; font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 10px; border-radius: 10px; cursor: pointer;
+  border: 1.5px dashed color-mix(in srgb, var(--cl) 55%, var(--bord)); background: var(--carte); color: var(--texte); text-align: left; }
+.sac-plus span { width: 20px; height: 20px; border-radius: 50%; background: var(--cl); color: #fff; display: grid; place-items: center; font-size: 15px; line-height: 1; flex: none; }
+.sac-plus:hover:not(:disabled) { border-style: solid; border-color: var(--cl); }
+.sac-plus:disabled { opacity: .45; cursor: not-allowed; }
+@media (max-width: 520px) {
+  .sac-club { grid-template-columns: 1fr auto auto; grid-template-areas: "n r x" "b b b"; row-gap: 4px; }
+  .sac-nom { grid-area: n; } .sac-barre { grid-area: b; } .sac-reglage { grid-area: r; } .sac-x { grid-area: x; } .sac-barre-vide { grid-area: r; }
 }
 /* choix du club dans le volet : une ligne par famille, boutons de même largeur (12/11) */
 .cl-lignes { display: grid; gap: 6px; }

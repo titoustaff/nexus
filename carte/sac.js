@@ -55,56 +55,66 @@ const SAC = (() => {
       .map((l) => `<div class="cl-ligne">${l.map(b).join("")}</div>`).join("")}</div>`;
   }
 
-  // ---------------------------------------------------------------- écran « Mon sac »
-  let note = "";
+  // ---------------------------------------------------------------- écran « Mon sac » (version visuelle, 12/11)
+  // le sac = une ligne par club, de la plus longue portée à la plus courte, barre proportionnelle (on voit les trous entre clubs),
+  // − / + pour régler la portée ; en dessous, « Ajouter un club » : les clubs absents du sac, filtrés par famille.
+  let note = "", filtre = "tous";
+  const ICONE = { bois: "🪵", hybride: "◆", fer: "▮", wedge: "◢", putter: "⛳" };
   function enregistrer(S) { Compte.setFiche({ sac: S }); }
+  const perso = () => Array.isArray(Compte.fiche?.sac) && Compte.fiche.sac.length;
   function rendre() {
     const z = document.getElementById("sac-contenu"); if (!z) return;
-    const perso = Array.isArray(Compte.fiche?.sac) && Compte.fiche.sac.length, S = perso ? sac() : [], dans = new Set(S.map((x) => x.c));
+    const S = perso() ? sac() : [], dans = new Set(S.map((x) => x.c));
     const enCours = typeof etat !== "undefined" && etat.partie && !etat.vue;
+    const tri = S.slice().sort((a, b) => b.d - a.d || (parNom[a.c]?.i ?? 99) - (parNom[b.c]?.i ?? 99));
+    const dmax = Math.max(220, ...S.map((x) => x.d));
+    const parFam = Object.keys(FAMILLES).map((f) => [f, S.filter((x) => famille(x.c) === f).length]).filter((x) => x[1]);
+    const dispo = CATALOGUE.filter(([c, f]) => !dans.has(c) && (filtre === "tous" || f === filtre));
     z.innerHTML = `
       ${enCours ? `<p><button type="button" class="lien" data-ecran="saisie">← Retour à la partie</button></p>` : ""}
-      <div class="bloc">
-        <p class="meta">Compose ton sac : touche un club dans « Tous les clubs » pour l'ajouter, touche-le à nouveau pour le retirer (${MAX} clubs au plus).
-          Ton sac sert à la saisie coup par coup : boutons de club et club deviné d'après la distance.${perso ? "" : " <b>Ton sac n'est pas encore composé</b> : en attendant, la saisie propose un sac type."}</p>
+      <div class="bloc sac-tete">
+        <div class="sac-jauge" style="--p:${Math.round(S.length / MAX * 100)}%"><b>${S.length}</b><span>/ ${MAX}</span></div>
+        <div>
+          <p class="sac-titre">${S.length ? "Ton sac" : "Ton sac est vide"}</p>
+          <p class="meta ${S.length ? "sac-fams" : ""}">${S.length ? parFam.map(([f, n]) => `<span class="sac-fam-n"><i class="cl-pt cl-${f}"></i>${n} ${FAMILLES[f].toLowerCase()}</span>`).join("")
+            : `Ajoute tes clubs ci-dessous${perso() ? "" : `, ou <button type="button" class="lien" data-sac-defaut>pars du sac type</button>`}. En attendant, la saisie propose un sac type.`}</p>
+        </div>
       </div>
+      ${note ? `<p class="sac-note">${esc(note)}</p>` : ""}
+      ${S.length ? `<div class="bloc sac-liste">
+        <p class="meta sac-aide">Portée moyenne d'un coup plein, roule comprise : règle-la avec − et +, le club deviné pendant la saisie sera plus juste.</p>
+        ${tri.map((x) => { const f = famille(x.c), put = f === "putter" && x.c === "Putter";
+          return `<div class="sac-club cl-${f}">
+            <span class="sac-nom"><i class="cl-pt cl-${f}"></i>${esc(x.c)}</span>
+            ${put ? `<span class="sac-barre sac-barre-vide">sur le green</span>` : `<span class="sac-barre"><span style="width:${Math.max(6, Math.round(x.d / dmax * 100))}%"></span></span>
+            <span class="sac-reglage"><button type="button" class="sac-pm" data-sac-pm="-5" data-c="${esc(x.c)}" aria-label="Portée ${esc(x.c)} moins 5 m">−</button><b>${x.d}<small> m</small></b><button type="button" class="sac-pm" data-sac-pm="5" data-c="${esc(x.c)}" aria-label="Portée ${esc(x.c)} plus 5 m">+</button></span>`}
+            <button type="button" class="sac-x" data-sac-club="${esc(x.c)}" aria-label="Retirer ${esc(x.c)} du sac">✕</button>
+          </div>`; }).join("")}
+      </div>` : ""}
       <div class="bloc">
-        <h3>Dans mon sac <span class="sac-compte"><b>${S.length}</b> / ${MAX} clubs</span></h3>
-        ${note ? `<p class="sac-note">${esc(note)}</p>` : ""}
-        ${S.length ? `<div class="sa-choix cpc-puces" role="group" aria-label="Mon sac">${S.map((x) =>
-          `<button type="button" class="cl cl-${famille(x.c)}" data-sac-club="${esc(x.c)}" aria-pressed="true" title="Retirer du sac">${esc(x.c)} ✕</button>`).join("")}</div>`
-          : `<p class="sac-vide">Ton sac est vide : touche les clubs ci-dessous pour les ajouter${perso ? "" : `, ou <button type="button" class="lien" data-sac-defaut>pars du sac type (12 clubs)</button>`}.</p>`}
-      </div>
-      <div class="bloc">
-        <h3>Tous les clubs</h3>
-        ${Object.entries(FAMILLES).map(([f, titre]) => `<h3 class="sac-fam">${titre}</h3>
-          <div class="sa-choix cpc-puces" role="group" aria-label="${titre}">${CATALOGUE.filter((x) => x[1] === f).map(([c]) =>
-            `<button type="button" class="cl cl-${f}" data-sac-club="${esc(c)}" aria-pressed="${dans.has(c)}">${esc(c)}</button>`).join("")}</div>`).join("")}
-      </div>
-      <div class="bloc">
-        <h3>Portée de mes clubs</h3>${S.length ? "" : `<p class="meta">Ajoute des clubs ci-dessus pour régler leur portée.</p>`}
-        <p class="meta">Distance moyenne de ton coup plein, roule comprise. Corrige-la : le club deviné sera plus juste.</p>
-        <div class="sac-portees">${S.filter((x) => x.c !== "Putter").map((x) => `<label class="sac-portee"><span class="cl-pt cl-${famille(x.c)}" aria-hidden="true"></span>${esc(x.c)}
-          <input type="number" inputmode="numeric" min="10" max="350" step="5" value="${x.d}" data-sac-portee="${esc(x.c)}" aria-label="Portée ${esc(x.c)} en mètres"> m</label>`).join("")}</div>
+        <h3>Ajouter un club</h3>
+        <div class="sac-filtres" role="group" aria-label="Famille">${[["tous", "Tous"], ...Object.entries(FAMILLES)].map(([f, t]) =>
+          `<button type="button" class="bulle ${f !== "tous" ? "cl-" + f : ""}" data-sac-filtre="${f}" aria-pressed="${filtre === f}">${t}</button>`).join("")}</div>
+        ${dispo.length ? `<div class="sac-ajout">${dispo.map(([c, f]) => `<button type="button" class="sac-plus cl-${f}" data-sac-club="${esc(c)}" ${S.length >= MAX ? "disabled" : ""}><span>+</span>${esc(c)}</button>`).join("")}</div>`
+          : `<p class="meta">Tous les clubs de cette famille sont déjà dans ton sac.</p>`}
+        ${S.length >= MAX ? `<p class="meta">Sac plein (${MAX} clubs, règle 4.1b) : retire un club pour en ajouter un autre.</p>` : ""}
       </div>`;
   }
   document.addEventListener("click", (e) => {
+    const f = e.target.closest("[data-sac-filtre]"); if (f) { filtre = f.dataset.sacFiltre; rendre(); return; }
+    const pm = e.target.closest("[data-sac-pm]");
+    if (pm) { const c = pm.dataset.c, d = +pm.dataset.sacPm; enregistrer(sac().map((x) => (x.c === c ? { c, d: Math.max(10, Math.min(350, x.d + d)) } : x))); rendre(); return; }
     const b = e.target.closest("[data-sac-club],[data-sac-defaut]"); if (!b) return;
-    let S = Array.isArray(Compte.fiche?.sac) && Compte.fiche.sac.length ? sac() : []; note = "";
+    let S = perso() ? sac() : []; note = "";
     if (b.dataset.sacDefaut != null) S = DEFAUT.map((c) => ({ c, d: parNom[c].d }));
     else {
       const c = b.dataset.sacClub;
       if (S.some((x) => x.c === c)) S = S.filter((x) => x.c !== c);
-      else if (S.length >= MAX) note = `déjà ${MAX} clubs : sors-en un d'abord`;
+      else if (S.length >= MAX) note = `Déjà ${MAX} clubs : retire-en un d'abord.`;
       else S.push({ c, d: parNom[c].d });
     }
     if (!note) enregistrer(S);
     rendre();
-  });
-  document.addEventListener("change", (e) => {
-    const i = e.target.closest("[data-sac-portee]"); if (!i) return;
-    const v = Math.max(10, Math.min(350, Math.round(+i.value || 0)));
-    enregistrer(sac().map((x) => (x.c === i.dataset.sacPortee ? { c: x.c, d: v } : x)));
   });
   return { famille, sac, noms, pour, boutons, rendre };
 })();
