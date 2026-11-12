@@ -70,6 +70,7 @@
         <button type="button" data-ecran="liste" aria-current="page">Mes cartes</button>
         <button type="button" data-ecran="lives" id="v-lives">📡 En direct <span class="nb" id="v-lives-nb" hidden></span></button>
         <button type="button" data-ecran="nouvelle" id="v-nouvelle">+ Nouvelle partie</button>
+        <button type="button" data-ecran="sac">🎒 Mon sac</button>
       </nav>
       <div class="b-compte" id="b-compte" aria-live="polite"></div>
     </div>
@@ -100,6 +101,7 @@
     <section id="ecran-voir" hidden><div id="vo-contenu"></div></section>
     <section id="ecran-direct" hidden aria-label="En direct"><div id="di-contenu"></div></section>
     <section id="ecran-marqueur" hidden aria-label="Saisie du marqueur"><div id="mq-contenu"></div></section>
+    <section id="ecran-sac" hidden aria-labelledby="sac-titre"><div class="s-tete"><h2 id="sac-titre">Mon sac</h2></div><div id="sac-contenu"></div></section>
     <section id="ecran-lives" hidden aria-labelledby="lv-titre"><div class="s-tete"><h2 id="lv-titre">En direct aujourd'hui</h2></div><div id="lv-contenu"></div></section>
   </main>
 
@@ -110,6 +112,7 @@
   <script src="../commun/v1/nexus.js"></script>
   <script src="../commun/v1/lanceur.js"></script>
   <script src="app.js"></script>
+  <script src="sac.js"></script>
   <script src="cpc.js"></script>
 </body>
 </html>

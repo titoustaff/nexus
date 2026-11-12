@@ -12,7 +12,6 @@ const CPC = (() => {
   const Z = 18, NS = "http://www.w3.org/2000/svg", VERSION_PLAN = 3;
   const OVERPASS = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter", "https://overpass.private.coffee/api/interpreter"];
   const POSITIONS = ["Fairway", "Rough", "Bunker", "Arbres", "Zone à pénalité", "Hors limites", "Green", "Dans le trou"];
-  const CLUBS = ["Driver", "Bois", "Hybride", "Fer 5-6", "Fer 7-8", "Fer 9", "PW", "SW", "Putter"];
   const PEN = ["Hors limites", "Zone à pénalité"];
   const S = {
     mode: (() => { try { return localStorage.getItem("carte-cpc-mode") || "classique"; } catch { return "classique"; } })(),
@@ -43,7 +42,8 @@ const CPC = (() => {
     if (formes(G, "fairway").some((f) => dedans(p, f.p))) return ["Fairway", "contour du fairway"];
     return ["Rough", "hors des contours dessinés"];
   }
-  function clubPour(m, surGreen) { if (surGreen) return "Putter"; return m > 200 ? "Driver" : m > 180 ? "Bois" : m > 160 ? "Hybride" : m > 140 ? "Fer 5-6" : m > 115 ? "Fer 7-8" : m > 95 ? "Fer 9" : m > 60 ? "PW" : "SW"; }
+  // club deviné d'après la distance et le sac du joueur (sac.js, écran « Mon sac »)
+  const clubPour = (m, surGreen) => SAC.pour(m, surGreen);
   function cote(G, p) {
     const L = G.trou; let best = null;
     for (let i = 0; i < L.length - 1; i++) {
@@ -403,7 +403,7 @@ const CPC = (() => {
         ${c.pos === "Hors limites" ? `<p class="cpc-regle"><b>+1 pénalité</b> : tu rejoues d'où tu avais joué.</p>` : ""}
         ${c.pos === "Zone à pénalité" ? `<p class="cpc-regle"><b>+1 pénalité</b> : ${c.drop ? "drop placé (balle « d »), fais-le glisser pour le corriger." : "<b>touche la photo là où tu as droppé.</b>"}</p>` : ""}
         ${c.pos === "Green" && dernier ? `<h3>Putts</h3><div class="sa-choix" role="group">${[0, 1, 2, 3, 4].map((v) => `<button type="button" data-cpc-putts="${v}" aria-pressed="${t.putts === v}">${v}</button>`).join("")}<button type="button" class="sa-plus" data-cpc-putts="${Math.max(5, (t.putts || 0) + 1)}" aria-label="Ajouter 1">+</button></div>` : ""}
-        ${c.pos === "Green" ? "" : `<h3>Club</h3><div class="sa-choix cpc-puces" role="group" aria-label="Club">${CLUBS.map((x) => `<button type="button" data-cpc-club="${k}" data-val="${x}" aria-pressed="${x === c.club}">${x}</button>`).join("")}</div>`}
+        ${c.pos === "Green" ? "" : `<h3 class="pan-club">Club <button type="button" class="lien" data-ecran="sac">🎒 Mon sac</button></h3><div class="sa-choix cpc-puces" role="group" aria-label="Club">${SAC.boutons(`data-cpc-club="${k}"`, c.club)}</div>`}
         ${fini && dernier && t.score ? `<p class="pan-score">Score du trou : <b>${t.score}</b> (${ecartPar(t.score - t.par)})</p>` : ""}
         ${pied(`<button type="button" class="lien" data-cpc-suppr="${k}">Supprimer</button><button type="button" class="btn" data-cpc-deplacer="${k}">Déplacer</button>${
           fini && dernier && t.score && i < etat.partie.trous.length - 1 ? `<button type="button" class="btn plein" data-pas="1">Trou ${etat.partie.trous[i + 1].t} →</button>` : `<button type="button" class="btn plein" data-cpc-fermer>Valider</button>`}`)}`;

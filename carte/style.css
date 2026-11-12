@@ -352,3 +352,16 @@ body.marqueur .pied { display: none; }
 .cpc-zoom { position: absolute; top: 8px; right: 8px; display: flex; flex-direction: column; gap: 6px; }
 .cpc-zoom button { width: 38px; height: 38px; border: 0; border-radius: 10px; background: rgba(12, 20, 15, .78); color: #fff; font: inherit; font-size: 22px; font-weight: 700; line-height: 1; cursor: pointer; }
 .cpc-zoom button:focus-visible { outline: 2px solid var(--jaune); outline-offset: 1px; }
+
+/* clubs : une couleur par famille (Mon sac, volet du coup) — 12/11/2026 */
+.cl { --cl: #6b7280; border-left: 5px solid var(--cl) !important; }
+.cl[aria-pressed="true"] { background: var(--cl) !important; border-color: var(--cl) !important; color: #fff !important; }
+.cl-bois { --cl: #c2410c; } .cl-hybride { --cl: #a16207; } .cl-fer { --cl: #1e3a8a; } .cl-wedge { --cl: #0369a1; } .cl-putter { --cl: #15803d; }
+.cl-pt { display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: var(--cl); margin-right: 8px; }
+.pan-club { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.pan-club .lien { font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: 0; }
+.sac-fam { margin: 14px 0 6px; font-size: 13px; color: var(--doux); }
+.sac-compte { margin: 8px 0 0; } .sac-note { color: #b91c1c; font-weight: 600; }
+.sac-portees { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px 16px; }
+.sac-portee { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.sac-portee input { width: 64px !important; flex: none; margin-left: auto; }

@@ -84,7 +84,7 @@ const dateLongue = (d) => new Date(d + "T12:00:00").toLocaleDateString("fr-FR", 
 function ecran(nom) {
   if (nom === "nouvelle" && etat.vue) nom = "liste";   // pas de saisie pour un joueur suivi (lecture seule)
   etat.ecran = nom;
-  for (const k of ["liste", "nouvelle", "saisie", "voir", "direct", "lives", "marqueur"]) $("ecran-" + k).hidden = k !== nom;
+  for (const k of ["liste", "nouvelle", "saisie", "voir", "direct", "lives", "marqueur", "sac"]) $("ecran-" + k).hidden = k !== nom;
   if (nom !== "direct") { arreterDirect(); if (/(^|[#&])(evt|tournoi)=/.test(location.hash)) history.replaceState(null, "", location.pathname + location.search); }
   for (const b of document.querySelectorAll(".vues button[data-ecran]"))
     if (b.dataset.ecran === nom) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
@@ -100,6 +100,7 @@ function ecran(nom) {
   else if (nom === "voir") rendreVoir();
   else if (nom === "direct") rendreDirect();
   else if (nom === "lives") rendreLives();
+  else if (nom === "sac") SAC.rendre();
   window.scrollTo({ top: 0 });
 }
 document.addEventListener("click", (e) => {
