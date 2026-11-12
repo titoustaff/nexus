@@ -61,9 +61,18 @@ const SAC = (() => {
     z.innerHTML = `
       ${enCours ? `<p><button type="button" class="lien" data-ecran="saisie">← Retour à la partie</button></p>` : ""}
       <div class="bloc">
-        <p class="meta">Voici tous les clubs : touche ceux qui sont dans ton sac pour les ajouter, touche à nouveau pour en retirer un (${MAX} clubs au plus).
+        <p class="meta">Compose ton sac : touche un club dans « Tous les clubs » pour l'ajouter, touche-le à nouveau pour le retirer (${MAX} clubs au plus).
           Ton sac sert à la saisie coup par coup : boutons de club et club deviné d'après la distance.${perso ? "" : " <b>Ton sac n'est pas encore composé</b> : en attendant, la saisie propose un sac type."}</p>
-        <p class="sac-compte"><b>${S.length}</b> / ${MAX} clubs${note ? ` · <span class="sac-note">${esc(note)}</span>` : ""}</p>
+      </div>
+      <div class="bloc">
+        <h3>Dans mon sac <span class="sac-compte"><b>${S.length}</b> / ${MAX} clubs</span></h3>
+        ${note ? `<p class="sac-note">${esc(note)}</p>` : ""}
+        ${S.length ? `<div class="sa-choix cpc-puces" role="group" aria-label="Mon sac">${S.map((x) =>
+          `<button type="button" class="cl cl-${famille(x.c)}" data-sac-club="${esc(x.c)}" aria-pressed="true" title="Retirer du sac">${esc(x.c)} ✕</button>`).join("")}</div>`
+          : `<p class="sac-vide">Ton sac est vide : touche les clubs ci-dessous pour les ajouter${perso ? "" : `, ou <button type="button" class="lien" data-sac-defaut>pars du sac type (12 clubs)</button>`}.</p>`}
+      </div>
+      <div class="bloc">
+        <h3>Tous les clubs</h3>
         ${Object.entries(FAMILLES).map(([f, titre]) => `<h3 class="sac-fam">${titre}</h3>
           <div class="sa-choix cpc-puces" role="group" aria-label="${titre}">${CATALOGUE.filter((x) => x[1] === f).map(([c]) =>
             `<button type="button" class="cl cl-${f}" data-sac-club="${esc(c)}" aria-pressed="${dans.has(c)}">${esc(c)}</button>`).join("")}</div>`).join("")}
@@ -73,7 +82,6 @@ const SAC = (() => {
         <p class="meta">Distance moyenne de ton coup plein, roule comprise. Corrige-la : le club deviné sera plus juste.</p>
         <div class="sac-portees">${S.filter((x) => x.c !== "Putter").map((x) => `<label class="sac-portee"><span class="cl-pt cl-${famille(x.c)}" aria-hidden="true"></span>${esc(x.c)}
           <input type="number" inputmode="numeric" min="10" max="350" step="5" value="${x.d}" data-sac-portee="${esc(x.c)}" aria-label="Portée ${esc(x.c)} en mètres"> m</label>`).join("")}</div>
-        ${perso ? "" : `<p><button type="button" class="lien" data-sac-defaut>Partir du sac type (12 clubs)</button></p>`}
       </div>`;
   }
   document.addEventListener("click", (e) => {

@@ -361,7 +361,7 @@ body.marqueur .pied { display: none; }
 .pan-club { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .pan-club .lien { font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: 0; }
 .sac-fam { margin: 14px 0 6px; font-size: 13px; color: var(--doux); }
-.sac-compte { margin: 8px 0 0; } .sac-note { color: #b91c1c; font-weight: 600; }
+.sac-compte { font-size: 13px; font-weight: 500; color: var(--doux); margin-left: 6px; } .sac-vide { margin: 4px 0; padding: 12px; border: 2px dashed var(--doux); border-radius: 10px; } .sac-note { color: #b91c1c; font-weight: 600; }
 .sac-portees { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px 16px; }
 .sac-portee { display: flex; align-items: center; gap: 6px; font-weight: 600; }
 .sac-portee input { width: 64px !important; flex: none; margin-left: auto; }
