@@ -302,6 +302,10 @@
       if (matchMedia("(min-width: 801px)").matches) q.focus();
     })();
   </script>
-  <script src="../commun/v1/lanceur.js"></script>   <!-- menu des modules sur le logo (12/11) -->
+  <!-- menu des modules sur le logo (12/11) : on lit le rôle du compte connecté pour afficher les mêmes modules qu'ailleurs -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.js"></script>
+  <script src="../commun/v1/nexus.js"></script>
+  <script src="../commun/v1/lanceur.js"></script>
+  <script>sb?.auth.getSession().then(({ data }) => { if (data?.session?.user) nexusLireProfil(data.session.user).catch(() => {}); });</script>
 </body>
 </html>
