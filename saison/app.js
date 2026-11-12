@@ -279,6 +279,12 @@ function initCarte() {
     },
   }).addTo(carte);
   coucheRef = L.layerGroup().addTo(carte);
+  // Vue golfs : la liste suit la zone affichée (sauf pendant une recherche, qui déplace elle-même la carte).
+  let minuteur;
+  carte.on("moveend", () => {
+    if (etat.vue !== "golfs" || plier($("l-cherche").value)) return;
+    clearTimeout(minuteur); minuteur = setTimeout(listeGolfs, 150);
+  });
 }
 // Carte centrée sur les pays actifs : ceux qui ont des tournois dans les données ET un contour (site/pays.json).
 // Aujourd'hui la France ; ajouter l'Espagne = collecter ses tournois + ajouter son contour. L'extérieur est estompé.
@@ -525,7 +531,6 @@ function golfsFiltres() {
 }
 function rendreGolfs() {
   const liste = golfsFiltres();
-  $("compte").textContent = `${liste.length} golf${liste.length > 1 ? "s" : ""}` + (etat.ref ? ` · triés par distance depuis ${etat.ref.nom}` : "");
   $("legende").innerHTML = `<span class="pastille" style="background:var(--vert)"></span>golf (cliquer pour la fiche)`;
   $("l-prochain-lib").hidden = true; $("l-place-lib").hidden = true;
   couche.clearLayers(); coucheRef.clearLayers(); etat.marqueurs.clear();
@@ -539,6 +544,19 @@ function rendreGolfs() {
     m.addTo(couche); etat.marqueurs.set(g.slug, m); pts.push([g.lat, g.lon]);
   }
   refEtCadre(pts);
+  etat.golfsListe = liste;
+  listeGolfs();
+}
+// Liste des golfs limitée à la zone affichée : rechargée à chaque zoom / déplacement de la carte.
+function listeGolfs() {
+  const tous = etat.golfsListe || [];
+  const b = carte.getBounds();
+  const avecGps = tous.filter((g) => g.lat);
+  const vus = avecGps.filter((g) => b.contains([g.lat, g.lon]));
+  const zoome = vus.length < avecGps.length;
+  const liste = zoome ? vus : tous;                      // vue d'ensemble : on garde aussi les golfs sans GPS
+  $("compte").textContent = (zoome ? `${liste.length} golf${liste.length > 1 ? "s" : ""} dans la zone affichée (sur ${tous.length})`
+    : `${tous.length} golf${tous.length > 1 ? "s" : ""}`) + (etat.ref ? ` · triés par distance depuis ${etat.ref.nom}` : "");
   $("liste").innerHTML = liste.length ? liste.map((g) => {
     const i = etat.golfInfo[g.slug] || {};
     const p18 = (g.parcours || []).filter((p) => p.trous >= 18);
@@ -549,7 +567,7 @@ function rendreGolfs() {
         <div class="meta">${esc(titre(g.ville))} · ${esc(i.departement || "")}${g._km != null ? ` · <b>${Math.round(g._km)} km</b>` : ""}</div>
         <div class="meta">${p18.length ? `<span class="tag">${p18.length} × 18 trous</span>` : ""}${long ? `<span class="tag">jusqu'à ${long} m</span>` : ""}<span class="tag">${i.n || 0} GP</span></div>
       </div></li>`;
-  }).join("") : `<li class="vide">Aucun golf pour ces critères.</li>`;
+  }).join("") : `<li class="vide">${tous.length ? "Aucun golf dans la zone affichée : dézoomez la carte." : "Aucun golf pour ces critères."}</li>`;
   chercher(false);
 }
 
