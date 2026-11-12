@@ -60,6 +60,9 @@ const parJoue = (p) => joues(p).reduce((s, t) => s + (+t.par || 0), 0);
 // carte saisie par le marqueur (trous « m ») et pas encore close par lui : le joueur ne peut rien modifier (club-marqueur-fin.sql)
 const carteMarqueur = (p) => (p?.trous || []).some((t) => t.m);
 const marqueurEnCours = (p) => carteMarqueur(p) && !p.terminee && !(p.jour < JOUR);   // jours passés : la base débloque après l'événement
+// score corrigé après le marqueur : « 4 » avec une marque, et la trace en info-bulle
+const corrige = (t) => t.m && t.sm != null && t.sm !== t.score;
+const titreCorrige = (t) => corrige(t) ? ` title="Corrigé par le joueur : le marqueur avait noté ${t.sm}"` : "";
 const ecartPar = (n) => (n === 0 ? "par" : (n > 0 ? "+" : "") + n);
 const classeScore = (t) => { if (!t.score) return ""; const d = t.score - t.par; return d <= -2 ? "sc-aigle" : d === -1 ? "sc-birdie" : d === 0 ? "sc-par" : d === 1 ? "sc-bogey" : "sc-double"; };
 // notation des cartes de golf : rond = birdie, double rond = eagle ou mieux, carré = bogey, double carré = double bogey ou pire
@@ -305,7 +308,7 @@ function rendreSaisie() {
     <div class="sa-trous" role="tablist" aria-label="Trous">${p.trous.map((x, k) => `<button type="button" class="${classeScore(x)}${k === etat.i ? " actif" : ""}" data-aller="${k}" aria-label="Trou ${x.t}">${x.t}<small>${x.score || ""}</small></button>`).join("")}</div>
     <div class="bloc sa-trou">
       <div class="sa-num"><span>Trou <b>${t.t}</b></span><span class="sa-par">Par <b>${t.par}</b></span></div>
-      <h3>Score</h3>${choix("score", scores, nomScore, true)}${t.m ? `<p class="sa-marqueur">Score saisi par le marqueur${(() => { const d = new Date(t.m); return isNaN(d) ? "" : " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }); })()} : corrige-le seulement en cas d'erreur.</p>` : ""}
+      <h3>Score</h3>${choix("score", scores, nomScore, true)}${t.m ? `<p class="sa-marqueur">${corrige(t) ? `Corrigé : le marqueur avait noté <b>${t.sm}</b>. ` : ""}Score saisi par le marqueur${(() => { const d = new Date(t.m); return isNaN(d) ? "" : " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }); })()} : corrige-le seulement en cas d'erreur.</p>` : ""}
       ${t.score && (t.putts || 0) + (t.pen || 0) > t.score - 1 ? `<p class="sa-alerte">⚠ ${t.putts || 0} putt${t.putts > 1 ? "s" : ""}${t.pen ? ` + ${t.pen} pénalité${t.pen > 1 ? "s" : ""}` : ""} pour un score de ${t.score} : il manque au moins le coup de départ. Vérifie le score ou les putts.</p>` : ""}
       <div class="sa-ligne"><div><h3>Putts</h3>${choix("putts", [0, 1, 2, 3, 4], undefined, true)}</div><div><h3>Pénalités</h3>${choix("pen", [0, 1, 2, 3], undefined, true)}</div></div>
       ${t.par > 3 ? `<h3>Mise en jeu : où a fini ton départ ?</h3>${terrainFw(t.fw)}` : ""}
@@ -321,6 +324,8 @@ function rendreSaisie() {
 $("sa-contenu").addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (!b) return;
   const p = etat.partie, t = p.trous[etat.i];
+  // score du marqueur corrigé par le joueur : on garde le score d'origine (« sm ») pour l'afficher sur la carte
+  if ((b.dataset.cle === "score" || b.dataset.plus === "score") && t.m && t.sm == null && t.score) t.sm = t.score;
   if (b.dataset.cle) {
     const v = b.dataset.cle === "bunker" ? b.dataset.val === "true" : b.dataset.cle === "fw" ? b.dataset.val : +b.dataset.val;
     t[b.dataset.cle] = t[b.dataset.cle] === v && b.dataset.cle !== "score" ? null : v;   // second clic : on efface (sauf le score)
@@ -381,7 +386,7 @@ function tableauCarte(T, nom, complet = true) {
   const somme = sommeCarte;
   return `<table class="vo-table"><thead><tr><th>Trou</th>${T.map((t) => `<th>${t.t}</th>`).join("")}<th>${nom}</th></tr></thead><tbody>
     <tr><th>Par</th>${T.map((t) => `<td>${t.par}</td>`).join("")}<td><b>${T.reduce((s, t) => s + t.par, 0)}</b></td></tr>
-    <tr class="vo-score"><th>Score</th>${T.map((t) => `<td><span class="nt ${notation(t)}">${t.score || "·"}</span></td>`).join("")}<td><b>${somme(T, "score") || "—"}</b></td></tr>
+    <tr class="vo-score"><th>Score</th>${T.map((t) => `<td${titreCorrige(t)}><span class="nt ${notation(t)}">${t.score || "·"}</span>${corrige(t) ? `<sup class="nt-corr" aria-label="corrigé, marqueur ${t.sm}">${t.sm}</sup>` : ""}</td>`).join("")}<td><b>${somme(T, "score") || "—"}</b></td></tr>
     <tr><th>Putts</th>${T.map((t) => `<td class="${t.putts >= 3 ? "pt-mal" : t.putts === 1 ? "pt-bon" : ""}">${t.putts ?? "·"}</td>`).join("")}<td>${somme(T, "putts") || "—"}</td></tr>
     ${complet ? `<tr><th>Pén.</th>${T.map((t) => `<td>${t.pen ? `<span class="pen">${t.pen}</span>` : "·"}</td>`).join("")}<td>${somme(T, "pen") || "—"}</td></tr>` : ""}
     ${complet ? `<tr><th>Départ</th>${T.map((t) => `<td title="${esc(t.fw || "")}">${t.par === 3 ? "" : t.fw ? miniFw(t.fw) : "·"}</td>`).join("")}<td title="Fairways touchés (par 4 et 5)">${(() => { const F = T.filter((t) => t.score && t.par > 3 && t.fw); return F.length ? `${F.filter((t) => t.fw === "fairway").length}/${F.length}` : "—"; })()}</td></tr>` : ""}
@@ -403,7 +408,7 @@ function rendreVoir0() {
     <div class="st-tuiles">${tuileSt(b.n ? b.score : "—", "score", b.n ? ecartPar(b.ecart) + (b.n < p.nb_trous ? ` sur ${b.n} trous` : "") : "")}${tuileSt(b.putts ?? "—", "putts")}${tuileSt(b.fairways, "fairways touchés")}${tuileSt(b.gir, "greens en régulation")}${tuileSt(b.pen, "pénalités")}</div>
     ${b.n ? `<button type="button" class="vo-stats" data-stats-tour><span aria-hidden="true">📊</span> <b>Stats du tour</b><small>${etat.partage ? "répartition, putting, mises en jeu…" : `comparées à ta moyenne${p.tournoi_id ? " · tournoi tour par tour" : ""}`}</small></button>` : ""}
     <div class="bloc vo-carte">${moities.map((T, k) => `<div class="defile">${tableau(T, moities.length > 1 ? (k ? "Retour" : "Aller") : "Total")}</div>`).join("")}
-      <p class="meta vo-legende"><span class="nt nt-albatros">2</span> albatros <span class="nt nt-aigle">3</span> eagle <span class="nt nt-birdie">4</span> birdie <span class="nt nt-par">5</span> par <span class="nt nt-bogey">6</span> bogey <span class="nt nt-double">7</span> double + · départ ${miniFw("fairway")} · <span class="vo-gir">✓</span> green en régulation · ${SABLE} bunker</p></div>
+      <p class="meta vo-legende"><span class="nt nt-albatros">2</span> albatros <span class="nt nt-aigle">3</span> eagle <span class="nt nt-birdie">4</span> birdie <span class="nt nt-par">5</span> par <span class="nt nt-bogey">6</span> bogey <span class="nt nt-double">7</span> double + · départ ${miniFw("fairway")} · <span class="vo-gir">✓</span> green en régulation · ${SABLE} bunker${p.trous.some(corrige) ? ` · <span class="nt">4</span><sup class="nt-corr">5</sup> score corrigé après le marqueur (il avait noté 5)` : ""}</p></div>
     ${p.contexte === "tournoi" && p.tournoi_id && !String(p.tournoi_id).startsWith("club:") && !etat.partage ? `<div id="vo-ffgolf"></div>` : ""}
     ${p.note ? `<div class="bloc"><b>Note</b> <span>${esc(p.note)}</span></div>` : ""}
     ${etat.partage ? `<p class="meta pt-pied">Carte partagée par lien (lecture seule) · <a href="../">GolfNexus</a></p>` : `<div class="vo-actions"><button type="button" class="btn" data-ecran="liste">← ${etat.vue ? "Cartes du joueur" : "Mes cartes"}</button>
@@ -640,7 +645,7 @@ function grilleDirect(J) {
       const T = j.der?.trous || [];
       return `<tr><th class="di-g-nom"><span class="di-rang">${rangs[i]}</span> ${esc(j.nom)}${j.der && !j.der.terminee && j.der.b.n ? ` <span class="di-live" title="saisie en cours">●</span>` : ""}</th>${moities.map(([a, b]) => {
         const M = T.slice(a, b);
-        return Array.from({ length: b - a }, (_, k) => { const t = M[k]; return `<td>${t?.score ? `<span class="nt ${notation(t)}">${t.score}</span>` : "·"}</td>`; }).join("") + `<td class="di-g-sous">${somme(M) || ""}</td>`;
+        return Array.from({ length: b - a }, (_, k) => { const t = M[k]; return `<td${t ? titreCorrige(t) : ""}>${t?.score ? `<span class="nt ${notation(t)}">${t.score}</span>${corrige(t) ? `<sup class="nt-corr">${t.sm}</sup>` : ""}` : "·"}</td>`; }).join("") + `<td class="di-g-sous">${somme(M) || ""}</td>`;
       }).join("")}${moities.length > 1 ? `<td class="di-g-sous"><b>${somme(T) || ""}</b></td>` : ""}<td class="di-ecart ${j.n ? (j.ecart < 0 ? "sous" : j.ecart === 0 ? "par" : "") : ""}">${j.n ? ecartPar(j.ecart) : ""}</td></tr>`;
     }).join("")}</tbody></table></div>
     <p class="meta vo-legende di-aide"><span class="nt nt-aigle">3</span> eagle <span class="nt nt-birdie">4</span> birdie <span class="nt nt-par">5</span> par <span class="nt nt-bogey">6</span> bogey <span class="nt nt-double">7</span> double +${J.some((j) => j.cartes.length > 1) ? " · tour en cours" : ""}</p>`;

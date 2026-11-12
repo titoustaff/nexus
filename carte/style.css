@@ -277,3 +277,6 @@ body.marqueur .pied { display: none; }
 .vo-marqueur { border-left: 4px solid var(--jaune); }
 .vo-marqueur.ok { border-left-color: var(--vert); }
 .vo-marqueur .lien { margin-left: 6px; }
+
+/* score corrigé par le joueur après le marqueur : ancien score en petit, barré */
+.nt-corr { margin-left: 1px; font-size: 10px; font-weight: 600; color: var(--doux); text-decoration: line-through; vertical-align: super; }
