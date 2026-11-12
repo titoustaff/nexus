@@ -575,6 +575,14 @@ function lireDirect() {
   return !!di.src;
 }
 function arreterDirect() { clearInterval(di.minuteur); di.minuteur = null; }
+// liste « Tous les directs » : mise à jour chaque minute tant qu'elle est affichée
+setInterval(() => { if (!document.hidden && etat.ecran === "lives") rendreLives(); }, 60000);
+// retour sur l'onglet (téléphone déverrouillé) : on recharge tout de suite
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) return;
+  if (etat.ecran === "direct" && (di.minuteur || di.publicJeton)) rendreDirect();
+  else if (etat.ecran === "lives") rendreLives();
+});
 function allerDirect(src) {
   const h = src.evt ? "evt=" + encodeURIComponent(src.evt) : "tournoi=" + encodeURIComponent(src.tournoi);
   history.pushState(null, "", location.pathname + location.search + "#" + h);
@@ -637,6 +645,8 @@ async function chargerDirect() {
 }
 async function rendreDirect() {
   const box = $("di-contenu");
+  // mise à jour automatique dès l'ouverture, même si le premier chargement échoue ou ne trouve encore rien
+  if (!di.minuteur) di.minuteur = setInterval(() => { if (!document.hidden && etat.ecran === "direct") rendreDirect(); }, 15000);
   if (!box.innerHTML.trim()) box.innerHTML = `<p class="meta">Chargement…</p>`;
   let D;
   try { D = await chargerDirect(); }
@@ -680,7 +690,7 @@ async function rendreDirect() {
         : `<button type="button" class="btn" id="di-activer">🔗 Créer le lien public</button>`}</div>
       <label class="di-option"><input type="checkbox" id="di-complet" ${D.complet ? "checked" : ""}> Carte complète sur le lien public <small class="meta">(sinon : score et putts seulement ; fairways, greens en régulation, pénalités et bunkers restent réservés aux coachs et aux participants)</small></label></div>` : ""}
     ${di.publicJeton ? `<p class="meta pt-pied">Classement partagé par l'organisateur (lecture seule) · <a href="../">GolfNexus</a></p>` : `<div class="vo-actions"><button type="button" class="btn" data-ecran="lives">← Tous les directs</button><button type="button" class="btn" data-ecran="liste">← Mes cartes</button></div>`}`;
-  if (!di.minuteur && !annule) di.minuteur = setInterval(() => { if (!document.hidden) rendreDirect(); }, 15000);
+  if (annule) arreterDirect();
 }
 $("di-contenu").addEventListener("click", async (e) => {
   const l = e.target.closest("[data-di]");
@@ -732,7 +742,7 @@ async function chargerLives() {
 function majBadgeLives(L) { const n = L.filter((x) => x.enCours).length, b = $("v-lives-nb"); if (b) { b.textContent = n; b.hidden = !n; } }
 async function rendreLives() {
   const box = $("lv-contenu");
-  box.innerHTML = `<p class="meta">Chargement…</p>`;
+  if (!box.innerHTML.trim()) box.innerHTML = `<p class="meta">Chargement…</p>`;   // pas de clignotement à chaque mise à jour
   let L;
   try { L = await chargerLives(); } catch (e) { box.innerHTML = `<div class="bloc vide">Lecture impossible : ${esc(e.message || String(e))}</div>`; return; }
   majBadgeLives(L);
