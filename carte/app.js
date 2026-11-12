@@ -568,7 +568,7 @@ async function modePartage(jeton) {
 // galaxy/MD_DOC/EVENEMENTS.md. #evt=<id> : événement (fonction carte_direct : participants ayant accepté) ;
 // #tournoi=<id ffgolf> : coach, cartes de SES joueurs suivis rattachées au tournoi (règle « carte : coach lecture ») ;
 // #evtdirect=<jeton> : lien public de l'événement, sans compte (carte_direct_public). Mise à jour toutes les 15 s.
-const di = { src: null, ouverts: new Set(), minuteur: null, publicJeton: null };
+const di = { src: null, ouverts: new Set(), minuteur: null, publicJeton: null, vue: (() => { try { return localStorage.getItem("gn-direct-vue") || "liste"; } catch { return "liste"; } })() };
 function lireDirect() {
   const h = new URLSearchParams(location.hash.slice(1));
   di.src = h.get("evt") ? { evt: h.get("evt") } : h.get("tournoi") ? { tournoi: h.get("tournoi") } : null;
@@ -614,6 +614,28 @@ function joueursDirect(L) {
 function miniCarte(c, complet) {
   const T = c.trous || [], moities = T.length > 9 ? [T.slice(0, 9), T.slice(9)] : [T];
   return moities.map((M, k) => `<div class="defile">${tableauCarte(M, moities.length > 1 ? (k ? "Retour" : "Aller") : "Total", complet).replace('class="vo-table"', 'class="vo-table di-mini"')}</div>`).join("");
+}
+// onglet « Carte de score » : une ligne par joueur (ordre du classement), trous 1 à 18 du tour en cours, couleurs de la carte
+function grilleDirect(J) {
+  const avec = J.filter((j) => j.der?.trous?.length);
+  if (!avec.length) return `<p class="meta di-aide">Aucune carte pour l'instant.</p>`;
+  const ref = avec.reduce((a, j) => (j.der.trous.length > a.length ? j.der.trous : a), []), n = ref.length;
+  const moities = n > 9 ? [[0, 9], [9, n]] : [[0, n]];
+  const parDe = (a, b) => ref.slice(a, b).reduce((s, t) => s + (t.par || 0), 0);
+  const somme = (T) => T.reduce((s, t) => s + (t.score || 0), 0);
+  let rang = 0, prec = null;
+  const rangs = J.map((j, i) => { if (!j.n) return ""; if (j.ecart !== prec) rang = i + 1; prec = j.ecart; return rang; });
+  return `<div class="defile"><table class="di-grille"><thead><tr><th class="di-g-nom">Trou</th>${moities.map(([a, b], k) =>
+      ref.slice(a, b).map((t) => `<th>${t.t}</th>`).join("") + `<th class="di-g-sous">${moities.length > 1 ? (k ? "Ret." : "Aller") : "Total"}</th>`).join("")}${moities.length > 1 ? `<th class="di-g-sous">Total</th>` : ""}<th>± Par</th></tr>
+    <tr class="di-g-par"><th class="di-g-nom">Par</th>${moities.map(([a, b]) => ref.slice(a, b).map((t) => `<td>${t.par}</td>`).join("") + `<td class="di-g-sous">${parDe(a, b)}</td>`).join("")}${moities.length > 1 ? `<td class="di-g-sous">${parDe(0, n)}</td>` : ""}<td></td></tr></thead>
+    <tbody>${J.map((j, i) => {
+      const T = j.der?.trous || [];
+      return `<tr><th class="di-g-nom"><span class="di-rang">${rangs[i]}</span> ${esc(j.nom)}${j.der && !j.der.terminee && j.der.b.n ? ` <span class="di-live" title="saisie en cours">●</span>` : ""}</th>${moities.map(([a, b]) => {
+        const M = T.slice(a, b);
+        return Array.from({ length: b - a }, (_, k) => { const t = M[k]; return `<td>${t?.score ? `<span class="nt ${notation(t)}">${t.score}</span>` : "·"}</td>`; }).join("") + `<td class="di-g-sous">${somme(M) || ""}</td>`;
+      }).join("")}${moities.length > 1 ? `<td class="di-g-sous"><b>${somme(T) || ""}</b></td>` : ""}<td class="di-ecart ${j.n ? (j.ecart < 0 ? "sous" : j.ecart === 0 ? "par" : "") : ""}">${j.n ? ecartPar(j.ecart) : ""}</td></tr>`;
+    }).join("")}</tbody></table></div>
+    <p class="meta vo-legende di-aide"><span class="nt nt-aigle">3</span> eagle <span class="nt nt-birdie">4</span> birdie <span class="nt nt-par">5</span> par <span class="nt nt-bogey">6</span> bogey <span class="nt nt-double">7</span> double +${J.some((j) => j.cartes.length > 1) ? " · tour en cours" : ""}</p>`;
 }
 async function chargerDirect() {
   if (di.publicJeton) {
@@ -695,9 +717,10 @@ async function rendreDirect() {
       <small>${enCours ? "mise à jour automatique · " : ""}${derniere ? "dernière saisie " + new Date(derniere).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : ""}</small></div>
     <div class="s-tete"><h2>${esc(D.titre)}</h2><span class="meta">${esc(D.sous)}${N > 1 ? ` · ${N} tours` : ""}</span></div>
     ${D.vide ? `<div class="bloc vide">${esc(D.vide)}</div>` : !J.length ? `<div class="bloc vide">Aucune carte pour l'instant.${D.note ? `<br><span class="meta">${esc(D.note)}</span>` : ""}</div>` : `
-    <div class="bloc di-bloc"><div class="defile"><table class="di-table"><thead><tr><th></th><th>Joueur</th><th title="trous saisis">Trou</th><th title="score par rapport au par">± Par</th>${N > 1 ? Array.from({ length: N }, (_, k) => `<th>T${k + 1}</th>`).join("") : ""}<th>Total</th></tr></thead>
+    <div class="di-onglets" role="tablist" aria-label="Affichage du direct"><button type="button" role="tab" data-di-vue="liste" aria-selected="${di.vue !== "grille"}">Classement</button><button type="button" role="tab" data-di-vue="grille" aria-selected="${di.vue === "grille"}">Carte de score</button></div>
+    ${di.vue === "grille" ? `<div class="bloc di-bloc">${grilleDirect(J)}</div>` : `<div class="bloc di-bloc"><div class="defile"><table class="di-table"><thead><tr><th></th><th>Joueur</th><th title="trous saisis">Trou</th><th title="score par rapport au par">± Par</th>${N > 1 ? Array.from({ length: N }, (_, k) => `<th>T${k + 1}</th>`).join("") : ""}<th>Total</th></tr></thead>
       <tbody>${lignes}</tbody></table></div>
-      <p class="meta di-aide">Touche un joueur pour voir sa carte trou par trou.${D.note ? " " + esc(D.note) : ""}</p></div>`}
+      <p class="meta di-aide">Touche un joueur pour voir sa carte trou par trou.${D.note ? " " + esc(D.note) : ""}</p></div>`}`}
     ${D.organisateur && !annule ? `<div class="bloc di-public"><b>Lien public</b> <span class="meta">pour les parents, sans compte : ils voient ce classement (prénom et initiale) et les cartes.</span>
       <div class="di-public-b">${D.jeton ? `<input id="di-lien" readonly value="${esc(location.origin + location.pathname + "#evtdirect=" + D.jeton)}" aria-label="Lien public"><button type="button" class="btn plein" id="di-copier">Copier</button><button type="button" class="lien vo-suppr" id="di-couper">Couper le lien</button>`
         : `<button type="button" class="btn" id="di-activer">🔗 Créer le lien public</button>`}</div>
@@ -706,6 +729,8 @@ async function rendreDirect() {
   if (annule) arreterDirect();
 }
 $("di-contenu").addEventListener("click", async (e) => {
+  const o = e.target.closest("[data-di-vue]");
+  if (o) { di.vue = o.dataset.diVue; try { localStorage.setItem("gn-direct-vue", di.vue); } catch {} rendreDirect(); return; }
   const l = e.target.closest("[data-di]");
   if (l) { const k = l.dataset.di; di.ouverts.has(k) ? di.ouverts.delete(k) : di.ouverts.add(k); rendreDirect(); return; }
   const id = e.target.id;

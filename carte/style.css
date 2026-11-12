@@ -253,3 +253,20 @@ body.marqueur .pied { display: none; }
 .mq-mode button[aria-pressed="true"] { background: var(--vert); color: var(--fond); }
 .mq-mode button:focus-visible { outline: 2px solid var(--jaune); outline-offset: 2px; }
 .mq-trous button { min-height: 38px; font-weight: 700; }
+
+/* direct : onglets Classement / Carte de score */
+.di-onglets { display: inline-flex; gap: 2px; padding: 3px; margin: 4px 0 10px; border-radius: 999px; background: var(--sauge-pale); }
+.di-onglets button { border: 0; background: transparent; color: var(--texte); font: inherit; font-weight: 600; font-size: 14px; padding: 7px 14px; border-radius: 999px; cursor: pointer; }
+.di-onglets button[aria-selected="true"] { background: var(--vert); color: var(--fond); }
+.di-onglets button:focus-visible { outline: 2px solid var(--jaune); outline-offset: 1px; }
+.di-grille { border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.di-grille th, .di-grille td { text-align: center; padding: 6px 3px; min-width: 28px; border-bottom: 1px solid var(--bord); white-space: nowrap; }
+.di-grille thead th { background: var(--vert); color: var(--fond); font-weight: 600; }
+.di-grille .di-g-par td, .di-grille .di-g-par th { background: var(--sauge-pale); color: var(--doux); }
+.di-grille .di-g-nom { position: sticky; left: 0; z-index: 1; text-align: left; padding: 6px 8px; min-width: 120px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; background: var(--fond); }
+.di-grille thead .di-g-nom { background: var(--vert); }
+.di-grille .di-g-par .di-g-nom { background: var(--sauge-pale); }
+.di-grille .di-g-sous { background: color-mix(in srgb, var(--sauge-pale) 70%, transparent); font-weight: 700; }
+.di-grille thead .di-g-sous { background: var(--vert-2); }
+.di-grille .nt { width: 24px; height: 24px; font-size: 12px; }
+.di-grille .di-ecart { font-size: 14px; padding: 6px 8px; }
