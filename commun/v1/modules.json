@@ -1,5 +1,5 @@
 {
- "_note": "Modules de la suite GolfNexus, dans l'ordre de développement. adresse : relative à https://titoustaff.github.io/nexus/ ; etat : ouvert | bientot. Nouveau module = une ligne ici. role : module visible seulement pour ce rôle ou cette liste de rôles (ex. \"admin\", [\"coach\", \"admin\"]) ; « membre » : membre AS / club invité par le club (fonction club_mon_acces). vueJoueur : module qui suit le joueur regardé par un coach (raccourci dans la bande jaune « lecture seule »).",
+ "_note": "Modules de la suite GolfNexus, dans l'ordre du menu (grille de 3 : Saison, Carte, Stats / Entraînement, Club, Admin ; décidé le 12/11/2026). adresse : relative à https://titoustaff.github.io/nexus/ ; etat : ouvert | bientot. Nouveau module = une ligne ici. role : module visible seulement pour ce rôle ou cette liste de rôles (ex. \"admin\", [\"coach\", \"admin\"]) ; « membre » : membre AS / club invité par le club (fonction club_mon_acces). vueJoueur : module qui suit le joueur regardé par un coach (raccourci dans la bande jaune « lecture seule »).",
  "modules": [
   {
    "id": "saison",
@@ -10,20 +10,6 @@
    "etat": "ouvert",
    "icone": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"5\" width=\"18\" height=\"16\" rx=\"3\"/><path d=\"M3 10h18M8 3v4M16 3v4\"/><path d=\"M10 13v6\" /><path d=\"M10.5 13l4 1.5-4 1.5z\" fill=\"currentColor\"/></svg>",
    "vueJoueur": true
-  },
-  {
-   "id": "club",
-   "nom": "Club",
-   "verbe": "Accompagner",
-   "couleur": "#14532d",
-   "adresse": "club/",
-   "etat": "ouvert",
-   "icone": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z\"/><circle cx=\"9.5\" cy=\"11\" r=\"2\"/><circle cx=\"14.5\" cy=\"11\" r=\"2\"/><path d=\"M6.8 17c.6-1.7 1.6-2.5 2.7-2.5s2.1.8 2.5 1.6c.4-.8 1.4-1.6 2.5-1.6s2.1.8 2.7 2.5\"/></svg>",
-   "role": [
-    "coach",
-    "admin",
-    "membre"
-   ]
   },
   {
    "id": "carte",
@@ -54,6 +40,20 @@
    "etat": "bientot",
    "icone": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><circle cx=\"12\" cy=\"12\" r=\"5\"/><circle cx=\"12\" cy=\"12\" r=\"1.6\" fill=\"currentColor\"/></svg>",
    "vueJoueur": true
+  },
+  {
+   "id": "club",
+   "nom": "Club",
+   "verbe": "Accompagner",
+   "couleur": "#14532d",
+   "adresse": "club/",
+   "etat": "ouvert",
+   "icone": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z\"/><circle cx=\"9.5\" cy=\"11\" r=\"2\"/><circle cx=\"14.5\" cy=\"11\" r=\"2\"/><path d=\"M6.8 17c.6-1.7 1.6-2.5 2.7-2.5s2.1.8 2.5 1.6c.4-.8 1.4-1.6 2.5-1.6s2.1.8 2.7 2.5\"/></svg>",
+   "role": [
+    "coach",
+    "admin",
+    "membre"
+   ]
   },
   {
    "id": "admin",
