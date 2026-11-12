@@ -79,7 +79,9 @@ function signaler(msg) {
 // ------------------------------------------------------------------ outils golf (repris de Saison, communs à tous les modules)
 const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
 const MOIS_COURT = ["janv", "févr", "mars", "avr", "mai", "juin", "juil", "août", "sept", "oct", "nov", "déc"];
-const AUJ = new Date().toISOString().slice(0, 10);
+// date du jour à l'heure du téléphone (France), pas en UTC : sinon, entre minuit et 1 h / 2 h, « aujourd'hui » serait la veille
+const jourLocal = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const AUJ = jourLocal();
 function fmtDate(d) { const x = new Date(d + "T12:00:00"); return `${x.getDate()} ${MOIS_COURT[x.getMonth()]}`; }
 // Noms FFGolf en MAJUSCULES → casse normale (« GOLF DE ST DONAT » → « Golf de St Donat »).
 const PETITS = new Set(["de", "du", "des", "la", "le", "les", "et", "sur", "en", "au", "aux", "à", "d", "l", "sous"]);
