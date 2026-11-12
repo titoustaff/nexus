@@ -336,3 +336,6 @@ body.marqueur .pied { display: none; }
 .cpc-pied { margin: 2px 0 0; font-size: 12px; color: var(--doux); }
 .cpc-pied .lien { font-size: 12px; }
 
+
+/* consigne du coup par coup : au-dessus de la photo, hors de la carte (12/11, demande utilisateur) */
+.cpc-aide { position: static; max-width: none; width: auto; margin: 0; padding: 8px 12px; border-radius: 10px; background: var(--sauge-pale); color: var(--texte); font-size: 13.5px; font-weight: 600; pointer-events: auto; }

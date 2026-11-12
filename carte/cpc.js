@@ -365,8 +365,9 @@ const CPC = (() => {
       return `<li class="cpc-coup${S.sel === k ? " choisi" : ""}"><button type="button" class="cpc-resume" data-cpc-ouvrir="${k}"><b>${k + 1}</b><span>${esc(c.club || "")} · <strong>${d} m</strong></span><span class="cpc-pos">${esc(c.pos)}</span>${c.vise ? `<span class="cpc-ecart">${texteEcart(ecart(G, O[k], c.vise, c.p))}</span>` : ""}<span class="cpc-reste">${c.pos === "Dans le trou" ? "dans le trou" : c.pos === "Green" ? r + " m du drapeau" : "reste " + r + " m"}</span></button></li>`;
     }).join("");
     return `<div class="cpc">
+      <p class="cpc-aide" aria-live="polite">${aide(i)}</p>
       <div class="cpc-carte"><svg id="cpc-svg" role="img" aria-label="Photo aérienne du trou ${t.t}, départ en bas, green en haut"></svg>
-        <p class="cpc-aide">${aide(i)}</p><span class="cpc-long">${Math.round(lg)} m</span></div>
+        <span class="cpc-long">${Math.round(lg)} m</span></div>
       <div class="cpc-outils">${S.mode === "visee" && !fini ? `<button type="button" class="btn" data-cpc-drapeau>🎯 Le drapeau</button>` : ""}<button type="button" class="btn" data-cpc-gps>📍 Ma balle est ici</button><button type="button" class="btn" data-cpc-annuler ${C.length || W.viseEnCours ? "" : "disabled"}>Annuler le dernier coup</button></div>
       ${C.length ? `<ol class="cpc-liste">${lignes}</ol>` : ""}
       <p class="cpc-pied"><button type="button" class="lien" data-cpc-retour>Signaler un problème sur ce trou</button> · <span>Plan © contributeurs OpenStreetMap · photo IGN</span></p>
