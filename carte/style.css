@@ -339,3 +339,10 @@ body.marqueur .pied { display: none; }
 
 /* consigne du coup par coup : au-dessus de la photo, hors de la carte (12/11, demande utilisateur) */
 .cpc-aide { position: static; max-width: none; width: auto; margin: 0; padding: 8px 12px; border-radius: 10px; background: var(--sauge-pale); color: var(--texte); font-size: 13.5px; font-weight: 600; pointer-events: auto; }
+
+/* questions du coup en VOLET sur le côté droit (12/11, demande utilisateur), plus en fenêtre sur la photo */
+.pan.volet { position: fixed; top: 0; bottom: 0; right: 0; left: auto; width: min(330px, 80vw); max-height: none; z-index: 50;
+  border-radius: 16px 0 0 16px; padding: 14px 14px 12px; box-shadow: -8px 0 30px rgba(0,0,0,.3); animation: volet-entre .18s ease-out; display: flex; flex-direction: column; }
+.pan.volet .pan-pied { margin-top: auto; bottom: -12px; flex-wrap: wrap; }
+@keyframes volet-entre { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .pan.volet { animation: none; } }

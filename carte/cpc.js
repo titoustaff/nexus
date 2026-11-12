@@ -399,7 +399,7 @@ const CPC = (() => {
         ${pied(`<button type="button" class="lien" data-cpc-suppr="${k}">Supprimer</button><button type="button" class="btn" data-cpc-deplacer="${k}">Déplacer</button>${
           fini && dernier && t.score && i < etat.partie.trous.length - 1 ? `<button type="button" class="btn plein" data-pas="1">Trou ${etat.partie.trous[i + 1].t} →</button>` : `<button type="button" class="btn plein" data-cpc-fermer>Valider</button>`}`)}`;
     }
-    return `<div class="pan" id="cpc-panneau" role="dialog" aria-label="Questions du coup">${corps}</div>`;
+    return `<div class="pan volet" id="cpc-panneau" role="dialog" aria-label="Questions du coup">${corps}</div>`;
   }
   function apres(i) {
     if (!actif(i)) return;
@@ -407,9 +407,7 @@ const CPC = (() => {
     if (S.panneau) {
       const svg = $("cpc-svg"), cadre = svg.parentNode;
       cadre.insertAdjacentHTML("beforeend", panneauHTML(i));
-      const pan = $("cpc-panneau"), cib = S.panneau.type === "depart" ? svg.querySelector("[data-depart]") : svg.querySelector(`[data-balle="${S.panneau.k}"]`);
-      if (pan && cib) { const r = cib.getBoundingClientRect(), s2 = svg.getBoundingClientRect(); pan.classList.toggle("haut", r.top + r.height / 2 > s2.top + s2.height / 2); }
-      cadre.classList.add("avec-pan");
+      // volet sur le côté droit (12/11, demande utilisateur : pas de fenêtre par-dessus la photo) ; la photo reste visible à gauche
       const r = cadre.getBoundingClientRect(); if (r.top < 0 || r.bottom > innerHeight) cadre.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
   }
