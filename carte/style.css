@@ -270,3 +270,10 @@ body.marqueur .pied { display: none; }
 .di-grille thead .di-g-sous { background: var(--vert-2); }
 .di-grille .nt { width: 24px; height: 24px; font-size: 12px; }
 .di-grille .di-ecart { font-size: 14px; padding: 6px 8px; }
+
+/* marqueur : fin de partie ; carte du joueur pendant / après la saisie du marqueur */
+.mq-fin { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin: 14px 0 4px; padding: 12px 14px; border-radius: 12px; background: var(--sauge-pale); }
+.mq-fin p { margin: 0; }
+.vo-marqueur { border-left: 4px solid var(--jaune); }
+.vo-marqueur.ok { border-left-color: var(--vert); }
+.vo-marqueur .lien { margin-left: 6px; }

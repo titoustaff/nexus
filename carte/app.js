@@ -57,6 +57,9 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape" && compte.o
 const joues = (p) => (p.trous || []).filter((t) => t.score);
 const total = (p, k = "score") => joues(p).reduce((s, t) => s + (+t[k] || 0), 0);
 const parJoue = (p) => joues(p).reduce((s, t) => s + (+t.par || 0), 0);
+// carte saisie par le marqueur (trous « m ») et pas encore close par lui : le joueur ne peut rien modifier (club-marqueur-fin.sql)
+const carteMarqueur = (p) => (p?.trous || []).some((t) => t.m);
+const marqueurEnCours = (p) => carteMarqueur(p) && !p.terminee && !(p.jour < JOUR);   // jours passés : la base débloque après l'événement
 const ecartPar = (n) => (n === 0 ? "par" : (n > 0 ? "+" : "") + n);
 const classeScore = (t) => { if (!t.score) return ""; const d = t.score - t.par; return d <= -2 ? "sc-aigle" : d === -1 ? "sc-birdie" : d === 0 ? "sc-par" : d === 1 ? "sc-bogey" : "sc-double"; };
 // notation des cartes de golf : rond = birdie, double rond = eagle ou mieux, carré = bogey, double carré = double bogey ou pire
@@ -149,7 +152,7 @@ $("li-contenu").addEventListener("click", async (e) => {
   etat.partie = etat.parties.find((p) => p.id === b.dataset.partie);
   const m = jsonLs("carte-en-cours");   // reprendre au trou où l'on s'était arrêté, sinon au premier trou sans score
   etat.i = m?.id === etat.partie.id ? Math.min(m.i, etat.partie.trous.length - 1) : Math.max(0, etat.partie.trous.findIndex((t) => !t.score));
-  ecran(!etat.vue && !etat.partie.terminee ? "saisie" : "voir");
+  ecran(!etat.vue && !etat.partie.terminee && !marqueurEnCours(etat.partie) ? "saisie" : "voir");
 });
 
 // ------------------------------------------------------------------ « Ta carte t'attend » : compétitions du jour dans Ma saison (Saison)
@@ -262,7 +265,7 @@ $("nv-form").addEventListener("submit", async (e) => {
   if (ligne.tournoi_id) {
     // déjà une carte pour ce tournoi et ce tour : on l'ouvre plutôt que d'en créer une deuxième
     const deja = etat.parties.find((x) => x.tournoi_id === ligne.tournoi_id && (x.tour || 1) === ligne.tour);
-    if (deja) { signaler("Ta carte de ce tour existe déjà : on la rouvre."); etat.partie = deja; etat.i = Math.max(0, deja.trous.findIndex((t) => !t.score)); ecran(deja.terminee ? "voir" : "saisie"); return; }
+    if (deja) { signaler("Ta carte de ce tour existe déjà : on la rouvre."); etat.partie = deja; etat.i = Math.max(0, deja.trous.findIndex((t) => !t.score)); ecran(deja.terminee || marqueurEnCours(deja) ? "voir" : "saisie"); return; }
   }
   $("nv-ok").disabled = true;
   let { data, error } = await sb.from("carte_parties").insert(ligne).select("*").single();
@@ -348,6 +351,7 @@ function sauver(tout = false) {
   const p = etat.partie; p.modifie_le = new Date().toISOString();
   lsSet("carte-brouillon", JSON.stringify(p));
   const ecrire = async () => {
+    if (marqueurEnCours(p)) return;   // le marqueur saisit : la base refuserait de toute façon
     // carte d'un événement : le marqueur a pu saisir des scores entre-temps (lien marqueur) ; on reprend ses scores
     // (trous marqués « m ») avant d'écrire, pour ne jamais les écraser avec une version ancienne
     if (String(p.tournoi_id || "").startsWith("club:")) {
@@ -365,6 +369,12 @@ function sauver(tout = false) {
       if (!error && !data?.length) error = { message: "session expirée : reconnecte-toi (tes saisies sont gardées et repartiront)" };
     }
     const m = $("sa-etat");
+    if (error && /marqueur/i.test(error.message)) {   // le marqueur a commencé à saisir cette carte entre-temps
+      try { localStorage.removeItem("carte-brouillon"); } catch { /* */ }
+      const { data: srv } = await sb.from("carte_parties").select("*").eq("id", p.id).maybeSingle();
+      if (srv) etat.partie = srv;
+      signaler(error.message); ecran("voir"); return;
+    }
     if (error) { if (m) m.textContent = "⚠ pas encore enregistré"; signaler("Enregistrement impossible : " + error.message + " — tes saisies sont gardées dans ce navigateur."); return; }
     try { localStorage.removeItem("carte-brouillon"); } catch { /* */ }
     if (m) m.textContent = "✓ enregistré";
@@ -396,6 +406,8 @@ function rendreVoir0() {
     ${etat.partage ? `<div class="pt-direct ${p.terminee ? "fini" : ""}"><span>${p.terminee ? "✓ Partie terminée" : "● En direct"}${p.prenom ? ` · la carte de <b>${esc(p.prenom)}</b>` : ""}</span>
       <small>${p.terminee ? "" : "mise à jour automatique · "}dernière saisie ${new Date(p.modifie_le).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</small></div>` : ""}
     <div class="s-tete"><h2>${esc(titre(p.golf_nom || p.golf))}</h2><span class="meta">${esc(p.parcours_nom || "")}${p.repere ? " · " + esc(p.repere) : ""} · ${dateLongue(p.jour)} · ${CONTEXTES[p.contexte] || ""}</span></div>
+    ${!etat.partage && !lecture && carteMarqueur(p) ? (p.terminee ? `<div class="bloc vo-marqueur ok">✓ <b>Le marqueur a terminé la partie.</b> Ses scores font foi ; touche « Compléter mes stats » pour ajouter tes putts, ta mise en jeu, tes pénalités et tes bunkers.</div>`
+      : `<div class="bloc vo-marqueur">🔒 <b>Le marqueur saisit ta carte.</b> Tu pourras la compléter (putts, mise en jeu…) quand il aura terminé la partie. <button type="button" class="lien" data-recharger-carte>Actualiser</button></div>`) : ""}
     <div class="st-tuiles">${tuileSt(b.n ? b.score : "—", "score", b.n ? ecartPar(b.ecart) + (b.n < p.nb_trous ? ` sur ${b.n} trous` : "") : "")}${tuileSt(b.putts ?? "—", "putts")}${tuileSt(b.fairways, "fairways touchés")}${tuileSt(b.gir, "greens en régulation")}${tuileSt(b.pen, "pénalités")}</div>
     ${b.n ? `<button type="button" class="vo-stats" data-stats-tour><span aria-hidden="true">📊</span> <b>Stats du tour</b><small>${etat.partage ? "répartition, putting, mises en jeu…" : `comparées à ta moyenne${p.tournoi_id ? " · tournoi tour par tour" : ""}`}</small></button>` : ""}
     <div class="bloc vo-carte">${moities.map((T, k) => `<div class="defile">${tableau(T, moities.length > 1 ? (k ? "Retour" : "Aller") : "Total")}</div>`).join("")}
@@ -403,7 +415,7 @@ function rendreVoir0() {
     ${p.contexte === "tournoi" && p.tournoi_id && !String(p.tournoi_id).startsWith("club:") && !etat.partage ? `<div id="vo-ffgolf"></div>` : ""}
     ${p.note ? `<div class="bloc"><b>Note</b> <span>${esc(p.note)}</span></div>` : ""}
     ${etat.partage ? `<p class="meta pt-pied">Carte partagée par lien (lecture seule) · <a href="../">GolfNexus</a></p>` : `<div class="vo-actions"><button type="button" class="btn" data-ecran="liste">← ${etat.vue ? "Cartes du joueur" : "Mes cartes"}</button>
-      ${lecture ? `<span class="meta">Lecture seule</span>` : `<button type="button" class="btn plein" data-partager>🔗 Partager en direct</button><button type="button" class="btn" data-modifier>Modifier la saisie</button><button type="button" class="lien vo-suppr" data-supprimer>Supprimer la partie</button>`}</div>`}`;
+      ${lecture ? `<span class="meta">Lecture seule</span>` : marqueurEnCours(p) ? `<span class="meta">🔒 Le marqueur saisit ta carte</span>` : `<button type="button" class="btn plein" data-partager>🔗 Partager en direct</button><button type="button" class="btn" data-modifier>${carteMarqueur(p) ? "Compléter mes stats" : "Modifier la saisie"}</button>${carteMarqueur(p) ? "" : `<button type="button" class="lien vo-suppr" data-supprimer>Supprimer la partie</button>`}`}</div>`}`;
 }
 // Contrôle ffgolf : le trou par trou relevé par la ffgolf (resultats_perso, après le tournoi) comparé à la carte.
 // La saisie reste la source immédiate (le joueur a besoin de ses chiffres entre deux tours) ; ici on signale seulement
@@ -432,7 +444,11 @@ $("vo-contenu").addEventListener("click", async (e) => {
     for (const [t, o] of E) { const h = etat.partie.trous.find((x) => x.t === t); if (h) h.score = o; }
     sauver(true); rendreVoir(); signaler("Scores ffgolf repris."); return;
   }
-  if ("modifier" in b.dataset) { const p = etat.partie; p.terminee = false; etat.i = Math.max(0, p.trous.findIndex((t) => !t.score)); ecran("saisie"); return; }
+  if ("rechargerCarte" in b.dataset) {
+    const { data: srv } = await sb.from("carte_parties").select("*").eq("id", etat.partie.id).maybeSingle();
+    if (srv) etat.partie = srv; rendreVoir(); return;
+  }
+  if ("modifier" in b.dataset) { const p = etat.partie; if (!carteMarqueur(p)) p.terminee = false; etat.i = Math.max(0, p.trous.findIndex((t) => !t.score)); ecran("saisie"); return; }
   if ("supprimer" in b.dataset) {
     if (!confirm("Supprimer définitivement cette partie ?")) return;
     const { error } = await sb.from("carte_parties").delete().eq("id", etat.partie.id);
@@ -471,7 +487,7 @@ async function entrer() {
       const { data: p } = await sb.from("carte_parties").select("*").eq("id", m.id).maybeSingle();
       etat.partie = p || null;
     }
-    if (etat.partie && !etat.partie.terminee) {
+    if (etat.partie && !etat.partie.terminee && !marqueurEnCours(etat.partie)) {
       etat.i = Math.min(m.i || 0, etat.partie.trous.length - 1);
       ecran("saisie"); signaler("Reprise de ta partie en cours."); return;
     }
@@ -810,14 +826,15 @@ async function chargerMarqueur() {
   const tour = tourDuJour({ debut: e.ev_debut, nb_tours: e.ev_nb_tours || 1 }, JOUR);
   const J = new Map();
   for (const r of data) {
-    const j = J.get(r.cle) || { cle: r.cle, nom: r.nom, trous: pars.map((x) => ({ t: x.t, par: x.par })) }; J.set(r.cle, j);
-    if (r.trous && (r.tour || 1) === tour) j.trous = pars.map((x) => ({ t: x.t, par: x.par, ...((r.trous || []).find((y) => y.t === x.t) || {}) }));
+    const j = J.get(r.cle) || { cle: r.cle, nom: r.nom, trous: pars.map((x) => ({ t: x.t, par: x.par })), carte: false, terminee: false }; J.set(r.cle, j);
+    if (r.trous && (r.tour || 1) === tour) { j.trous = pars.map((x) => ({ t: x.t, par: x.par, ...((r.trous || []).find((y) => y.t === x.t) || {}) })); j.carte = true; j.terminee = !!r.terminee; }
   }
   // départ du trou 10 : on commence au 10 et on finit par le 9
   const ordre = pars.map((_, k) => k); const k10 = pars.findIndex((x) => x.t === 10);
   if (e.depart === 10 && k10 > 0) ordre.push(...ordre.splice(0, k10));
   return { nom: e.ev_nom, golf: titre(e.ev_golf_nom || ""), numero: e.numero, heure: e.heure, depart: e.depart, parcours: e.parcours_nom, repere: e.repere,
-    nbTours: e.ev_nb_tours || 1, tour, pars, ordre, joueurs: [...J.values()] };
+    nbTours: e.ev_nb_tours || 1, tour, pars, ordre, joueurs: [...J.values()],
+    fini: [...J.values()].some((j) => j.carte) && [...J.values()].filter((j) => j.carte).every((j) => j.terminee) };
 }
 function rendreMarqueur() {
   const box = $("mq-contenu"), D = mq.D;
@@ -843,6 +860,8 @@ function rendreMarqueur() {
           <div><h3>Pénalités</h3><div class="sa-choix">${[0, 1, 2, 3].map((v) => bouton("pen", j.cle, v, v, t.pen === v)).join("")}</div></div>
           <div><h3>Bunker</h3><div class="sa-choix">${bouton("bunker", j.cle, false, "Non", t.bunker === false)}${bouton("bunker", j.cle, true, "Oui", t.bunker === true)}</div></div>
           ${P.par > 3 ? `<div class="mq-fw" data-mq-fw="${esc(j.cle)}"><h3>Mise en jeu</h3>${terrainFw(t.fw)}</div>` : ""}</div>` : ""}</div>`; }).join("")}</div>
+    <div class="mq-fin">${D.fini ? `<p><b>✓ Partie terminée.</b> Les joueurs peuvent maintenant compléter leurs stats (putts, mise en jeu…). Les scores sont verrouillés.</p><button type="button" class="lien" data-mq-terminer="0">Rouvrir pour corriger un score</button>`
+      : `<button type="button" class="btn ${D.ordre.every(fait) ? "plein" : ""}" data-mq-terminer="1">✓ Terminer la partie</button><small class="meta">Tant que la partie n'est pas terminée, les joueurs ne peuvent pas modifier leur carte.</small>`}</div>
     <div class="sa-nav mq-nav"><button type="button" class="btn" data-mq-pas="-1" ${mq.i === 0 ? "disabled" : ""}>← Trou ${mq.i ? D.pars[D.ordre[mq.i - 1]].t : ""}</button>
       ${mq.i < D.ordre.length - 1 ? `<button type="button" class="btn plein" data-mq-pas="1">Trou ${D.pars[D.ordre[mq.i + 1]].t} →</button>` : `<span class="meta">Dernier trou</span>`}</div>
     <p class="meta pt-pied">Lien marqueur de la partie ${D.numero} : il ne sert que pour cette partie et expire après le jour de l'événement. Chaque joueur complète ensuite sa carte (putts, mise en jeu…). · <a href="../">GolfNexus</a></p>`;
@@ -868,6 +887,23 @@ async function viderMarqueur() {
   if (echec) { etatMarqueur("hors ligne : nouvel essai…", true); clearTimeout(mq.minuteur); mq.minuteur = setTimeout(viderMarqueur, 5000); }
   else etatMarqueur("✓ enregistré");
 }
+async function terminerMarqueur(fini) {
+  const D = mq.D;
+  if (fini) {
+    const manque = D.joueurs.reduce((s, j) => s + D.ordre.filter((kk) => !j.trous[kk]?.score).length, 0);
+    if (!confirm(manque ? `Il manque ${manque} score${manque > 1 ? "s" : ""}. Terminer quand même ? Les joueurs pourront alors compléter leurs stats.`
+      : "Terminer la partie ? Les scores seront verrouillés et chaque joueur pourra compléter ses stats.")) return;
+  }
+  if (mq.envoi.size) { clearTimeout(mq.minuteur); await viderMarqueur(); }
+  const { error } = await sb.rpc("marqueur_terminer", { j: mq.jeton, tour: D.tour, fini });
+  if (error) {
+    signaler(/marqueur_terminer|function/.test(error.message) ? "Fonction pas encore installée dans la base (script club-marqueur-fin.sql)." : /lien/.test(error.message) ? "Lien expiré ou coupé." : "Impossible : " + error.message);
+    return;
+  }
+  D.fini = fini; for (const j of D.joueurs) if (j.carte) j.terminee = fini;
+  etatMarqueur(fini ? "✓ partie terminée" : "partie rouverte");
+  rendreMarqueur(); window.scrollTo({ top: document.body.scrollHeight });
+}
 async function modeMarqueur(jeton) {
   mq.jeton = jeton; etat.ecran = "marqueur";
   finReprise(); document.body.classList.remove("verrou"); document.body.classList.add("partage", "marqueur");
@@ -889,6 +925,8 @@ $("mq-contenu").addEventListener("click", (e) => {
   if (b.dataset.mqMode != null) { mq.complet = b.dataset.mqMode === "1"; try { localStorage.setItem("carte-marqueur-complet", mq.complet ? "1" : "0"); } catch { /* */ } rendreMarqueur(); return; }
   if (b.dataset.mqAller != null) { mq.i = +b.dataset.mqAller; rendreMarqueur(); return; }
   if (b.dataset.mqPas) { mq.i = Math.max(0, Math.min(D.ordre.length - 1, mq.i + +b.dataset.mqPas)); rendreMarqueur(); window.scrollTo({ top: 0 }); return; }
+  if (b.dataset.mqTerminer != null) { terminerMarqueur(b.dataset.mqTerminer === "1"); return; }
+  if (D.fini) { signaler("Partie terminée : touche « Rouvrir pour corriger un score » en bas de page pour modifier."); return; }
   // le joueur : sur le bouton (data-mq-j) ou sur la zone de mise en jeu (data-mq-fw)
   const cleJ = b.dataset.mqJ || b.closest("[data-mq-fw]")?.dataset.mqFw; if (!cleJ) return;
   const j = D.joueurs.find((x) => x.cle === cleJ), t = j?.trous[k]; if (!t) return;
