@@ -3,7 +3,7 @@
 // Le plan du trou vient d'OpenStreetMap, la photo de l'IGN (Géoplateforme, sans clé). Plans préparés à l'avance par
 // outils/plans_osm.py (page/plans/<slug>.json, publiés avec Carte) ; à défaut, interrogation d'Overpass depuis le téléphone
 // autour du contour OSM du golf (page/golfs-osm.json). Plan mis en cache dans ce navigateur.
-// Modes : « Classique » (saisie actuelle), « Coup par coup » (une touche par coup), « Visée + résultat » (cible puis balle).
+// Modes : « Classique » (saisie actuelle), « Coup par coup » (une touche par coup). Le mode « Visée + résultat » a été retiré le 12/11 (trop complexe).
 // Données : chaque trou garde ses coups dans carte_parties.trous[].coups (latitude / longitude, 6 décimales) ;
 // score, putts, pénalités, mise en jeu et bunker s'en déduisent. Les pars restent ceux de la ffgolf (OSM se trompe parfois).
 // Dépend de app.js : etat, sauver, rendreSaisie, signaler, esc, $, ecartPar, etat.golfs.
@@ -14,9 +14,9 @@ const CPC = (() => {
   const POSITIONS = ["Fairway", "Rough", "Bunker", "Arbres", "Zone à pénalité", "Hors limites", "Green", "Dans le trou"];
   const PEN = ["Hors limites", "Zone à pénalité"];
   const S = {
-    mode: (() => { try { return localStorage.getItem("carte-cpc-mode") || "classique"; } catch { return "classique"; } })(),
+    mode: (() => { try { const m = localStorage.getItem("carte-cpc-mode"); return m === "visee" ? "cpc" : m || "classique"; } catch { return "classique"; } })(),
     plans: new Map(),     // clé partie → { etat: "chargement" | "ok" | "absent" | "erreur", G: [plan par trou], info }
-    travail: new Map(),   // clé partie:trou → coups en pixels locaux (balles, drops, visées)
+    travail: new Map(),   // clé partie:trou → coups en pixels locaux (balles, drops)
     sel: null, panneau: null, geste: null,
     vue: null,            // zoom de la photo { i, x, y, w, h, base: [x, y, w, h] } (la page, elle, ne zoome pas sur la photo)
     doigts: new Map(), pince: null,
@@ -54,11 +54,6 @@ const CPC = (() => {
     }
     return best.x < 0 ? "gauche" : "droite";
   }
-  function ecart(G, de, vise, p) {
-    const ax = vise[0] - de[0], ay = vise[1] - de[1], L = Math.hypot(ax, ay) || 1, ux = ax / L, uy = ay / L, vx = p[0] - de[0], vy = p[1] - de[1];
-    return { lat: (ux * vy - uy * vx) * G.mpp, lon: (vx * ux + vy * uy - L) * G.mpp, vise: L * G.mpp };
-  }
-  const texteEcart = (e) => `${Math.abs(e.lat) < 2 ? "dans l'axe" : Math.round(Math.abs(e.lat)) + " m " + (e.lat > 0 ? "à droite" : "à gauche")}, ${Math.abs(e.lon) < 3 ? "bonne longueur" : Math.round(Math.abs(e.lon)) + " m " + (e.lon > 0 ? "long" : "court")}`;
 
   // ---------------------------------------------------------------- chargement du plan (OSM + IGN)
   const cleP = (p) => `${p.golf}|${p.parcours || p.parcours_nom || ""}`;
@@ -221,7 +216,7 @@ const CPC = (() => {
     const p = etat.partie, t = p.trous[i], G = geo(i), k = (p.id || "") + ":" + i;
     let W = S.travail.get(k);
     if (!W || W.G !== G) {
-      W = { G, coups: (t.coups || []).map((c) => ({ ...c, p: loc(G, c.ll), drop: c.drop ? loc(G, c.drop) : null, vise: c.vise ? loc(G, c.vise) : null })), dep: t.dep ? loc(G, t.dep) : null, viseEnCours: null };
+      W = { G, coups: (t.coups || []).map((c) => ({ ...c, p: loc(G, c.ll), drop: c.drop ? loc(G, c.drop) : null })), dep: t.dep ? loc(G, t.dep) : null };
       S.travail.set(k, W);
     }
     return W;
@@ -231,7 +226,6 @@ const CPC = (() => {
     const W = travail(i); let o = departDu(i);
     return W.coups.map((c) => { const de = o; o = c.pos === "Hors limites" ? de : c.pos === "Zone à pénalité" ? (c.drop || c.p) : c.p; return de; });
   }
-  const prochaineOrigine = (i) => { const W = travail(i), C = W.coups; if (!C.length) return departDu(i); const O = origines(i), c = C[C.length - 1]; return c.pos === "Hors limites" ? O[O.length - 1] : c.pos === "Zone à pénalité" ? (c.drop || c.p) : c.p; };
   const dropAttendu = (W) => W.coups.findIndex((c) => c.pos === "Zone à pénalité" && !c.drop);
   function recalculer(i) {
     const W = travail(i), G = W.G;
@@ -249,7 +243,6 @@ const CPC = (() => {
       if (c.devine) o.devine = true;
       if (c.clubMain) o.clubMain = true;
       if (c.drop) o.drop = glob(G, c.drop);
-      if (c.vise) o.vise = glob(G, c.vise);
       return o;
     });
     if (W.dep) t.dep = glob(G, W.dep); else delete t.dep;
@@ -291,7 +284,7 @@ const CPC = (() => {
   }
   function dessiner(i) {
     const svg = $("cpc-svg"); if (!svg) return;
-    const W = travail(i), G = W.G, Rp = repere(G), mode = S.mode;
+    const W = travail(i), G = W.G, Rp = repere(G);
     if (!S.vue || S.vue.i !== i) {
       // cadre élargi à la forme de l'écran (ordinateur : pas de bandes sombres sur les côtés)
       let [vx, vy, vw, vh] = Rp.view; const W = svg.parentNode.clientWidth || 0;
@@ -331,16 +324,6 @@ const CPC = (() => {
       const e2 = el("text", { x: 0, y: 4, "font-size": 13, "font-weight": 700, fill: "#fff", "font-family": "inherit" }); e2.textContent = v; g2.append(e2);
       svg.append(g2);
     }
-    const cible = (q, attrs) => { const g3 = ech(q[0], q[1], 0, { class: "cpc-balle", ...attrs });
-      g3.append(el("circle", { r: 22, fill: "transparent" }), el("circle", { r: 9, fill: "rgba(0,0,0,.25)", stroke: "#fff", "stroke-width": 2.5 }),
-        el("line", { x1: -14, y1: 0, x2: 14, y2: 0, stroke: "#fff", "stroke-width": 2 }), el("line", { x1: 0, y1: -14, x2: 0, y2: 14, stroke: "#fff", "stroke-width": 2 })); svg.append(g3); };
-    W.coups.forEach((c, k) => { if (!c.vise) return;
-      const a = Rp.rot(O[k]), v = Rp.rot(c.vise), q = Rp.rot(c.p);
-      svg.append(el("line", { x1: a[0], y1: a[1], x2: v[0], y2: v[1], stroke: "#fff", "stroke-width": 1.8, "stroke-dasharray": "3 6", "stroke-opacity": .9 }));
-      svg.append(el("line", { x1: v[0], y1: v[1], x2: q[0], y2: q[1], stroke: "#ff9f43", "stroke-width": 2.5, "stroke-dasharray": "2 4" }));
-      cible(v, { "data-vise": k }); });
-    if (W.viseEnCours && mode === "visee") { const a = Rp.rot(prochaineOrigine(i)), v = Rp.rot(W.viseEnCours);
-      svg.append(el("line", { x1: a[0], y1: a[1], x2: v[0], y2: v[1], stroke: "#fff", "stroke-width": 2, "stroke-dasharray": "3 6" })); cible(v, { "data-vise-attente": 1 }); }
     { const q = Rp.rot(departDu(i)), b = ech(q[0], q[1], 0, { "data-depart": 1, class: "cpc-balle" });
       b.append(el("circle", { r: 26, fill: "transparent" }), el("circle", { r: 12, fill: "#fff", stroke: "#1c2a20", "stroke-width": 2 })); txt(b, 0, 5, "D", 13, "#1c2a20"); svg.append(b); }
     W.coups.forEach((c, k) => { if (c.pos !== "Zone à pénalité" || !c.drop) return;
@@ -377,19 +360,18 @@ const CPC = (() => {
     if (S.mode === "classique" && P && P.etat !== "chargement" && !G) {
       const r = `Coup par coup indisponible ${P.etat === "ok" ? `sur le trou ${p.trous[i].t}` : "sur ce golf"} : ${P.etat === "ok" ? "il" : "le golf"} n'est pas encore dessiné trou par trou dans OpenStreetMap.`;
       const off = (m, t) => `<button type="button" class="cpc-off" aria-disabled="true" data-cpc-off="${esc(r)}" title="${esc(r)}">${t}</button>`;
-      return `<div class="cpc-bascule" role="group" aria-label="Mode de saisie"><button type="button" data-cpc-mode="classique" aria-pressed="true">Classique</button>${off("cpc", "Coup par coup")}${off("visee", "Visée + résultat")}</div>`;
+      return `<div class="cpc-bascule" role="group" aria-label="Mode de saisie"><button type="button" data-cpc-mode="classique" aria-pressed="true">Classique</button>${off("cpc", "Coup par coup")}</div>`;
     }
     const info = S.mode === "classique" || G ? "" : P.etat === "chargement" ? "Recherche du plan du trou dans OpenStreetMap…"
       : P.etat === "ok" ? `Trou ${p.trous[i].t} pas dessiné dans OpenStreetMap : utilise la saisie classique.`
       : `Coup par coup indisponible ici : ${P.raison || "plan introuvable"}. Utilise la saisie classique.`;
-    return `${info ? `<p class="cpc-info">${esc(info)}</p>` : ""}<div class="cpc-bascule" role="group" aria-label="Mode de saisie"><button type="button" data-cpc-mode="classique" aria-pressed="${S.mode === "classique"}">Classique</button><button type="button" data-cpc-mode="cpc" aria-pressed="${S.mode === "cpc"}">Coup par coup</button><button type="button" data-cpc-mode="visee" aria-pressed="${S.mode === "visee"}">Visée + résultat</button></div><span class="cpc-essai">essai</span>`;
+    return `${info ? `<p class="cpc-info">${esc(info)}</p>` : ""}<div class="cpc-bascule" role="group" aria-label="Mode de saisie"><button type="button" data-cpc-mode="classique" aria-pressed="${S.mode === "classique"}">Classique</button><button type="button" data-cpc-mode="cpc" aria-pressed="${S.mode === "cpc"}">Coup par coup</button></div><span class="cpc-essai">essai</span>`;
   }
   function aide(i) {
     const W = travail(i), C = W.coups, fini = C.length && ["Green", "Dans le trou"].includes(C[C.length - 1].pos);
     if (dropAttendu(W) >= 0) return `Coup ${dropAttendu(W) + 1} dans la zone à pénalité (+1) : touche la photo là où tu as droppé`;
     if (S.sel != null && C[S.sel]) return `Coup ${S.sel + 1} sélectionné : fais-le glisser, ou touche la photo pour le déplacer. Touche-le encore pour le lâcher.`;
     if (fini) return C[C.length - 1].pos === "Green" ? "Balle sur le green : indique les putts" : "Balle dans le trou";
-    if (S.mode === "visee") return W.viseEnCours ? `Coup ${C.length + 1} : touche maintenant là où la balle a fini` : `Coup ${C.length + 1} : touche d'abord l'endroit que tu vises (ou « 🎯 Le drapeau »)`;
     if (C.length) return C[C.length - 1].pos === "Hors limites" ? `Hors limites (+1) : tu rejoues d'où tu avais joué. Touche la photo là où a fini le coup ${C.length + 1}` : `Touche la photo là où a fini le coup ${C.length + 1}`;
     return "Touche la photo là où a fini ton départ";
   }
@@ -399,14 +381,14 @@ const CPC = (() => {
     let lg = 0; for (let k = 0; k < G.trou.length - 1; k++) lg += metres(G, G.trou[k], G.trou[k + 1]);
     const lignes = C.map((c, k) => {
       const d = Math.round(metres(G, O[k], c.p)), r = Math.round(metres(G, c.p, drapeauDe(G)));
-      return `<li class="cpc-coup${S.sel === k ? " choisi" : ""}"><button type="button" class="cpc-resume" data-cpc-ouvrir="${k}"><b>${k + 1}</b><span>${esc(c.club || "")} · <strong>${d} m</strong></span><span class="cpc-pos">${esc(c.pos)}</span>${c.vise ? `<span class="cpc-ecart">${texteEcart(ecart(G, O[k], c.vise, c.p))}</span>` : ""}<span class="cpc-reste">${c.pos === "Dans le trou" ? "dans le trou" : c.pos === "Green" ? r + " m du drapeau" : "reste " + r + " m"}</span></button></li>`;
+      return `<li class="cpc-coup${S.sel === k ? " choisi" : ""}"><button type="button" class="cpc-resume" data-cpc-ouvrir="${k}"><b>${k + 1}</b><span>${esc(c.club || "")} · <strong>${d} m</strong></span><span class="cpc-pos">${esc(c.pos)}</span><span class="cpc-reste">${c.pos === "Dans le trou" ? "dans le trou" : c.pos === "Green" ? r + " m du drapeau" : "reste " + r + " m"}</span></button></li>`;
     }).join("");
     return `<div class="cpc">
       <p class="cpc-aide" aria-live="polite">${aide(i)}</p>
       <div class="cpc-carte"><svg id="cpc-svg" role="img" aria-label="Photo aérienne du trou ${t.t}, départ en bas, green en haut"></svg>
         <div class="cpc-zoom"><button type="button" data-cpc-zoom="1.6" aria-label="Rapprocher la photo">+</button><button type="button" data-cpc-zoom="0.625" aria-label="Éloigner la photo">−</button></div>
         <span class="cpc-long">${Math.round(lg)} m</span></div>
-      <div class="cpc-outils">${S.mode === "visee" && !fini ? `<button type="button" class="btn" data-cpc-drapeau>🎯 Le drapeau</button>` : ""}<button type="button" class="btn" data-cpc-gps>📍 Ma balle est ici</button><button type="button" class="btn" data-cpc-annuler ${C.length || W.viseEnCours ? "" : "disabled"}>Annuler le dernier coup</button></div>
+      <div class="cpc-outils"><button type="button" class="btn" data-cpc-gps>📍 Ma balle est ici</button><button type="button" class="btn" data-cpc-annuler ${C.length ? "" : "disabled"}>Annuler le dernier coup</button></div>
       ${C.length ? `<ol class="cpc-liste">${lignes}</ol>` : ""}
       <p class="cpc-pied"><button type="button" class="lien" data-cpc-retour>Signaler un problème sur ce trou</button> · <span>Plan © contributeurs OpenStreetMap · photo IGN</span></p>
     </div>`;
@@ -424,7 +406,6 @@ const CPC = (() => {
       const O = origines(i), d = Math.round(metres(G, O[k], c.p)), r = Math.round(metres(G, c.p, drapeauDe(G)));
       const fini = c.pos === "Green" || c.pos === "Dans le trou", dernier = k === C.length - 1;
       corps = `<div class="pan-tete"><b>Coup ${k + 1}</b><span>${d} m · ${c.pos === "Dans le trou" ? "dans le trou" : c.pos === "Green" ? r + " m du drapeau" : "reste " + r + " m"}</span><button type="button" class="pan-x" data-cpc-fermer aria-label="Fermer">×</button></div>
-        ${c.vise ? (() => { const e = ecart(G, O[k], c.vise, c.p); return `<p class="pan-ecart">Visé <b>${Math.round(e.vise)} m</b> · ${texteEcart(e)}</p>`; })() : ""}
         <h3>Où a fini la balle ?</h3>
         <div class="sa-choix cpc-puces" role="group" aria-label="Position">${POSITIONS.map((x) => `<button type="button" data-cpc-pos="${k}" data-val="${x}" aria-pressed="${x === c.pos}">${x}</button>`).join("")}</div>
         ${c.devine ? `<p class="cpc-devine">Deviné : ${esc(c.raison || "")}.</p>` : ""}
@@ -475,9 +456,8 @@ const CPC = (() => {
     const kd = dropAttendu(W);
     if (kd >= 0) { C[kd].drop = p; S.panneau = { type: "coup", k: kd }; majTrou(i); return; }
     if (C.length && ["Green", "Dans le trou"].includes(C[C.length - 1].pos)) { signaler("La balle est sur le green : indique les putts. Pour corriger, touche une balle puis déplace-la."); return; }
-    if (S.mode === "visee" && !W.viseEnCours) { W.viseEnCours = p; S.panneau = null; rendreSaisie(); return; }
-    C.push({ p, devine: true, vise: S.mode === "visee" ? W.viseEnCours : null });
-    W.viseEnCours = null; S.sel = C.length - 1; S.panneau = { type: "coup", k: C.length - 1 };
+    C.push({ p, devine: true });
+    S.sel = C.length - 1; S.panneau = { type: "coup", k: C.length - 1 };
     majTrou(i);
   }
   async function retour(i) {
@@ -505,10 +485,8 @@ const CPC = (() => {
     if (d.cpcPos != null) { const k = +d.cpcPos, c = C[k]; c.pos = d.val; c.devine = false; if (c.pos === "Green" || c.pos === "Dans le trou") C.splice(k + 1); if (c.pos === "Zone à pénalité" && !c.drop) { S.panneau = null; S.sel = null; } majTrou(i); return true; }
     if (d.cpcClub != null) { const c = C[+d.cpcClub]; c.club = d.val; c.clubMain = true; majTrou(i); return true; }
     if (d.cpcPutts != null) { const t = etat.partie.trous[i]; t.putts = +d.cpcPutts; t.puttsVu = true; ecrire(i); sauver(); rendreSaisie(); return true; }
-    if (d.cpcDrapeau != null) { W.viseEnCours = drapeauDe(W.G); rendreSaisie(); return true; }
     if (d.cpcDepAuto != null) { W.dep = null; S.panneau = null; majTrou(i); return true; }
     if (d.cpcAnnuler != null) {
-      if (W.viseEnCours) { W.viseEnCours = null; rendreSaisie(); return true; }
       S.sel = null; S.panneau = null; C.pop(); etat.partie.trous[i].puttsVu = false; majTrou(i); return true;
     }
     if (d.cpcGps != null) {
@@ -561,9 +539,9 @@ const CPC = (() => {
         S.pince = { d: Math.hypot(x2 - x1, y2 - y1) || 1, m: [(x1 + x2) / 2, (y1 + y2) / 2] }; S.geste = null; e.preventDefault(); return;
       }
       if (S.doigts.size > 2) return;
-      const balle = e.target.closest("[data-balle]"), dep = e.target.closest("[data-depart]"), drop = e.target.closest("[data-drop]"), vis = e.target.closest("[data-vise]"), visA = e.target.closest("[data-vise-attente]");
-      S.geste = { k: balle ? +balle.dataset.balle : null, dep: !!dep, drop: drop ? +drop.dataset.drop : null, vis: vis ? +vis.dataset.vise : null, visA: !!visA, x: e.clientX, y: e.clientY, bouge: false, id: e.pointerId };
-      if (balle || dep || drop || vis || visA) { svg.setPointerCapture(e.pointerId); e.preventDefault(); }
+      const balle = e.target.closest("[data-balle]"), dep = e.target.closest("[data-depart]"), drop = e.target.closest("[data-drop]");
+      S.geste = { k: balle ? +balle.dataset.balle : null, dep: !!dep, drop: drop ? +drop.dataset.drop : null, x: e.clientX, y: e.clientY, bouge: false, id: e.pointerId };
+      if (balle || dep || drop) { svg.setPointerCapture(e.pointerId); e.preventDefault(); }
     });
     box.addEventListener("pointermove", (e) => {
       if (S.doigts.has(e.pointerId)) S.doigts.set(e.pointerId, [e.clientX, e.clientY]);
@@ -575,7 +553,7 @@ const CPC = (() => {
         S.pince = { d, m }; e.preventDefault(); return;
       }
       const g0 = S.geste;
-      if (g0 && e.pointerId === g0.id && g0.k == null && !g0.dep && g0.drop == null && g0.vis == null && !g0.visA && svg) {   // un doigt sur la photo
+      if (g0 && e.pointerId === g0.id && g0.k == null && !g0.dep && g0.drop == null && svg) {   // un doigt sur la photo
         const dx = e.clientX - (g0.lx ?? g0.x), dy = e.clientY - (g0.ly ?? g0.y);
         if (!g0.glisse && Math.hypot(e.clientX - g0.x, e.clientY - g0.y) < 8) return;
         g0.glisse = true; g0.lx = e.clientX; g0.ly = e.clientY;
@@ -583,11 +561,11 @@ const CPC = (() => {
         else window.scrollBy(0, -dy);   // photo entière : le doigt fait défiler la page
         return;
       }
-      const g = S.geste; if (!g || (g.k == null && !g.dep && g.drop == null && g.vis == null && !g.visA) || e.pointerId !== g.id) return;
+      const g = S.geste; if (!g || (g.k == null && !g.dep && g.drop == null) || e.pointerId !== g.id) return;
       if (!g.bouge && Math.hypot(e.clientX - g.x, e.clientY - g.y) < 6) return;
       g.bouge = true;
       const W = travail(etat.i), q = versPhoto(e);
-      if (g.vis != null) W.coups[g.vis].vise = q; else if (g.visA) W.viseEnCours = q; else if (g.dep) W.dep = q; else if (g.drop != null) W.coups[g.drop].drop = q; else { S.sel = g.k; W.coups[g.k].p = q; }
+      if (g.dep) W.dep = q; else if (g.drop != null) W.coups[g.drop].drop = q; else { S.sel = g.k; W.coups[g.k].p = q; }
       dessiner(etat.i);
     });
     const fin = (e) => { S.doigts.delete(e.pointerId); if (S.pince && S.doigts.size < 2) { S.pince = null; S.geste = null; return true; } return false; };
@@ -596,11 +574,9 @@ const CPC = (() => {
       if (fin(e)) return;
       const g = S.geste; if (!g || e.pointerId !== g.id) { S.geste = null; return; }
       S.geste = null;
-      if (!e.target.closest("#cpc-svg") && g.k == null && !g.dep && g.drop == null && g.vis == null && !g.visA) return;
+      if (!e.target.closest("#cpc-svg") && g.k == null && !g.dep && g.drop == null) return;
       const i = etat.i; if (!actif(i)) return;
       const W = travail(i), C = W.coups;
-      if (g.vis != null) { if (g.bouge) { C[g.vis].vise = versPhoto(e); majTrou(i); } else { S.panneau = { type: "coup", k: g.vis }; rendreSaisie(); } return; }
-      if (g.visA) { if (g.bouge) W.viseEnCours = versPhoto(e); rendreSaisie(); return; }
       if (g.dep) { if (g.bouge) { W.dep = versPhoto(e); S.panneau = null; majTrou(i); } else { S.sel = null; S.panneau = { type: "depart" }; rendreSaisie(); } return; }
       if (g.drop != null) { if (g.bouge) { C[g.drop].drop = versPhoto(e); majTrou(i); } else { S.panneau = { type: "coup", k: g.drop }; rendreSaisie(); } return; }
       if (g.k != null) {
