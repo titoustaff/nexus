@@ -11,7 +11,7 @@ function semaine(d) {
   const x = new Date(d + "T12:00:00"); const j = (x.getDay() + 6) % 7;
   const lun = new Date(x); lun.setDate(x.getDate() - j);
   const dim = new Date(lun); dim.setDate(lun.getDate() + 6);
-  return [lun.toISOString().slice(0, 10), dim.toISOString().slice(0, 10)];
+  return [jourLocal(lun), jourLocal(dim)];
 }
 function km(a, b) {
   const R = 6371, r = Math.PI / 180;
@@ -1944,7 +1944,7 @@ function rendreStats() {
   const M = S.mois.filter((m) => m.liste === st.liste).sort((a, b) => a.mois.localeCompare(b.mois));
   const T = S.tournois.filter((t) => t.liste === st.liste).sort((a, b) => a.date.localeCompare(b.date));
   const der = M.at(-1), avant = M.at(-2);
-  const il12 = new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10);
+  const il12 = jourLocal(new Date(Date.now() - 365 * 864e5));
   // tournois relevés de CE circuit (place / champ, trou par trou)
   const R = R0.filter((r) => circuitDe(r.t) === st.circuit);
   // TOURNOIS DE CE CIRCUIT (06/11 : dans un onglet, tous les blocs ne parlent que du circuit) :
@@ -2021,7 +2021,7 @@ function rendreStats() {
     const fen = 5, glis = tours.map((x, i) => moyenne(tours.slice(Math.max(0, i - fen + 1), i + 1).map((y) => y.d)));
     const debut = st.toutHisto ? "" : il12, idx = tours.map((x, i) => i).filter((i) => tours[i].date >= debut), T_ = idx.map((i) => tours[i]);
     // les tours d'un même tournoi : un jour d'écart chacun sur l'axe du temps (pas empilés)
-    const jour = (x) => { const dt = new Date(x.date + "T12:00:00"); dt.setDate(dt.getDate() + x.n - 1); return dt.toISOString().slice(0, 10); };
+    const jour = (x) => { const dt = new Date(x.date + "T12:00:00"); dt.setDate(dt.getDate() + x.n - 1); return jourLocal(dt); };
     let ptsPoints, ptsCourbe;
     if (st.chaqueTour) {
       ptsPoints = idx.map((i) => { const x = tours[i]; return { t: jour(x), x: "", y: +x.d.toFixed(1), tip: `${x.score} (${sg(x.d)}), tour ${x.n} de « ${esc(titre(x.nom))} », ${fmtDate(x.date)}${x.src === "repère" ? " · SSS du repère (absent du Mérite)" : ""}` }; });
