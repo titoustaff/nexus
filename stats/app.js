@@ -60,7 +60,7 @@ const gir = (t) => t.putts != null && coherent(t) && t.score - t.putts - (t.pen 
 const dateCourte = (d) => new Date(d + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 
 function filtrees() {
-  const debut = etat.periode === "tout" ? "" : (() => { const d = new Date(); d.setMonth(d.getMonth() - (etat.periode === "3m" ? 3 : 12)); return d.toISOString().slice(0, 10); })();
+  const debut = etat.periode === "tout" ? "" : (() => { const d = new Date(); d.setMonth(d.getMonth() - (etat.periode === "3m" ? 3 : 12)); return jourLocal(d); })();
   return etat.parties.filter((p) => etat.contextes.has(p.contexte) && (!debut || p.jour >= debut) && joues(p).length >= 9);
 }
 // une partie, ramenée à 18 trous (écart au par × 18 / trous joués) pour comparer 9 et 18 trous
