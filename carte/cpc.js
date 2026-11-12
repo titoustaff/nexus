@@ -373,9 +373,12 @@ const CPC = (() => {
   }
   function bascule(i) {
     const p = etat.partie, P = S.mode === "classique" ? planConnu(p) : planDe(p), G = P?.etat === "ok" ? P.G[i] : null;
-    // on sait déjà que ce trou n'a pas de plan : on le dit (12/11, golf seulement détouré dans OpenStreetMap, ex. Palmola)
-    if (S.mode === "classique" && P && P.etat !== "chargement" && !G)
-      return `<p class="cpc-info">Coup par coup indisponible ${P.etat === "ok" ? `sur le trou ${esc(p.trous[i].t)}` : "sur ce golf"} : ${P.etat === "ok" ? "il" : "le golf"} n'est pas encore dessiné trou par trou dans OpenStreetMap.</p>`;
+    // on sait déjà que ce trou n'a pas de plan : boutons grisés, la raison au survol (et au toucher sur téléphone) — 12/11
+    if (S.mode === "classique" && P && P.etat !== "chargement" && !G) {
+      const r = `Coup par coup indisponible ${P.etat === "ok" ? `sur le trou ${p.trous[i].t}` : "sur ce golf"} : ${P.etat === "ok" ? "il" : "le golf"} n'est pas encore dessiné trou par trou dans OpenStreetMap.`;
+      const off = (m, t) => `<button type="button" class="cpc-off" aria-disabled="true" data-cpc-off="${esc(r)}" title="${esc(r)}">${t}</button>`;
+      return `<div class="cpc-bascule" role="group" aria-label="Mode de saisie"><button type="button" data-cpc-mode="classique" aria-pressed="true">Classique</button>${off("cpc", "Coup par coup")}${off("visee", "Visée + résultat")}</div>`;
+    }
     const info = S.mode === "classique" || G ? "" : P.etat === "chargement" ? "Recherche du plan du trou dans OpenStreetMap…"
       : P.etat === "ok" ? `Trou ${p.trous[i].t} pas dessiné dans OpenStreetMap : utilise la saisie classique.`
       : `Coup par coup indisponible ici : ${P.raison || "plan introuvable"}. Utilise la saisie classique.`;
@@ -489,6 +492,7 @@ const CPC = (() => {
   // clics dans la saisie : renvoie true si le bouton concernait le coup par coup
   function clic(e, b) {
     const d = b.dataset, i = etat.i;
+    if (d.cpcOff) { signaler(d.cpcOff); return true; }
     if (d.cpcMode) { S.mode = d.cpcMode; try { localStorage.setItem("carte-cpc-mode", S.mode); } catch { /* */ } S.sel = null; S.panneau = null; rendreSaisie(); return true; }
     if (d.aller != null || d.pas != null) { S.sel = null; S.panneau = null; return false; }   // changement de trou : géré par Carte
     if (!actif(i)) return false;

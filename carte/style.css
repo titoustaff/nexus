@@ -401,3 +401,4 @@ body.marqueur .pied { display: none; }
 .cl-lignes { display: grid; gap: 6px; }
 .cl-ligne { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
 .cl-ligne .cl { min-height: 38px; padding: 4px 6px; font-size: 13px; font-weight: 700; border: 1.5px solid var(--bord); border-radius: 10px; background: var(--carte); color: var(--texte); cursor: pointer; white-space: nowrap; }
+.cpc-bascule .cpc-off { opacity: .45; cursor: not-allowed; }
