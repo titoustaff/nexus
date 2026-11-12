@@ -365,3 +365,18 @@ body.marqueur .pied { display: none; }
 .sac-portees { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px 16px; }
 .sac-portee { display: flex; align-items: center; gap: 6px; font-weight: 600; }
 .sac-portee input { width: 64px !important; flex: none; margin-left: auto; }
+
+/* repères à taille fixe à l'écran (12/11) : les traits ne grossissent pas avec le zoom */
+#cpc-svg line, #cpc-svg path, #cpc-svg polyline, #cpc-svg polygon, #cpc-svg circle, #cpc-svg rect { vector-effect: non-scaling-stroke; }
+/* téléphone : volet des questions en bas de l'écran, la photo reste visible au-dessus */
+@media (max-width: 759px) {
+  .pan.volet { top: auto !important; left: 0; right: 0; bottom: 0; width: auto; max-height: 52vh; overflow-y: auto;
+    border-radius: 16px 16px 0 0; box-shadow: 0 -8px 30px rgba(0,0,0,.3); animation: pan-monte .18s ease-out; padding: 10px 14px 10px; }
+  .pan.volet .pan-pied { position: sticky; bottom: -10px; background: inherit; padding-bottom: 6px; }
+  .pan.volet h3 { margin: 8px 0 4px; }
+  .pan.volet .cpc-puces button { min-height: 36px; padding: 5px 9px; }
+}
+/* choix du club dans le volet : une ligne par famille, boutons de même largeur (12/11) */
+.cl-lignes { display: grid; gap: 6px; }
+.cl-ligne { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
+.cl-ligne .cl { min-height: 38px; padding: 4px 6px; font-size: 13px; font-weight: 700; border: 1.5px solid var(--bord); border-radius: 10px; background: var(--carte); color: var(--texte); cursor: pointer; white-space: nowrap; }

@@ -279,14 +279,29 @@ const CPC = (() => {
     return { deg: th * 180 / Math.PI, cx, cy, rot, view: [x0, y0, x1 - x0, y1 - y0] };
   }
   const tuile = (tx, ty) => `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX=${Z}&TILEROW=${ty}&TILECOL=${tx}&FORMAT=image/jpeg`;
+  // tuiles qui couvrent tout le cadre affiché (photo tournée : sans cela, coins sombres) — 12/11
+  function tuilesVue(G, Rp, vue) {
+    const [vx, vy, vw, vh] = vue, th = -Rp.deg * Math.PI / 180, co = Math.cos(th), si = Math.sin(th);
+    const inv = (p) => [Rp.cx + (p[0] - Rp.cx) * co - (p[1] - Rp.cy) * si, Rp.cy + (p[0] - Rp.cx) * si + (p[1] - Rp.cy) * co];
+    const C = [[vx, vy], [vx + vw, vy], [vx, vy + vh], [vx + vw, vy + vh]].map(inv).map(([x, y]) => [x + G.o[0], y + G.o[1]]);
+    const tx0 = Math.floor(Math.min(...C.map((c) => c[0])) / 256), tx1 = Math.floor(Math.max(...C.map((c) => c[0])) / 256);
+    const ty0 = Math.floor(Math.min(...C.map((c) => c[1])) / 256), ty1 = Math.floor(Math.max(...C.map((c) => c[1])) / 256), T = [];
+    for (let tx = tx0; tx <= tx1; tx++) for (let ty = ty0; ty <= ty1; ty++) T.push([tx, ty]);
+    return T.length > 120 ? G.tuiles : T;
+  }
   function dessiner(i) {
     const svg = $("cpc-svg"); if (!svg) return;
     const W = travail(i), G = W.G, Rp = repere(G), mode = S.mode;
-    if (!S.vue || S.vue.i !== i) S.vue = { i, x: Rp.view[0], y: Rp.view[1], w: Rp.view[2], h: Rp.view[3], base: Rp.view };
+    if (!S.vue || S.vue.i !== i) {
+      // cadre élargi à la forme de l'écran (ordinateur : pas de bandes sombres sur les côtés)
+      let [vx, vy, vw, vh] = Rp.view; const W = svg.parentNode.clientWidth || 0;
+      if (W) { const H = Math.min(W * vh / vw, innerHeight * 0.62); if (W / H > vw / vh) { const n = vh * W / H; vx -= (n - vw) / 2; vw = n; } }
+      S.vue = { i, x: vx, y: vy, w: vw, h: vh, base: [vx, vy, vw, vh] };
+    }
     appliquerVue();
     svg.replaceChildren();
     const g = el("g", { transform: `rotate(${Rp.deg.toFixed(2)} ${Rp.cx} ${Rp.cy})`, id: "cpc-photo" });
-    for (const [tx, ty] of G.tuiles) g.append(el("image", { href: tuile(tx, ty), x: tx * 256 - G.o[0], y: ty * 256 - G.o[1], width: 256.6, height: 256.6, preserveAspectRatio: "none" }));
+    for (const [tx, ty] of tuilesVue(G, Rp, S.vue.base)) g.append(el("image", { href: tuile(tx, ty), x: tx * 256 - G.o[0], y: ty * 256 - G.o[1], width: 256.6, height: 256.6, preserveAspectRatio: "none" }));
     for (const f of formes(G, "fairway")) g.append(el("polygon", { points: pts(f.p), fill: "#9fe3a8", "fill-opacity": .2, stroke: "#d6f7da", "stroke-width": 1.4, "stroke-opacity": .8 }));
     for (const f of formes(G, "tee")) g.append(el("polygon", { points: pts(f.p), fill: "#8fd19e", "fill-opacity": .45, stroke: "#d8f5df", "stroke-width": 1.2 }));
     for (const f of formes(G, "green")) g.append(el("polygon", { points: pts(f.p), fill: "#57c46b", "fill-opacity": f.p === G.green ? .45 : .2, stroke: "#eaffee", "stroke-width": f.p === G.green ? 2.4 : 1 }));
@@ -294,7 +309,7 @@ const CPC = (() => {
     for (const f of formes(G, "bunker")) g.append(el("polygon", { points: pts(f.p), fill: "#e8cf8f", "fill-opacity": .85, stroke: "#fff3cf", "stroke-width": 1.4 }));
     g.append(el("polyline", { points: pts(G.trou), fill: "none", stroke: "#fff", "stroke-width": 2.5, "stroke-dasharray": "9 7", "stroke-opacity": .8 }));
     svg.append(g);
-    const d = Rp.rot(drapeauDe(G)), mat = el("g", { transform: `translate(${d[0]},${d[1]})` });
+    const d = Rp.rot(drapeauDe(G)), mat = ech(d[0], d[1]);
     mat.append(el("line", { x1: 0, y1: 0, x2: 0, y2: -32, stroke: "#fff", "stroke-width": 3 }), el("polygon", { points: "0,-32 20,-26 0,-20", fill: "#e5484d" }));
     svg.append(mat);
     const O = origines(i), etiquettes = [];
@@ -311,12 +326,12 @@ const CPC = (() => {
       if (c.pos === "Zone à pénalité" && c.drop) { const r = Rp.rot(c.drop); svg.append(el("line", { x1: q[0], y1: q[1], x2: r[0], y2: r[1], stroke: "#8fd3ff", "stroke-width": 2.5, "stroke-dasharray": "4 5" })); }
     });
     for (const [x, y, v] of etiquettes) {
-      const g2 = el("g", { transform: `translate(${x + 16},${y})`, "pointer-events": "none" });
+      const g2 = ech(x, y, 16); g2.setAttribute("pointer-events", "none");
       g2.append(el("rect", { x: -4, y: -11, width: v.length * 8.4 + 8, height: 20, rx: 6, fill: "rgba(15,23,18,.82)" }));
       const e2 = el("text", { x: 0, y: 4, "font-size": 13, "font-weight": 700, fill: "#fff", "font-family": "inherit" }); e2.textContent = v; g2.append(e2);
       svg.append(g2);
     }
-    const cible = (q, attrs) => { const g3 = el("g", { transform: `translate(${q[0]},${q[1]})`, class: "cpc-balle", ...attrs });
+    const cible = (q, attrs) => { const g3 = ech(q[0], q[1], 0, { class: "cpc-balle", ...attrs });
       g3.append(el("circle", { r: 22, fill: "transparent" }), el("circle", { r: 9, fill: "rgba(0,0,0,.25)", stroke: "#fff", "stroke-width": 2.5 }),
         el("line", { x1: -14, y1: 0, x2: 14, y2: 0, stroke: "#fff", "stroke-width": 2 }), el("line", { x1: 0, y1: -14, x2: 0, y2: 14, stroke: "#fff", "stroke-width": 2 })); svg.append(g3); };
     W.coups.forEach((c, k) => { if (!c.vise) return;
@@ -326,18 +341,26 @@ const CPC = (() => {
       cible(v, { "data-vise": k }); });
     if (W.viseEnCours && mode === "visee") { const a = Rp.rot(prochaineOrigine(i)), v = Rp.rot(W.viseEnCours);
       svg.append(el("line", { x1: a[0], y1: a[1], x2: v[0], y2: v[1], stroke: "#fff", "stroke-width": 2, "stroke-dasharray": "3 6" })); cible(v, { "data-vise-attente": 1 }); }
-    { const q = Rp.rot(departDu(i)), b = el("g", { transform: `translate(${q[0]},${q[1]})`, "data-depart": 1, class: "cpc-balle" });
+    { const q = Rp.rot(departDu(i)), b = ech(q[0], q[1], 0, { "data-depart": 1, class: "cpc-balle" });
       b.append(el("circle", { r: 26, fill: "transparent" }), el("circle", { r: 12, fill: "#fff", stroke: "#1c2a20", "stroke-width": 2 })); txt(b, 0, 5, "D", 13, "#1c2a20"); svg.append(b); }
     W.coups.forEach((c, k) => { if (c.pos !== "Zone à pénalité" || !c.drop) return;
-      const q = Rp.rot(c.drop), b = el("g", { transform: `translate(${q[0]},${q[1]})`, "data-drop": k, class: "cpc-balle" });
+      const q = Rp.rot(c.drop), b = ech(q[0], q[1], 0, { "data-drop": k, class: "cpc-balle" });
       b.append(el("circle", { r: 24, fill: "transparent" }), el("circle", { r: 10, fill: "#8fd3ff", stroke: "#0b3a57", "stroke-width": 2 })); txt(b, 0, 4, "d", 12, "#0b3a57"); svg.append(b); });
     W.coups.forEach((c, k) => {
-      const q = Rp.rot(c.p), sel = S.sel === k, hl = c.pos === "Hors limites", b = el("g", { transform: `translate(${q[0]},${q[1]})`, "data-balle": k, class: "cpc-balle" });
+      const q = Rp.rot(c.p), sel = S.sel === k, hl = c.pos === "Hors limites", b = ech(q[0], q[1], 0, { "data-balle": k, class: "cpc-balle" });
       b.append(el("circle", { r: 26, fill: "transparent" }));
       if (sel) b.append(el("circle", { r: 19, fill: "none", stroke: "#fff", "stroke-width": 3.5 }));
       b.append(el("circle", { r: sel ? 14 : 12, fill: hl ? "#ff6b6b" : c.pos === "Zone à pénalité" ? "#4aa3df" : "#ffd23f", stroke: "#1c2a20", "stroke-width": 2 }));
       txt(b, 0, 5, k + 1, 14, "#1c2a20"); svg.append(b);
     });
+    echelle();
+  }
+  // repère posé en (x, y) photo, dessiné à taille fixe à l'écran (dx : décalage en pixels écran)
+  function ech(x, y, dx = 0, attrs = {}) { const g = el("g", { class: "cpc-ech " + (attrs.class || ""), ...attrs }); g.setAttribute("class", ("cpc-ech " + (attrs.class || "")).trim()); g.dataset.x = x; g.dataset.y = y; g.dataset.dx = dx; return g; }
+  function echelle() {
+    const svg = $("cpc-svg"); if (!svg || !S.vue) return;
+    const r = svg.getBoundingClientRect(), u = r.width ? Math.max(S.vue.w / r.width, S.vue.h / r.height) : 1;   // unités de photo par pixel d'écran
+    for (const g of svg.querySelectorAll(".cpc-ech")) g.setAttribute("transform", `translate(${g.dataset.x},${g.dataset.y}) scale(${u.toFixed(4)}) translate(${g.dataset.dx},0)`);
   }
 
   // ---------------------------------------------------------------- blocs HTML insérés dans la saisie de Carte
@@ -403,7 +426,7 @@ const CPC = (() => {
         ${c.pos === "Hors limites" ? `<p class="cpc-regle"><b>+1 pénalité</b> : tu rejoues d'où tu avais joué.</p>` : ""}
         ${c.pos === "Zone à pénalité" ? `<p class="cpc-regle"><b>+1 pénalité</b> : ${c.drop ? "drop placé (balle « d »), fais-le glisser pour le corriger." : "<b>touche la photo là où tu as droppé.</b>"}</p>` : ""}
         ${c.pos === "Green" && dernier ? `<h3>Putts</h3><div class="sa-choix" role="group">${[0, 1, 2, 3, 4].map((v) => `<button type="button" data-cpc-putts="${v}" aria-pressed="${t.putts === v}">${v}</button>`).join("")}<button type="button" class="sa-plus" data-cpc-putts="${Math.max(5, (t.putts || 0) + 1)}" aria-label="Ajouter 1">+</button></div>` : ""}
-        ${c.pos === "Green" ? "" : `<h3 class="pan-club">Club <button type="button" class="lien" data-ecran="sac">🎒 Mon sac</button></h3><div class="sa-choix cpc-puces" role="group" aria-label="Club">${SAC.boutons(`data-cpc-club="${k}"`, c.club)}</div>`}
+        ${c.pos === "Green" ? "" : `<h3 class="pan-club">Club <button type="button" class="lien" data-ecran="sac">🎒 Mon sac</button></h3><div class="cpc-puces cl-choix" role="group" aria-label="Club">${SAC.boutons(`data-cpc-club="${k}"`, c.club)}</div>`}
         ${fini && dernier && t.score ? `<p class="pan-score">Score du trou : <b>${t.score}</b> (${ecartPar(t.score - t.par)})</p>` : ""}
         ${pied(`<button type="button" class="lien" data-cpc-suppr="${k}">Supprimer</button><button type="button" class="btn" data-cpc-deplacer="${k}">Déplacer</button>${
           fini && dernier && t.score && i < etat.partie.trous.length - 1 ? `<button type="button" class="btn plein" data-pas="1">Trou ${etat.partie.trous[i + 1].t} →</button>` : `<button type="button" class="btn plein" data-cpc-fermer>Valider</button>`}`)}`;
@@ -411,15 +434,32 @@ const CPC = (() => {
     return `<div class="pan volet" id="cpc-panneau" role="dialog" aria-label="Questions du coup">${corps}</div>`;
   }
   function apres(i) {
+    document.body.style.paddingBottom = "";
     if (!actif(i)) return;
     dessiner(i);
     if (S.panneau) {
       const svg = $("cpc-svg"), cadre = svg.parentNode;
       cadre.insertAdjacentHTML("beforeend", panneauHTML(i));
       // volet sur le côté droit (12/11, demande utilisateur : pas de fenêtre par-dessus la photo) ; la photo reste visible à gauche
-      const r = cadre.getBoundingClientRect(); if (r.top < 0 || r.bottom > innerHeight) cadre.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      placerVolet();
     }
   }
+  // téléphone : volet en bas (la photo reste visible au-dessus, on fait remonter la balle si elle est cachée) ;
+  // ordinateur : volet à droite, sous le bandeau du haut
+  function placerVolet() {
+    const pan = $("cpc-panneau"), svg = $("cpc-svg"); if (!pan || !svg) return;
+    if (innerWidth < 760) {
+      document.body.style.paddingBottom = pan.offsetHeight + "px";
+      const b = svg.querySelector(S.panneau?.type === "depart" ? "[data-depart]" : `[data-balle="${S.panneau?.k}"]`) || svg;
+      const r = b.getBoundingClientRect(), haut = innerHeight - pan.offsetHeight - 24;
+      if (r.bottom > haut || r.top < 8) window.scrollBy({ top: r.top + r.height / 2 - haut / 2 });
+    } else {
+      const h = document.querySelector("header.bandeau")?.getBoundingClientRect().bottom || 0;
+      pan.style.top = Math.max(0, h) + "px";
+    }
+  }
+  addEventListener("scroll", () => { if (innerWidth >= 760 && $("cpc-panneau")) { const h = document.querySelector("header.bandeau")?.getBoundingClientRect().bottom || 0; $("cpc-panneau").style.top = Math.max(0, h) + "px"; } }, { passive: true });
+  addEventListener("resize", () => { if ($("cpc-svg")) echelle(); });
   const verrou = (i, html) => (aDesCoups(i) ? html.replace(/<button /g, "<button disabled ") + `<p class="cpc-calc">Calculé à partir des coups</p>` : html);
 
   // ---------------------------------------------------------------- actions
@@ -486,7 +526,7 @@ const CPC = (() => {
     return false;
   }
   // zoom de la photo seule (pincer, glisser un doigt, boutons + −) : la page ne zoome pas, le volet garde sa taille
-  function appliquerVue() { const svg = $("cpc-svg"), v = S.vue; if (svg && v) svg.setAttribute("viewBox", [v.x, v.y, v.w, v.h].map((n) => n.toFixed(1)).join(" ")); }
+  function appliquerVue() { const svg = $("cpc-svg"), v = S.vue; if (svg && v) { svg.setAttribute("viewBox", [v.x, v.y, v.w, v.h].map((n) => n.toFixed(1)).join(" ")); echelle(); } }
   function zoomer(f, cx, cy) {   // f > 1 : on rapproche ; (cx, cy) : point fixe, en unités de la photo
     const v = S.vue; if (!v) return;
     const [bx, by, bw, bh] = v.base, w = Math.max(bw / 8, Math.min(bw, v.w / f)), k = w / v.w;
@@ -500,7 +540,7 @@ const CPC = (() => {
     v.x = Math.max(bx, Math.min(bx + bw - v.w, v.x)); v.y = Math.max(by, Math.min(by + bh - v.h, v.y));
   }
   const zoome = () => S.vue && S.vue.w < S.vue.base[2] - 0.5;
-  const unites = (svg) => S.vue.w / svg.getBoundingClientRect().width;   // unités de photo par pixel d'écran
+  const unites = (svg) => { const r = svg.getBoundingClientRect(); return Math.max(S.vue.w / r.width, S.vue.h / r.height); };   // unités de photo par pixel d'écran
   const versVue = (svg, x, y) => { const r = svg.getBoundingClientRect(); return [S.vue.x + (x - r.left) * unites(svg), S.vue.y + (y - r.top) * unites(svg)]; };
   // gestes sur la photo
   const versPhoto = (e) => { const svg = $("cpc-svg"), pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; const q = pt.matrixTransform($("cpc-photo").getScreenCTM().inverse()); return [q.x, q.y]; };

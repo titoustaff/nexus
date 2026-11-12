@@ -48,7 +48,11 @@ const SAC = (() => {
   // boutons de club (volet du coup) : couleur par famille ; un club hors sac déjà choisi reste affiché
   function boutons(attrs, choisi) {
     const L = noms(); if (choisi && !L.includes(choisi)) L.push(choisi);
-    return L.map((x) => `<button type="button" class="cl cl-${famille(x)}" ${attrs} data-val="${esc(x)}" aria-pressed="${x === choisi}">${esc(x)}</button>`).join("");
+    // rangés par ligne de famille (12/11) : bois et hybrides, fers, wedges, putter
+    const LIGNES = [["bois", "hybride"], ["fer"], ["wedge"], ["putter"]];
+    const b = (x) => `<button type="button" class="cl cl-${famille(x)}" ${attrs} data-val="${esc(x)}" aria-pressed="${x === choisi}">${esc(x)}</button>`;
+    return `<div class="cl-lignes">${LIGNES.map((F) => L.filter((x) => F.includes(famille(x)))).filter((l) => l.length)
+      .map((l) => `<div class="cl-ligne">${l.map(b).join("")}</div>`).join("")}</div>`;
   }
 
   // ---------------------------------------------------------------- écran « Mon sac »
