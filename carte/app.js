@@ -568,7 +568,7 @@ async function modePartage(jeton) {
 // galaxy/MD_DOC/EVENEMENTS.md. #evt=<id> : événement (fonction carte_direct : participants ayant accepté) ;
 // #tournoi=<id ffgolf> : coach, cartes de SES joueurs suivis rattachées au tournoi (règle « carte : coach lecture ») ;
 // #evtdirect=<jeton> : lien public de l'événement, sans compte (carte_direct_public). Mise à jour toutes les 15 s.
-const di = { src: null, ouverts: new Set(), minuteur: null, publicJeton: null, vue: (() => { try { return localStorage.getItem("gn-direct-vue") || "liste"; } catch { return "liste"; } })() };
+const di = { src: null, ouverts: new Set(), minuteur: null, publicJeton: null, vue: (() => { try { return localStorage.getItem("gn-direct-vue") || "grille"; } catch { return "grille"; } })() };
 function lireDirect() {
   const h = new URLSearchParams(location.hash.slice(1));
   di.src = h.get("evt") ? { evt: h.get("evt") } : h.get("tournoi") ? { tournoi: h.get("tournoi") } : null;
@@ -717,8 +717,8 @@ async function rendreDirect() {
       <small>${enCours ? "mise à jour automatique · " : ""}${derniere ? "dernière saisie " + new Date(derniere).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : ""}</small></div>
     <div class="s-tete"><h2>${esc(D.titre)}</h2><span class="meta">${esc(D.sous)}${N > 1 ? ` · ${N} tours` : ""}</span></div>
     ${D.vide ? `<div class="bloc vide">${esc(D.vide)}</div>` : !J.length ? `<div class="bloc vide">Aucune carte pour l'instant.${D.note ? `<br><span class="meta">${esc(D.note)}</span>` : ""}</div>` : `
-    <div class="di-onglets" role="tablist" aria-label="Affichage du direct"><button type="button" role="tab" data-di-vue="liste" aria-selected="${di.vue !== "grille"}">Classement</button><button type="button" role="tab" data-di-vue="grille" aria-selected="${di.vue === "grille"}">Carte de score</button></div>
-    ${di.vue === "grille" ? `<div class="bloc di-bloc">${grilleDirect(J)}</div>` : `<div class="bloc di-bloc"><div class="defile"><table class="di-table"><thead><tr><th></th><th>Joueur</th><th title="trous saisis">Trou</th><th title="score par rapport au par">± Par</th>${N > 1 ? Array.from({ length: N }, (_, k) => `<th>T${k + 1}</th>`).join("") : ""}<th>Total</th></tr></thead>
+    <div class="di-onglets" role="tablist" aria-label="Affichage du direct"><button type="button" role="tab" data-di-vue="grille" aria-selected="${di.vue !== "liste"}">Carte de score</button><button type="button" role="tab" data-di-vue="liste" aria-selected="${di.vue === "liste"}">Classement</button></div>
+    ${di.vue !== "liste" ? `<div class="bloc di-bloc">${grilleDirect(J)}</div>` : `<div class="bloc di-bloc"><div class="defile"><table class="di-table"><thead><tr><th></th><th>Joueur</th><th title="trous saisis">Trou</th><th title="score par rapport au par">± Par</th>${N > 1 ? Array.from({ length: N }, (_, k) => `<th>T${k + 1}</th>`).join("") : ""}<th>Total</th></tr></thead>
       <tbody>${lignes}</tbody></table></div>
       <p class="meta di-aide">Touche un joueur pour voir sa carte trou par trou.${D.note ? " " + esc(D.note) : ""}</p></div>`}`}
     ${D.organisateur && !annule ? `<div class="bloc di-public"><b>Lien public</b> <span class="meta">pour les parents, sans compte : ils voient ce classement (prénom et initiale) et les cartes.</span>
