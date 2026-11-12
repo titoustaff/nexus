@@ -177,7 +177,13 @@ async function rendreCoach() {
   catch (e) { corps.innerHTML = `<div class="bloc vide">Lecture impossible : ${esc(e.message || String(e))}</div>`; }
 }
 const majMots = (x) => x.toLowerCase().replace(/(^|[\s/(-])(\p{L})/gu, (m, a, c) => a + c.toUpperCase());
-const infoJoueur = (j) => [j.categorie && majMots(j.categorie), j.naissance && `né${j.sexe === "D" ? "e" : ""} en ${j.naissance}`,
+// catégorie d'âge ffgolf quand la ffgolf n'en donne pas (adultes) : même règle que Saison (Vademecum 2026 § 1.5.5) — 12/11
+function categorieAge(naissance, an = new Date().getFullYear()) {
+  const a = an - (+naissance || 0); if (!naissance || a < 5 || a > 110) return "";
+  return a <= 8 ? "Enfant" : a <= 10 ? `Poucet ${a - 8}` : a <= 12 ? `Poussin ${a - 10}` : a <= 14 ? `Benjamin ${a - 12}` : a <= 16 ? `Minime ${a - 14}`
+    : a <= 18 ? `Cadet ${a - 16}` : a <= 24 ? "Adulte" : a < 40 ? "Mid-Amateur" : a < 50 ? "Mid-Amateur 2" : a < 60 ? "Senior" : a < 70 ? "Senior 2" : "Senior 3";
+}
+const infoJoueur = (j) => [j.categorie ? majMots(j.categorie) : categorieAge(j.naissance), j.naissance && `né${j.sexe === "D" ? "e" : ""} en ${j.naissance}`,
   j.index_golf != null && `index ${String(j.index_golf).replace(".", ",")}`].filter(Boolean).join(" · ");
 // ---- onglet Joueurs : tableau compact filtrable (clubs de 300 joueurs), ajout et rangement en masse
 const GROUPES = { U12: "U12", U14: "U14", U16: "U16", Adultes: "Adultes", Mid: "Mid-Am (25+)", Seniors: "Seniors (50+)" };
@@ -413,7 +419,7 @@ function majTableJoueurs() {
   tb.innerHTML = vus.map((j) => { const ok = j.statut === "accepte";
     return `<tr><td>${ok ? `<input type="checkbox" class="co-sel" data-j="${esc(j.joueur_id)}" ${co.sel.has(j.joueur_id) ? "checked" : ""} aria-label="Sélectionner">` : ""}</td>
       <td>${ok ? `<button type="button" class="s-nom" data-voir="${esc(j.joueur_id)}" title="Voir sa saison">${esc(j.nom || j.libelle || "joueur")}</button>` : `<b>${esc(j.libelle || "Joueur")}</b>`}<small class="co-lic">${esc(j.licence || "")}</small></td>
-      <td>${ok ? esc([j.categorie && majMots(j.categorie), j.naissance].filter(Boolean).join(" · ")) : "—"}</td>
+      <td>${ok ? esc([j.categorie ? majMots(j.categorie) : categorieAge(j.naissance), j.naissance].filter(Boolean).join(" · ")) : "—"}</td>
       <td>${ok && j.index_golf != null ? String(j.index_golf).replace(".", ",") : "—"}</td>
       <td>${j.moi_referent ? "<b>toi</b>" : esc(j.referent_nom || "—")}${ok && !j.du_club ? ' <span class="tag" title="licencié dans un autre club : visible seulement par son coach">hors club</span>' : ""}</td>
       <td>${(eqDe[j.joueur_id] || []).map((e) => `<span class="co-mini">${esc(e.nom)}</span>`).join(" ") || (ok ? `<span class="meta">—</span>` : "")}</td>
