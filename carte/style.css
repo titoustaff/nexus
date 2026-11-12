@@ -280,3 +280,59 @@ body.marqueur .pied { display: none; }
 
 /* score corrigé par le joueur après le marqueur : ancien score en petit, barré */
 .nt-corr { margin-left: 1px; font-size: 10px; font-weight: 600; color: var(--doux); text-decoration: line-through; vertical-align: super; }
+
+/* saisie coup par coup (essai 12/11/2026, cpc.js) — repris de la démo validée */
+.cpc-bascule { display: inline-flex; border: 1.5px solid var(--bord); border-radius: 12px; overflow: hidden; margin: 4px 0 12px; }
+.cpc-bascule button { font: inherit; font-weight: 700; border: 0; background: var(--fond); color: var(--texte); padding: 9px 16px; cursor: pointer; }
+.cpc-bascule button[aria-pressed="true"] { background: var(--vert); color: var(--fond); }
+.cpc { display: grid; gap: 10px; margin-bottom: 8px; }
+.pan { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 5; max-height: 50%; overflow-y: auto; background: var(--carte); color: var(--texte);
+  border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,.35); padding: 10px 12px 12px; animation: pan-monte .16s ease-out; }
+.pan.haut { bottom: auto; top: 8px; }
+.pan h3 { margin: 8px 0 5px; font-size: 12.5px; }
+.pan p { margin: 5px 0; font-size: 13px; }
+.pan .sa-choix button { padding: 6px 9px; min-height: 0; font-size: 12.5px; }
+.pan-tete { display: flex; align-items: baseline; gap: 10px; }
+.pan-tete b { font-size: 16px; }
+.pan-tete span { color: var(--doux); font-variant-numeric: tabular-nums; font-weight: 600; }
+.pan-x { margin-left: auto; border: 0; background: transparent; color: var(--doux); font-size: 26px; line-height: 1; cursor: pointer; padding: 0 4px; }
+.pan-pied { display: flex; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 10px; position: sticky; bottom: -12px; background: var(--carte); padding: 6px 0 2px; }
+.pan-pied .lien { margin-right: auto; }
+.pan-score { font-size: 15px !important; }
+.cpc-carte.avec-pan { min-height: 430px; }
+@media (min-width: 900px) { .pan { left: auto; width: 380px; } }
+@keyframes pan-monte { from { transform: translateY(30px); opacity: .4; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .pan { animation: none; } }
+.cpc-ecart { display: block; font-size: 12px; color: var(--doux); }
+.pan-ecart { font-size: 14px !important; background: var(--sauge-pale); border-radius: 8px; padding: 6px 9px; }
+.cpc-regle { margin: 6px 0 0; font-size: 13px; padding: 7px 10px; border-radius: 8px; background: var(--sauge-pale); }
+.cpc-ok { align-self: center; font-weight: 700; color: var(--vert); font-size: 13.5px; }
+.cpc-balle { cursor: grab; touch-action: none; }
+.cpc-coup.choisi { outline: 2px solid var(--jaune); outline-offset: 1px; border-radius: 10px; }
+.cpc-actions { margin: 6px 0 0; font-size: 13px; }
+.cpc-carte { position: relative; border-radius: 12px; overflow: hidden; background: #24331f; }
+.cpc-carte svg { display: block; width: 100%; height: auto; max-height: 62vh; cursor: crosshair; touch-action: manipulation; }
+.cpc-aide { position: absolute; left: 8px; top: 8px; right: 8px; margin: 0; width: fit-content; max-width: calc(100% - 16px); background: rgba(12, 20, 15, .78); color: #fff; font-size: 12.5px; font-weight: 600; padding: 6px 10px; border-radius: 8px; pointer-events: none; }
+.cpc-outils { display: flex; gap: 8px; flex-wrap: wrap; }
+.cpc-exemple { margin: 0; font-size: 12.5px; color: var(--jaune-trait); background: color-mix(in srgb, var(--jaune) 18%, transparent); padding: 6px 10px; border-radius: 8px; }
+.cpc-liste { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.cpc-coup { border: 1.5px solid var(--bord); border-radius: 12px; overflow: hidden; }
+.cpc-coup.ouvert { border-color: var(--vert-2); }
+.cpc-resume { width: 100%; display: grid; grid-template-columns: 28px 1fr auto; grid-template-areas: "n c p" "n r r"; align-items: center; gap: 0 10px; text-align: left; font: inherit; color: inherit; background: none; border: 0; padding: 8px 12px; cursor: pointer; }
+.cpc-resume > b { grid-area: n; width: 26px; height: 26px; border-radius: 50%; background: #ffd23f; color: #1c2a20; display: grid; place-items: center; font-size: 13px; }
+.cpc-resume > span:nth-of-type(1) { grid-area: c; }
+.cpc-pos { grid-area: p; font-weight: 700; color: var(--vert-2); }
+.cpc-reste { grid-area: r; font-size: 12.5px; color: var(--doux); font-variant-numeric: tabular-nums; }
+.cpc-detail { padding: 0 12px 10px; display: grid; gap: 8px; }
+.cpc-puces button { min-width: 0; min-height: 40px; font-size: 13px; padding: 6px 10px; }
+.cpc-devine, .cpc-calc { margin: 2px 0 0; font-size: 12px; color: var(--doux); font-style: italic; }
+.cpc-confirm { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; } .cpc-confirm p { margin: 0; flex: 1 1 100%; }
+.cpc-info { margin: 4px 0 8px; font-size: 13px; color: var(--doux); }
+.cpc-essai { display: inline-block; vertical-align: middle; margin: 0 0 12px 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--jaune-trait, #8a6400); }
+.cpc-bascule { align-items: stretch; max-width: 100%; }
+.cpc-bascule button { padding: 9px 12px; }
+.cpc-long { position: absolute; right: 8px; bottom: 8px; background: rgba(12, 20, 15, .78); color: #fff; font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 8px; pointer-events: none; }
+.cpc-carte.avec-pan .cpc-long { display: none; }
+.cpc-pied { margin: 2px 0 0; font-size: 12px; color: var(--doux); }
+.cpc-pied .lien { font-size: 12px; }
+

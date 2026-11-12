@@ -302,17 +302,19 @@ function rendreSaisie() {
   const scores = [], bas = 1;   // toujours à partir de 1 : trou en un, albatros, eagle…
   for (let s = bas; s <= t.par + 4; s++) scores.push(s);
   const nomScore = (s) => { const d = s - t.par; return `<b>${s}</b><small>${s === 1 ? "trou en 1" : d <= -3 ? "albatros" : d === -2 ? "eagle" : d === -1 ? "birdie" : d === 0 ? "par" : d === 1 ? "bogey" : d === 2 ? "double" : "+" + d}</small>`; };
+  const cpcV = (html) => (typeof CPC !== "undefined" ? CPC.verrou(etat.i, html) : html);   // coup par coup : champs calculés
   $("sa-contenu").innerHTML = `
     <div class="sa-tete"><div><h2 id="sa-titre">${esc(titre(p.golf_nom || p.golf))}</h2><p class="meta">${esc(p.parcours_nom || "")}${p.repere ? " · " + esc(p.repere) : ""} · ${dateLongue(p.jour)}</p></div>
       <div class="sa-total"><b>${b.n ? b.score : "—"}</b><small>${b.n ? ecartPar(b.ecart) + " · " + b.n + "/" + p.nb_trous : "à toi de jouer"}</small></div></div>
     <div class="sa-trous" role="tablist" aria-label="Trous">${p.trous.map((x, k) => `<button type="button" class="${classeScore(x)}${k === etat.i ? " actif" : ""}" data-aller="${k}" aria-label="Trou ${x.t}">${x.t}<small>${x.score || ""}</small></button>`).join("")}</div>
     <div class="bloc sa-trou">
       <div class="sa-num"><span>Trou <b>${t.t}</b></span><span class="sa-par">Par <b>${t.par}</b></span></div>
-      <h3>Score</h3>${choix("score", scores, nomScore, true)}${t.m ? `<p class="sa-marqueur">${corrige(t) ? `Corrigé : le marqueur avait noté <b>${t.sm}</b>. ` : ""}Score saisi par le marqueur${(() => { const d = new Date(t.m); return isNaN(d) ? "" : " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }); })()} : corrige-le seulement en cas d'erreur.</p>` : ""}
+      ${typeof CPC !== "undefined" ? CPC.bascule(etat.i) + (CPC.actif(etat.i) ? CPC.bloc(etat.i) : "") : ""}
+      <h3>Score</h3>${cpcV(choix("score", scores, nomScore, true))}${t.m ? `<p class="sa-marqueur">${corrige(t) ? `Corrigé : le marqueur avait noté <b>${t.sm}</b>. ` : ""}Score saisi par le marqueur${(() => { const d = new Date(t.m); return isNaN(d) ? "" : " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }); })()} : corrige-le seulement en cas d'erreur.</p>` : ""}
       ${t.score && (t.putts || 0) + (t.pen || 0) > t.score - 1 ? `<p class="sa-alerte">⚠ ${t.putts || 0} putt${t.putts > 1 ? "s" : ""}${t.pen ? ` + ${t.pen} pénalité${t.pen > 1 ? "s" : ""}` : ""} pour un score de ${t.score} : il manque au moins le coup de départ. Vérifie le score ou les putts.</p>` : ""}
-      <div class="sa-ligne"><div><h3>Putts</h3>${choix("putts", [0, 1, 2, 3, 4], undefined, true)}</div><div><h3>Pénalités</h3>${choix("pen", [0, 1, 2, 3], undefined, true)}</div></div>
-      ${t.par > 3 ? `<h3>Mise en jeu : où a fini ton départ ?</h3>${terrainFw(t.fw)}` : ""}
-      <h3>Bunker</h3>${choix("bunker", [false, true], (v) => (v ? "Oui, joué depuis un bunker" : "Non"))}
+      <div class="sa-ligne"><div><h3>Putts</h3>${cpcV(choix("putts", [0, 1, 2, 3, 4], undefined, true))}</div><div><h3>Pénalités</h3>${cpcV(choix("pen", [0, 1, 2, 3], undefined, true))}</div></div>
+      ${t.par > 3 ? `<h3>Mise en jeu : où a fini ton départ ?</h3>${cpcV(terrainFw(t.fw))}` : ""}
+      <h3>Bunker</h3>${cpcV(choix("bunker", [false, true], (v) => (v ? "Oui, joué depuis un bunker" : "Non")))}
     </div>
     <div class="sa-nav">
       <button type="button" class="btn" data-pas="-1" ${etat.i === 0 ? "disabled" : ""}>← Trou ${etat.i ? p.trous[etat.i - 1].t : ""}</button>
@@ -320,9 +322,12 @@ function rendreSaisie() {
       ${etat.i < p.trous.length - 1 ? `<button type="button" class="btn plein" data-pas="1">Trou ${p.trous[etat.i + 1].t} →</button>` : `<button type="button" class="btn plein" data-finir>Terminer la partie ✓</button>`}
     </div>
     <p class="sa-bas"><button type="button" class="lien" data-ecran="liste">← Mes cartes</button> · <button type="button" class="lien" data-voir-carte>Voir la carte</button> · ${String(p.tournoi_id || "").startsWith("club:") ? `<button type="button" class="lien" data-direct-evt="${esc(p.tournoi_id.slice(5))}">📡 Direct de la partie</button> · ` : ""}<button type="button" class="lien" data-partager>🔗 Partager en direct</button></p>`;
+  if (typeof CPC !== "undefined") CPC.apres(etat.i);
 }
 $("sa-contenu").addEventListener("click", (e) => {
+  if (e.target.closest("#cpc-svg")) return;   // gestes de la photo : cpc.js
   const b = e.target.closest("button"); if (!b) return;
+  if (typeof CPC !== "undefined" && CPC.clic(e, b)) return;
   const p = etat.partie, t = p.trous[etat.i];
   // score du marqueur corrigé par le joueur : on garde le score d'origine (« sm ») pour l'afficher sur la carte
   if ((b.dataset.cle === "score" || b.dataset.plus === "score") && t.m && t.sm == null && t.score) t.sm = t.score;
