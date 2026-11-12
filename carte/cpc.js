@@ -373,7 +373,9 @@ const CPC = (() => {
   }
   function bascule(i) {
     const p = etat.partie, P = S.mode === "classique" ? planConnu(p) : planDe(p), G = P?.etat === "ok" ? P.G[i] : null;
-    if (S.mode === "classique" && P && P.etat !== "chargement" && !G) return "";   // on sait déjà que ce trou n'a pas de plan
+    // on sait déjà que ce trou n'a pas de plan : on le dit (12/11, golf seulement détouré dans OpenStreetMap, ex. Palmola)
+    if (S.mode === "classique" && P && P.etat !== "chargement" && !G)
+      return `<p class="cpc-info">Coup par coup indisponible ${P.etat === "ok" ? `sur le trou ${esc(p.trous[i].t)}` : "sur ce golf"} : ${P.etat === "ok" ? "il" : "le golf"} n'est pas encore dessiné trou par trou dans OpenStreetMap.</p>`;
     const info = S.mode === "classique" || G ? "" : P.etat === "chargement" ? "Recherche du plan du trou dans OpenStreetMap…"
       : P.etat === "ok" ? `Trou ${p.trous[i].t} pas dessiné dans OpenStreetMap : utilise la saisie classique.`
       : `Coup par coup indisponible ici : ${P.raison || "plan introuvable"}. Utilise la saisie classique.`;

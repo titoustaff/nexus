@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <title>GolfNexus · Notice de Carte</title>
+  <link rel="icon" type="image/svg+xml" href="../saison/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="../commun/v1/charte.css">
+  <!-- Notice de Carte (12/11/2026, même modèle que club/page/aide.html) : page statique, sans base ni connexion. Menu généré depuis les <h2>, recherche dans le texte
+       (sans accents) : les sections sans résultat sont masquées, les mots trouvés surlignés. Pour modifier la notice : éditer
+       les <section> ci-dessous (une section = un id = une entrée du menu). -->
+  <style>
+    .bandeau-in { display: flex; }
+    .vues a { color: #d6e6da; font-weight: 600; font-size: 14px; padding: 6px 14px; border-radius: 999px; text-decoration: none; white-space: nowrap; }
+    .vues a:hover { color: #fff; background: rgba(255,255,255,.08); }
+    .ai { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 24px; align-items: start; padding-bottom: 60px; }
+    .ai-menu { position: sticky; top: 12px; background: var(--carte); border: 1px solid var(--bord); border-radius: 14px; padding: 14px; box-shadow: var(--ombre); }
+    .ai-q { width: 100%; box-sizing: border-box; border: 1px solid var(--bord); background: var(--fond); border-radius: 10px; padding: 9px 12px; font-size: 14px; color: var(--texte); }
+    .ai-q:focus-visible { outline: 2px solid var(--vert-2); outline-offset: 1px; }
+    .ai-nb { margin: 6px 2px 10px; font-size: 12px; color: var(--doux); min-height: 18px; }
+    .ai-menu ol { list-style: none; margin: 0; padding: 0; counter-reset: s; }
+    .ai-menu li { counter-increment: s; }
+    .ai-menu a { display: flex; gap: 8px; padding: 6px 8px; border-radius: 8px; color: var(--texte); text-decoration: none; font-weight: 500; }
+    .ai-menu a::before { content: counter(s); color: var(--doux); font-variant-numeric: tabular-nums; min-width: 14px; }
+    .ai-menu a:hover { background: var(--sauge-pale); }
+    .ai-menu a[aria-current] { background: var(--sauge-pale); color: var(--vert); font-weight: 700; }
+    .ai-menu li.vide a { opacity: .35; pointer-events: none; }
+    .ai-menu .b { font-size: 11px; background: var(--jaune); color: var(--jaune-texte); border-radius: 999px; padding: 0 6px; margin-left: auto; align-self: center; }
+    .ai-corps h1 { color: var(--vert); font-size: 28px; font-weight: 800; letter-spacing: -.02em; margin: 4px 0 4px; }
+    .ai-corps > .sous { color: var(--doux); margin: 0 0 18px; }
+    .ai-corps section { background: var(--carte); border: 1px solid var(--bord); border-radius: 14px; padding: 18px 22px; margin: 0 0 16px; box-shadow: var(--ombre); scroll-margin-top: 12px; }
+    .ai-corps section[hidden] { display: none; }
+    .ai-corps h2 { margin: 0 0 10px; color: var(--vert); font-size: 20px; font-weight: 800; letter-spacing: -.01em; }
+    .ai-corps h3 { margin: 16px 0 6px; font-size: 15px; }
+    .ai-corps p, .ai-corps li { line-height: 1.6; }
+    .ai-corps ul, .ai-corps ol { padding-left: 22px; }
+    .ai-corps li { margin: 3px 0; }
+    .ai-corps table { border-collapse: collapse; width: 100%; font-size: 13px; margin: 10px 0; }
+    .ai-corps th, .ai-corps td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--bord); }
+    .ai-corps th { color: var(--doux); font-weight: 600; font-size: 12px; }
+    .ai-tab { overflow-x: auto; }
+    .ai-corps code { background: var(--fond); border: 1px solid var(--bord); border-radius: 6px; padding: 1px 5px; font-size: 12px; }
+    .ai-corps mark { background: var(--jaune); color: var(--jaune-texte); border-radius: 3px; padding: 0 1px; }
+    .ai-allers { display: flex; flex-wrap: wrap; gap: 6px; margin: -2px 0 12px; }
+    .ai-aller { display: inline-block; font-size: 12px; font-weight: 600; color: var(--vert); background: var(--sauge-pale); border: 1px solid var(--bord);
+      border-radius: 999px; padding: 3px 10px; text-decoration: none; vertical-align: middle; margin-left: 4px; white-space: nowrap; }
+    .ai-allers .ai-aller { margin-left: 0; }
+    .ai-aller:hover { border-color: var(--sauge); }
+    .ai-aller:focus-visible { outline: 2px solid var(--vert-2); outline-offset: 2px; }
+    .ai-rien { text-align: center; color: var(--doux); padding: 30px; }
+    .ai-rien[hidden] { display: none; }
+    @media (max-width: 800px) {
+      .ai { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+      .ai > * { min-width: 0; }
+      .ai-menu { position: static; }
+      .ai-menu ol { display: flex; flex-wrap: wrap; gap: 4px; }
+      .ai-menu a { padding: 4px 10px; border: 1px solid var(--bord); border-radius: 999px; font-size: 13px; }
+      .ai-corps section { padding: 14px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="bandeau">
+    <div class="bandeau-in">
+      <div class="marque">
+        <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#f4f7f2"/><ellipse cx="30" cy="52" rx="20" ry="5" fill="#cfe3d3"/><path d="M22 10v41" stroke="#14532d" stroke-width="4.5" stroke-linecap="round"/><path d="M24 10l22 8-22 8z" fill="#f0b400"/><circle cx="43" cy="45" r="7" fill="#fff" stroke="#14532d" stroke-width="2"/></svg>
+        <div><div class="nom">Golf<span>Nexus</span> · Aide</div><p class="devise">Notice de Carte</p></div>
+      </div>
+      <nav class="vues" aria-label="Retour"><a href="./">← Carte</a></nav>
+    </div>
+  </header>
+
+  <div class="ai">
+    <aside class="ai-menu" aria-label="Sommaire">
+      <input type="search" id="ai-q" class="ai-q" placeholder="Rechercher dans la notice…" aria-label="Rechercher dans la notice" autocomplete="off">
+      <p class="ai-nb" id="ai-nb" aria-live="polite"></p>
+      <ol id="ai-sommaire"></ol>
+    </aside>
+
+    <main class="ai-corps" id="ai-corps">
+      <h1>Notice de Carte</h1>
+      <p class="sous">Mise à jour le 12/11/2026 · tape un mot dans la recherche (ex. « putts », « marqueur », « sac »). Les boutons verts « … → » t'emmènent directement à l'écran expliqué.</p>
+
+      <section id="bienvenue">
+        <h2>Bienvenue</h2>
+        <p class="ai-allers"><a class="ai-aller" href="./">Ouvrir Carte →</a></p>
+        <p>Carte sert à <b>noter tes parties trou par trou</b> : score, putts, pénalités, mise en jeu, bunker. Tu saisis sur le parcours ou après, sur téléphone ou ordinateur.</p>
+        <div class="ai-tab"><table>
+          <thead><tr><th>Onglet</th><th>À quoi il sert</th></tr></thead>
+          <tbody>
+            <tr><td><b>+ Nouvelle partie</b></td><td>créer une carte : golf, parcours, repères, nombre de trous, contexte</td></tr>
+            <tr><td><b>Mes cartes</b></td><td>toutes tes parties, la plus récente d'abord ; ouvrir, reprendre, voir une carte</td></tr>
+            <tr><td><b>📡 En direct</b></td><td>ce qui se joue aujourd'hui : les événements où tu joues, le classement et les cartes en direct</td></tr>
+            <tr><td><b>🎒 Mon sac</b></td><td>tes clubs et leur portée, pour la saisie coup par coup</td></tr>
+          </tbody>
+        </table></div>
+        <ul>
+          <li>Tous les golfs ffgolf sont prêts : parcours, par de chaque trou et repères.</li>
+          <li>Tes cartes sont à toi. Ton coach les voit en lecture seule, seulement si tu as accepté son suivi.</li>
+          <li>Carte ne fait pas l'analyse : tes chiffres partent dans <b>Stats</b>. Tes résultats officiels ffgolf restent dans <b>Saison</b>.</li>
+        </ul>
+      </section>
+
+      <section id="nouvelle-partie">
+        <h2>Nouvelle partie</h2>
+        <p class="ai-allers"><a class="ai-aller" href="./">Ouvrir Carte →</a></p>
+        <p>Touche <b>+ Nouvelle partie</b> en haut, puis remplis le formulaire.</p>
+        <ul>
+          <li><b>Date</b> : aujourd'hui par défaut.</li>
+          <li><b>Golf</b> : tape le nom ou la ville, puis choisis le golf dans la liste.</li>
+          <li><b>Parcours</b> : la liste du golf, avec le nombre de trous et le par.</li>
+          <li><b>Repères</b> : la couleur de ton départ (avec la longueur du parcours). Elle sert aussi à placer ton départ en coup par coup.</li>
+          <li><b>Trous</b> : 18 trous, 9 trous (1 à 9) ou 9 trous (10 à 18). Sur un parcours de 9 trous, c'est réglé tout seul.</li>
+          <li><b>Contexte</b> : Partie libre, Entraînement, Rencontre, Événement hors Mérite (club, comité, tournoi privé…) ou Tournoi ffgolf.</li>
+          <li><b>Note</b> : facultative (météo, ressenti, avec qui…).</li>
+        </ul>
+        <p>Touche <b>Commencer la saisie</b> : tu arrives sur le premier trou.</p>
+        <h3>Tournoi ffgolf</h3>
+        <ul>
+          <li>Avec le contexte « Tournoi ffgolf », choisis le <b>tournoi</b> : la liste montre les tournois de ce golf, les plus proches de ta date d'abord.</li>
+          <li>Choisir un tournoi règle la date sur son premier jour. S'il a plusieurs tours, choisis le <b>tour</b> (celui du jour est proposé).</li>
+          <li>Une seule carte par tournoi et par tour : si elle existe déjà, Carte la rouvre au lieu d'en créer une autre.</li>
+        </ul>
+        <h3>« Ta carte t'attend »</h3>
+        <p>Le jour d'un tournoi de ta saison (Saison) ou d'un événement où tu es invité, <b>Mes cartes</b> te propose la carte déjà remplie (golf, parcours, repères, tour).</p>
+        <ul>
+          <li>Touche <b>Ta carte t'attend · commencer</b>, vérifie le parcours et les repères, puis commence la saisie.</li>
+          <li>Rien n'est créé tant que tu ne l'as pas activée.</li>
+          <li>Invitation à un événement pas encore acceptée : <b>commencer ta carte vaut acceptation</b>.</li>
+        </ul>
+      </section>
+
+      <section id="saisir">
+        <h2>Saisir un trou</h2>
+        <p>Un trou par écran, avec de gros boutons. Le <b>par</b> vient des données ffgolf : il ne se change pas.</p>
+        <ul>
+          <li><b>Score</b> : de 1 (trou en 1) à par + 4, avec le nom sous le chiffre (eagle, birdie, par, bogey, double…). Le bouton <b>+</b> ajoute 1 au-delà : il n'y a pas de limite.</li>
+          <li>Dès que tu mets un score, Carte pré-remplit <b>2 putts, 0 pénalité, pas de bunker</b> : corrige d'un clic si besoin.</li>
+          <li><b>Putts</b> : 0 à 4, puis <b>+</b>.</li>
+          <li><b>Pénalités</b> : 0 à 3, puis <b>+</b>.</li>
+          <li><b>Mise en jeu</b> (par 4 et par 5) : un fairway vu de dessus. Touche la zone où a fini ton départ : Gauche, Fairway, Droite, Court ou Long. Une balle s'y pose.</li>
+          <li><b>Bunker</b> : « Oui, joué depuis un bunker » ou « Non ».</li>
+          <li>Touche une seconde fois un choix pour l'effacer (sauf le score).</li>
+        </ul>
+        <p>Si putts + pénalités ne laissent pas la place au coup de départ (ex. 3 putts pour un score de 3), un message ⚠ te prévient. Il ne bloque rien.</p>
+        <h3>Passer d'un trou à l'autre</h3>
+        <ul>
+          <li>Boutons <b>← Trou</b> et <b>Trou →</b> en bas, ou les <b>pastilles des trous</b> en haut pour sauter directement.</li>
+          <li>Au dernier trou : <b>Terminer la partie ✓</b>. S'il manque des scores, Carte te demande de confirmer.</li>
+          <li>Liens du bas : <b>← Mes cartes</b>, <b>Voir la carte</b>, <b>📡 Direct de la partie</b> (pour un événement) et <b>🔗 Partager en direct</b>.</li>
+        </ul>
+        <h3>Enregistrement</h3>
+        <ul>
+          <li>Tout s'enregistre seul, juste après chaque clic : « ✓ enregistré » s'affiche.</li>
+          <li>Réseau coupé : « ⚠ pas encore enregistré ». Ta saisie est gardée dans le téléphone et repart au retour du réseau.</li>
+          <li>Page fermée ou déconnexion : à ton retour, Carte rouvre ta partie <b>sur le trou où tu t'étais arrêté</b>.</li>
+        </ul>
+        <h3>Notation de la carte de score</h3>
+        <div class="ai-tab"><table>
+          <thead><tr><th>Sur la carte</th><th>Signification</th></tr></thead>
+          <tbody>
+            <tr><td>triple rond</td><td>albatros</td></tr>
+            <tr><td>double rond</td><td>eagle</td></tr>
+            <tr><td>rond</td><td>birdie</td></tr>
+            <tr><td>chiffre seul</td><td>par</td></tr>
+            <tr><td>carré</td><td>bogey</td></tr>
+            <tr><td>double carré</td><td>double bogey ou plus</td></tr>
+            <tr><td>putts en vert / en rouge</td><td>1 putt / 3 putts ou plus</td></tr>
+            <tr><td>pastille rouge</td><td>pénalités</td></tr>
+            <tr><td>mini-fairway</td><td>où a fini ta mise en jeu</td></tr>
+            <tr><td>✓ (ligne GIR)</td><td>green en régulation : green atteint en par − 2 coups ou moins</td></tr>
+            <tr><td>tas de sable</td><td>joué depuis un bunker</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <section id="coup-par-coup">
+        <h2>Coup par coup (essai)</h2>
+        <p>Sous « Trou · Par », trois boutons choisissent ta façon de saisir. Ton choix est gardé pour les trous suivants. La mention <b>essai</b> rappelle que ce mode est en test.</p>
+        <div class="ai-tab"><table>
+          <thead><tr><th>Mode</th><th>Ce que tu fais</th></tr></thead>
+          <tbody>
+            <tr><td><b>Classique</b></td><td>la saisie avec les boutons (voir « Saisir un trou »)</td></tr>
+            <tr><td><b>Coup par coup</b></td><td>une touche sur la photo du trou à chaque endroit où ta balle a fini</td></tr>
+            <tr><td><b>Visée + résultat</b></td><td>deux touches par coup : d'abord où tu visais, puis où la balle a fini</td></tr>
+          </tbody>
+        </table></div>
+        <h3>La photo du trou</h3>
+        <ul>
+          <li>Une photo aérienne, tournée <b>départ en bas, green en haut</b>, avec le drapeau, les fairways, bunkers, greens et zones à pénalité dessinés.</li>
+          <li>La balle <b>D</b> est ton départ, placé tout seul d'après le repère de ta carte.</li>
+          <li>Touche la photo là où a fini ton coup : une balle numérotée se pose, avec la <b>distance du coup</b> sur son trait.</li>
+          <li>La liste sous la photo résume chaque coup : club, distance, position, et ce qui reste jusqu'au drapeau.</li>
+        </ul>
+        <h3>Le volet des questions</h3>
+        <p>À chaque balle posée, un volet s'ouvre (en bas sur téléphone, à droite sur ordinateur). Tout est déjà proposé : le plus souvent, touche <b>Valider</b>.</p>
+        <ul>
+          <li><b>Où a fini la balle ?</b> Fairway, Rough, Bunker, Arbres, Zone à pénalité, Hors limites, Green, Dans le trou. Carte devine d'après le dessin du trou ; corrige si besoin.</li>
+          <li><b>Club</b> : les clubs de ton sac. Carte propose celui dont la portée colle à la distance. Le lien <b>🎒 Mon sac</b> ouvre ton sac.</li>
+          <li><b>Putts</b> : quand la balle est sur le green. Le score du trou s'affiche, puis le bouton du trou suivant.</li>
+          <li>En bas du volet : <b>Supprimer</b>, <b>Déplacer</b>, <b>Valider</b>.</li>
+        </ul>
+        <h3>Pénalités</h3>
+        <ul>
+          <li><b>Hors limites</b> (ou balle perdue) : +1 pénalité, ton coup suivant repart d'où tu avais joué.</li>
+          <li><b>Zone à pénalité</b> : +1 pénalité, puis touche la photo là où tu as droppé (balle « d »). Le coup suivant part du drop.</li>
+        </ul>
+        <p>Score, putts, pénalités, mise en jeu et bunker sont <b>calculés à partir des coups</b>. Leurs boutons classiques sont grisés, sauf les putts, que tu peux toujours changer.</p>
+        <h3>Visée + résultat</h3>
+        <ul>
+          <li>Touche d'abord l'endroit que tu vises (une cible ⊕), ou le bouton <b>🎯 Le drapeau</b>.</li>
+          <li>Touche ensuite là où la balle a fini.</li>
+          <li>Carte affiche ton écart : mètres à gauche ou à droite, mètres court ou long.</li>
+        </ul>
+        <h3>Corriger</h3>
+        <ul>
+          <li><b>Déplacer une balle</b> : fais-la glisser. Ou touche-la pour la sélectionner, puis touche la photo là où elle a vraiment fini.</li>
+          <li>Une simple touche sur une balle rouvre ses questions ; un glissé la pose sans ouvrir le volet.</li>
+          <li><b>Annuler le dernier coup</b> : bouton sous la photo.</li>
+          <li>Départ ailleurs aujourd'hui (travaux, départ avancé) : fais glisser la balle <b>D</b>. Touche-la pour retrouver « Remettre le départ prévu ».</li>
+        </ul>
+        <h3>GPS et zoom</h3>
+        <ul>
+          <li><b>📍 Ma balle est ici</b> pose la balle à la position de ton téléphone. Si tu es trop loin du trou, Carte refuse : touche plutôt la photo.</li>
+          <li>Autorise la localisation dans ton navigateur pour que ce bouton marche.</li>
+          <li><b>Zoom</b> : boutons + et − sur la photo, ou pince avec deux doigts. Photo rapprochée : glisse un doigt pour la déplacer.</li>
+        </ul>
+        <h3>Plans et golfs sans plan</h3>
+        <ul>
+          <li>Le dessin des trous vient d'<b>OpenStreetMap</b>, la photo de l'<b>IGN</b>. Certains golfs ont un plan déjà préparé ; pour les autres, Carte cherche le plan sur Internet la première fois (quelques secondes), puis le garde dans ton téléphone.</li>
+          <li>Golf ou trou pas dessiné dans OpenStreetMap : un message s'affiche (« Coup par coup indisponible ici… »). Utilise alors la saisie <b>Classique</b>.</li>
+          <li>Les pars restent ceux de la ffgolf, même si le plan dit autre chose.</li>
+        </ul>
+        <h3>Signaler un problème</h3>
+        <p>Sous la photo, <b>Signaler un problème sur ce trou</b> : décris en une phrase ce qui ne va pas (plan faux, départ mal placé, position mal devinée…). Ton message est envoyé avec le détail du trou.</p>
+      </section>
+
+      <section id="mon-sac">
+        <h2>Mon sac</h2>
+        <p class="ai-allers"><a class="ai-aller" href="./">Ouvrir Carte →</a></p>
+        <p>Onglet <b>🎒 Mon sac</b>. Ton sac sert au coup par coup : boutons de club du volet et club proposé selon la distance.</p>
+        <ul>
+          <li><b>Ajouter un club</b> : touche-le dans la liste du bas. Les bulles (Tous, Bois, Hybrides, Fers, Wedges, Putter et chipper) filtrent la liste.</li>
+          <li><b>Retirer un club</b> : la croix ✕ sur sa ligne.</li>
+          <li><b>14 clubs au plus</b> (règle 4.1b) : la jauge en haut compte tes clubs.</li>
+          <li><b>Portée</b> : règle chaque club avec − et + (de 5 en 5 m). C'est la portée moyenne d'un coup plein, roule comprise.</li>
+          <li>Les clubs sont rangés du plus long au plus court, avec une barre : tu vois les écarts entre deux clubs.</li>
+          <li>Chaque famille a sa couleur (bois, hybrides, fers, wedges, putter), dans le sac comme dans le volet du coup.</li>
+          <li>Sac vide : « pars du sac type » le remplit d'un coup. Tant que tu n'as rien composé, la saisie utilise ce sac type.</li>
+        </ul>
+        <p>Ton sac est rangé dans ton profil : tu le retrouves sur tous tes appareils. Pendant une partie, <b>← Retour à la partie</b> te ramène à ta saisie.</p>
+      </section>
+
+      <section id="mes-cartes">
+        <h2>Mes cartes et voir une carte</h2>
+        <p class="ai-allers"><a class="ai-aller" href="./">Ouvrir Mes cartes →</a></p>
+        <p><b>Mes cartes</b> liste tes parties, la plus récente d'abord : score, écart au par, putts, fairways, et « en cours » pour une partie pas finie.</p>
+        <ul>
+          <li><b>▶ Reprendre la partie en cours</b> : te remet sur ta saisie.</li>
+          <li>Touche une carte : une partie en cours s'ouvre en saisie, une partie terminée s'affiche en entier.</li>
+        </ul>
+        <h3>La carte complète</h3>
+        <ul>
+          <li>Les <b>tuiles</b> : score, putts, fairways touchés, greens en régulation, pénalités.</li>
+          <li>La carte de score aller et retour, avec la légende sous le tableau.</li>
+          <li><b>📊 Stats du tour</b> : l'analyse de ce tour, comparée à ta moyenne (tournoi : tour par tour). « Ouvrir dans Stats → » ouvre le module complet.</li>
+          <li>Ta note, si tu en as mis une.</li>
+          <li>Boutons : <b>🔗 Partager en direct</b>, <b>Modifier la saisie</b>, <b>Supprimer la partie</b>.</li>
+        </ul>
+        <h3>Contrôle ffgolf (tournoi ffgolf)</h3>
+        <p>Ta saisie compte tout de suite. Quand la ffgolf publie le trou par trou (relevé du lundi), Carte compare :</p>
+        <ul>
+          <li>« ✓ Conforme » si tout colle ;</li>
+          <li>sinon la liste des trous qui diffèrent, et le bouton <b>Reprendre les scores ffgolf</b>. Tes putts, départs, bunkers et pénalités restent ;</li>
+          <li>les trous sans score peuvent être complétés par la ffgolf.</li>
+        </ul>
+        <h3>Partager en direct</h3>
+        <ul>
+          <li><b>🔗 Partager en direct</b> crée un lien pour <b>cette partie seulement</b>. La personne la suit sans compte, pendant que tu saisis ; elle ne voit rien d'autre.</li>
+          <li>Copie le lien ou « Envoyer… ». La date de fin est écrite sous le lien.</li>
+          <li><b>Arrêter le partage</b> : le lien ne marche plus.</li>
+        </ul>
+      </section>
+
+      <section id="en-direct">
+        <h2>En direct</h2>
+        <p class="ai-allers"><a class="ai-aller" href="./#lives">Ouvrir En direct →</a></p>
+        <p>L'onglet <b>📡 En direct</b> montre ce qui se joue aujourd'hui. La pastille jaune compte les directs en cours.</p>
+        <ul>
+          <li>Tu vois les événements du jour où tu es invité ou organisateur, avec le nombre de joueurs qui ont une carte et l'heure de la dernière saisie.</li>
+          <li>Touche un événement : <b>Ouvrir le direct →</b>.</li>
+          <li>Pendant ta saisie, <b>📡 Direct de la partie</b> ouvre le direct de ton événement.</li>
+        </ul>
+        <h3>La page du direct</h3>
+        <ul>
+          <li>Deux onglets : <b>Carte de score</b> (une ligne par joueur, trou par trou) et <b>Classement</b> (rang, trous joués, ± par, tours, total).</li>
+          <li>Dans le Classement, touche un joueur pour voir sa carte.</li>
+          <li>Le point ● signale une saisie en cours. La page se met à jour seule.</li>
+          <li>Le direct ne montre que les participants qui ont accepté l'invitation.</li>
+        </ul>
+        <h3>Si tu organises l'événement</h3>
+        <ul>
+          <li><b>🔗 Créer le lien public</b> : un seul lien pour les parents, sans compte (prénom et initiale seulement). <b>Couper le lien</b> l'arrête.</li>
+          <li>Case <b>Carte complète sur le lien public</b> : sinon, le lien ne montre que le score et les putts.</li>
+        </ul>
+      </section>
+
+      <section id="marqueur">
+        <h2>Partie avec marqueur</h2>
+        <p>Pour certains événements, le coach compose les parties et désigne un <b>marqueur</b> : il saisit les scores de toute la partie sur son téléphone. Ta carte reste <b>la tienne</b> : elle va dans tes Stats et dans le direct.</p>
+        <h3>Pendant la partie</h3>
+        <ul>
+          <li>Ta carte affiche <b>🔒 Le marqueur saisit ta carte</b>.</li>
+          <li>Tu ne peux <b>rien modifier</b> tant qu'il n'a pas terminé. Touche « Actualiser » pour voir ses dernières saisies.</li>
+        </ul>
+        <h3>Après la partie</h3>
+        <ul>
+          <li>Quand le marqueur touche « Terminer la partie », ta carte affiche <b>✓ Le marqueur a terminé la partie</b>.</li>
+          <li>Touche <b>Compléter mes stats</b> : ajoute tes putts, ta mise en jeu, tes pénalités et tes bunkers.</li>
+          <li>Sous le score, tu vois « Score saisi par le marqueur » et l'heure. Corrige-le <b>seulement en cas d'erreur</b>.</li>
+          <li>Un score corrigé s'affiche sur la carte avec, en petit et <b>barré</b>, le score du marqueur.</li>
+          <li>Si le marqueur ne termine jamais, ta carte se débloque après le dernier jour de l'événement.</li>
+        </ul>
+        <h3>Si c'est toi le marqueur</h3>
+        <ul>
+          <li>Ouvre le lien reçu du coach : pas besoin de compte. Il ne sert que pour ta partie, jusqu'au jour de l'événement.</li>
+          <li>Choisis <b>Score seul</b> (rapide) ou <b>Saisie complète</b> (putts, pénalités, bunker, mise en jeu).</li>
+          <li>Les trous suivent l'ordre de ton départ (du 1 ou du 10). Mets le score de chaque joueur.</li>
+          <li>À la fin, touche <b>✓ Terminer la partie</b>. « Rouvrir pour corriger un score » reste possible.</li>
+          <li>Téléphone éteint : rouvre le même lien sur un autre téléphone, la saisie reprend.</li>
+        </ul>
+      </section>
+
+      <section id="coach">
+        <h2>Coach et joueur suivi</h2>
+        <p>Si tu as accepté le suivi d'un coach, il voit tes cartes <b>en lecture seule</b> : il ne peut ni les modifier ni en créer.</p>
+        <h3>Pour le coach</h3>
+        <ul>
+          <li>Dans Mes cartes, le menu <b>« Cartes de … »</b> choisit un joueur suivi.</li>
+          <li>Une bande jaune rappelle que tu regardes ce joueur ; ses cartes s'affichent avec la mention « Lecture seule ».</li>
+          <li>Le bouton « + Nouvelle partie » est caché tant que tu regardes un joueur.</li>
+          <li>Le joueur choisi te suit dans Saison et Stats. « Mes cartes » dans le menu, ou « ← Mon compte » dans la bande jaune, te ramène à tes propres cartes.</li>
+          <li>Les jours de tournoi ffgolf, l'onglet <b>📡 En direct</b> montre les cartes de tes joueurs suivis qui saisissent ce tournoi.</li>
+        </ul>
+      </section>
+
+      <section id="faq">
+        <h2>Questions fréquentes</h2>
+        <h3>Le coup par coup ne s'affiche pas sur mon golf.</h3>
+        <p>Le golf ou ce trou n'est pas dessiné dans OpenStreetMap, ou le plan n'a pas pu être chargé (Internet). Utilise la saisie Classique.</p>
+        <h3>Les boutons Score et Pénalités sont grisés.</h3>
+        <p>Tu as posé des coups sur la photo : ces chiffres en sont calculés. Corrige les coups, ou annule-les pour revenir à la saisie classique.</p>
+        <h3>Je ne peux pas modifier ma carte.</h3>
+        <p>Un marqueur saisit ta partie : attends qu'il touche « Terminer la partie », puis « Compléter mes stats ».</p>
+        <h3>« ⚠ pas encore enregistré » s'affiche.</h3>
+        <p>Pas de réseau ou session expirée. Ta saisie est gardée dans le téléphone ; reconnecte-toi si Carte te le demande, elle repartira.</p>
+        <h3>Le par d'un trou est faux.</h3>
+        <p>Le par vient des données ffgolf et ne se change pas dans Carte. Préviens l'administrateur.</p>
+        <h3>« Ma balle est ici » ne marche pas.</h3>
+        <p>Autorise la localisation dans le navigateur. Si Carte dit que tu es loin du trou, touche simplement la photo.</p>
+        <h3>Le direct n'affiche rien. <a class="ai-aller" href="./#lives">Voir En direct →</a></h3>
+        <p>Il ne montre que les événements du jour où tu es invité ou organisateur, et les joueurs qui ont accepté l'invitation.</p>
+        <h3>La page n'a pas changé après une mise à jour.</h3>
+        <p>Recharge-la complètement : Ctrl + Maj + R sur ordinateur.</p>
+      </section>
+
+      <p class="ai-rien" id="ai-rien" hidden>Aucun résultat. Essaie un autre mot, ou demande à l'administrateur.</p>
+    </main>
+  </div>
+
+  <script>
+    // menu depuis les sections, recherche sans accents, section courante surlignée dans le menu
+    (() => {
+      const plier = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+      const S = [...document.querySelectorAll("#ai-corps section")];
+      const menu = document.getElementById("ai-sommaire"), q = document.getElementById("ai-q");
+      const nb = document.getElementById("ai-nb"), rien = document.getElementById("ai-rien");
+      menu.innerHTML = S.map((s) => `<li data-id="${s.id}"><a href="#${s.id}">${s.querySelector("h2").textContent}<span class="b" hidden></span></a></li>`).join("");
+      const LI = Object.fromEntries([...menu.children].map((li) => [li.dataset.id, li]));
+      // texte d'origine de chaque nœud texte, pour surligner puis revenir en arrière
+      const noeuds = S.map((s) => { const w = document.createTreeWalker(s, NodeFilter.SHOW_TEXT), L = []; while (w.nextNode()) if (w.currentNode.nodeValue.trim()) L.push(w.currentNode); return L; });
+      const marques = [];
+      function effacer() { for (const m of marques.splice(0)) { const p = m.parentNode; if (p) { p.replaceChild(document.createTextNode(m.textContent), m); p.normalize(); } } }
+      function surligner(n, mots) {
+        const t = n.nodeValue, pt = plier(t); let iv = [];
+        for (const m of mots) { let i = 0; while ((i = pt.indexOf(m, i)) >= 0) { iv.push([i, i + m.length]); i += m.length; } }
+        if (!iv.length) return 0;
+        iv.sort((a, b) => a[0] - b[0]); const F = []; for (const x of iv) { const d = F[F.length - 1]; if (d && x[0] <= d[1]) d[1] = Math.max(d[1], x[1]); else F.push([...x]); }
+        const frag = document.createDocumentFragment(); let k = 0;
+        for (const [a, b] of F) { frag.append(t.slice(k, a)); const mk = document.createElement("mark"); mk.textContent = t.slice(a, b); marques.push(mk); frag.append(mk); k = b; }
+        frag.append(t.slice(k)); n.parentNode.replaceChild(frag, n); return F.length;
+      }
+      function chercher() {
+        effacer();
+        S.forEach((s, i) => { noeuds[i] = []; const w = document.createTreeWalker(s, NodeFilter.SHOW_TEXT); while (w.nextNode()) if (w.currentNode.nodeValue.trim() && !w.currentNode.parentNode.closest(".ai-aller")) noeuds[i].push(w.currentNode); });
+        const mots = plier(q.value).trim().split(/\s+/).filter((m) => m.length > 1);
+        let total = 0, sections = 0;
+        S.forEach((s, i) => {
+          const txt = plier(s.textContent), ok = !mots.length || mots.every((m) => txt.includes(m));
+          s.hidden = !ok; const li = LI[s.id], b = li.querySelector(".b");
+          li.classList.toggle("vide", !ok); b.hidden = true;
+          if (ok && mots.length) { let n = 0; for (const nd of noeuds[i]) n += surligner(nd, mots); total += n; sections++; b.textContent = n; b.hidden = !n; }
+        });
+        nb.textContent = mots.length ? (sections ? `${total} résultat${total > 1 ? "s" : ""} dans ${sections} section${sections > 1 ? "s" : ""}` : "") : "";
+        rien.hidden = !mots.length || sections > 0;
+        try { history.replaceState(null, "", mots.length ? "#q=" + encodeURIComponent(q.value.trim()) : location.pathname); } catch { /* */ }
+      }
+      let minuteur; q.addEventListener("input", () => { clearTimeout(minuteur); minuteur = setTimeout(chercher, 150); });
+      q.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") { q.value = ""; chercher(); }
+        if (e.key === "Enter") { const s = S.find((x) => !x.hidden); (s?.querySelector("mark") || s)?.scrollIntoView({ behavior: "smooth", block: "center" }); }
+      });
+      // section courante dans le menu
+      const vis = new IntersectionObserver((E) => { for (const e of E) if (e.isIntersecting) { for (const li of menu.children) li.firstChild.removeAttribute("aria-current"); LI[e.target.id]?.firstChild.setAttribute("aria-current", "true"); } }, { rootMargin: "-20% 0px -70% 0px" });
+      S.forEach((s) => vis.observe(s));
+      // lien direct : aide.html#q=putts ou aide.html#coup-par-coup
+      const h = decodeURIComponent(location.hash.slice(1));
+      if (h.startsWith("q=")) { q.value = h.slice(2); chercher(); }
+      else if (h && document.getElementById(h)) document.getElementById(h).scrollIntoView();
+      if (matchMedia("(min-width: 801px)").matches) q.focus();
+    })();
+  </script>
+  <!-- menu des modules sur le logo (12/11) : on lit le rôle du compte connecté pour afficher les mêmes modules qu'ailleurs -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.js"></script>
+  <script src="../commun/v1/nexus.js"></script>
+  <script src="../commun/v1/lanceur.js"></script>
+  <script>sb?.auth.getSession().then(({ data }) => { if (data?.session?.user) nexusLireProfil(data.session.user).catch(() => {}); });</script>
+</body>
+</html>
