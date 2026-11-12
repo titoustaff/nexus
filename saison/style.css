@@ -687,3 +687,8 @@ html, body { overflow-x: clip; }   /* filet de sécurité : jamais de défilemen
 .ev-rep { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .ev-rep small { flex-basis: 100%; }
 body.lecture-seule #s-ev-plus { display: none; }
+
+/* lien « ? Aide » dans les onglets du bandeau (notice aide.html, 12/11/2026) : même style que dans Club */
+.vues .vers-module { color: #d6e6da; font-weight: 600; font-size: 14px; padding: 6px 14px; border-radius: 999px; text-decoration: none; white-space: nowrap; }
+.vues .vers-module:hover { color: #fff; background: rgba(255,255,255,.08); }
+.vues .vers-module:focus-visible { outline: 2px solid var(--jaune); outline-offset: 2px; }

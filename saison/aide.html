@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <title>GolfNexus · Notice de Saison</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="../commun/v1/charte.css">
+  <!-- Notice de Saison, pour le joueur (12/11/2026) : page statique, sans base ni connexion. Menu généré depuis les <h2>, recherche dans le texte
+       (sans accents) : les sections sans résultat sont masquées, les mots trouvés surlignés. Pour modifier la notice : éditer
+       les <section> ci-dessous (une section = un id = une entrée du menu). -->
+  <style>
+    .bandeau-in { display: flex; }
+    .vues a { color: #d6e6da; font-weight: 600; font-size: 14px; padding: 6px 14px; border-radius: 999px; text-decoration: none; white-space: nowrap; }
+    .vues a:hover { color: #fff; background: rgba(255,255,255,.08); }
+    .ai { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 24px; align-items: start; padding-bottom: 60px; }
+    .ai-menu { position: sticky; top: 12px; background: var(--carte); border: 1px solid var(--bord); border-radius: 14px; padding: 14px; box-shadow: var(--ombre); }
+    .ai-q { width: 100%; box-sizing: border-box; border: 1px solid var(--bord); background: var(--fond); border-radius: 10px; padding: 9px 12px; font-size: 14px; color: var(--texte); }
+    .ai-q:focus-visible { outline: 2px solid var(--vert-2); outline-offset: 1px; }
+    .ai-nb { margin: 6px 2px 10px; font-size: 12px; color: var(--doux); min-height: 18px; }
+    .ai-menu ol { list-style: none; margin: 0; padding: 0; counter-reset: s; }
+    .ai-menu li { counter-increment: s; }
+    .ai-menu a { display: flex; gap: 8px; padding: 6px 8px; border-radius: 8px; color: var(--texte); text-decoration: none; font-weight: 500; }
+    .ai-menu a::before { content: counter(s); color: var(--doux); font-variant-numeric: tabular-nums; min-width: 14px; }
+    .ai-menu a:hover { background: var(--sauge-pale); }
+    .ai-menu a[aria-current] { background: var(--sauge-pale); color: var(--vert); font-weight: 700; }
+    .ai-menu li.vide a { opacity: .35; pointer-events: none; }
+    .ai-menu .b { font-size: 11px; background: var(--jaune); color: var(--jaune-texte); border-radius: 999px; padding: 0 6px; margin-left: auto; align-self: center; }
+    .ai-corps h1 { color: var(--vert); font-size: 28px; font-weight: 800; letter-spacing: -.02em; margin: 4px 0 4px; }
+    .ai-corps > .sous { color: var(--doux); margin: 0 0 18px; }
+    .ai-corps section { background: var(--carte); border: 1px solid var(--bord); border-radius: 14px; padding: 18px 22px; margin: 0 0 16px; box-shadow: var(--ombre); scroll-margin-top: 12px; }
+    .ai-corps section[hidden] { display: none; }
+    .ai-corps h2 { margin: 0 0 10px; color: var(--vert); font-size: 20px; font-weight: 800; letter-spacing: -.01em; }
+    .ai-corps h3 { margin: 16px 0 6px; font-size: 15px; }
+    .ai-corps p, .ai-corps li { line-height: 1.6; }
+    .ai-corps ul, .ai-corps ol { padding-left: 22px; }
+    .ai-corps li { margin: 3px 0; }
+    .ai-corps table { border-collapse: collapse; width: 100%; font-size: 13px; margin: 10px 0; }
+    .ai-corps th, .ai-corps td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--bord); }
+    .ai-corps th { color: var(--doux); font-weight: 600; font-size: 12px; }
+    .ai-tab { overflow-x: auto; }
+    .ai-corps code { background: var(--fond); border: 1px solid var(--bord); border-radius: 6px; padding: 1px 5px; font-size: 12px; }
+    .ai-corps mark { background: var(--jaune); color: var(--jaune-texte); border-radius: 3px; padding: 0 1px; }
+    .ai-allers { display: flex; flex-wrap: wrap; gap: 6px; margin: -2px 0 12px; }
+    .ai-aller { display: inline-block; font-size: 12px; font-weight: 600; color: var(--vert); background: var(--sauge-pale); border: 1px solid var(--bord);
+      border-radius: 999px; padding: 3px 10px; text-decoration: none; vertical-align: middle; margin-left: 4px; white-space: nowrap; }
+    .ai-allers .ai-aller { margin-left: 0; }
+    .ai-aller:hover { border-color: var(--sauge); }
+    .ai-aller:focus-visible { outline: 2px solid var(--vert-2); outline-offset: 2px; }
+    .ai-rien { text-align: center; color: var(--doux); padding: 30px; }
+    .ai-rien[hidden] { display: none; }
+    @media (max-width: 800px) {
+      .ai { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+      .ai > * { min-width: 0; }
+      .ai-menu { position: static; }
+      .ai-menu ol { display: flex; flex-wrap: wrap; gap: 4px; }
+      .ai-menu a { padding: 4px 10px; border: 1px solid var(--bord); border-radius: 999px; font-size: 13px; }
+      .ai-corps section { padding: 14px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="bandeau">
+    <div class="bandeau-in">
+      <div class="marque">
+        <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#f4f7f2"/><ellipse cx="30" cy="52" rx="20" ry="5" fill="#cfe3d3"/><path d="M22 10v41" stroke="#14532d" stroke-width="4.5" stroke-linecap="round"/><path d="M24 10l22 8-22 8z" fill="#f0b400"/><circle cx="43" cy="45" r="7" fill="#fff" stroke="#14532d" stroke-width="2"/></svg>
+        <div><div class="nom">Golf<span>Nexus</span> · Aide</div><p class="devise">Notice de Saison</p></div>
+      </div>
+      <nav class="vues" aria-label="Retour"><a href="./">← Saison</a></nav>
+    </div>
+  </header>
+
+  <div class="ai">
+    <aside class="ai-menu" aria-label="Sommaire">
+      <input type="search" id="ai-q" class="ai-q" placeholder="Rechercher dans la notice…" aria-label="Rechercher dans la notice" autocomplete="off">
+      <p class="ai-nb" id="ai-nb" aria-live="polite"></p>
+      <ol id="ai-sommaire"></ol>
+    </aside>
+
+    <main class="ai-corps" id="ai-corps">
+      <h1>Notice de Saison</h1>
+      <p class="sous">Mise à jour le 12/11/2026 · tape un mot dans la recherche (ex. « licence », « étoile », « place »). Les boutons verts « … → » t'emmènent directement à l'écran expliqué.</p>
+
+      <section id="bienvenue">
+        <h2>Bienvenue</h2>
+        <p>Saison t'aide à <b>préparer ta saison de golf</b> : trouver les tournois ffgolf, choisir ceux que tu vas jouer, estimer ta place et retrouver tes résultats. Tout se passe dans le navigateur, sur téléphone ou ordinateur.</p>
+        <div class="ai-tab"><table>
+          <thead><tr><th>Écran</th><th>À quoi il sert</th></tr></thead>
+          <tbody>
+            <tr><td><b>Tournois</b></td><td>la carte et la liste des tournois, avec les filtres</td></tr>
+            <tr><td><b>Ma saison</b></td><td>tes tournois choisis, leur statut, le calendrier, la carte de tes déplacements</td></tr>
+            <tr><td><b>Mes stats</b></td><td>ton Mérite mois par mois, tes places et tes scores (visible une fois connecté)</td></tr>
+            <tr><td><b>Mon profil</b></td><td>ta fiche joueur, ton Mérite, ton coach, tes rappels (visible une fois connecté)</td></tr>
+          </tbody>
+        </table></div>
+        <p>Les données des tournois viennent des pages publiques de <b>ffgolf.org</b>. La date des données est écrite en bas de page.</p>
+      </section>
+
+      <section id="connexion">
+        <h2>Connexion et compte</h2>
+        <p>On entre <b>sur invitation</b> : ton coach ou l'administrateur t'envoie un lien par e-mail.</p>
+        <ol>
+          <li>Ouvre le lien de l'e-mail dans le navigateur où tu veux utiliser GolfNexus.</li>
+          <li>Connecte-toi avec ton e-mail et ton mot de passe.</li>
+          <li>Pas de mot de passe, ou oublié ? Clique sur « Pas de mot de passe ou oublié ? Recevoir un lien par e-mail ».</li>
+        </ol>
+        <ul>
+          <li>Connecté par lien, choisis un mot de passe : clique sur ton nom en haut à droite, puis « Choisir mon mot de passe » (8 caractères minimum).</li>
+          <li>Pour sortir : ton nom en haut à droite, puis « Se déconnecter ».</li>
+          <li>Le drapeau du logo ouvre le menu des modules : Saison, Carte, Stats…</li>
+        </ul>
+      </section>
+
+      <section id="demarrer">
+        <h2>Bien démarrer</h2>
+        <p>À ta première connexion, un assistant te guide écran par écran :</p>
+        <ol>
+          <li><b>Mot de passe</b> (si tu es arrivé par un lien) et <b>accord du parent</b> pour un joueur de moins de 18 ans.</li>
+          <li><b>Ta fiche Mérite</b> : tape ton nom, puis choisis ta ligne. Tu ne la trouves pas ? « Je ne trouve pas ma fiche ».</li>
+          <li><b>Ta licence ffgolf</b> et <b>ton code postal</b> : tu peux les passer avec « Plus tard ».</li>
+        </ol>
+        <p>Ensuite, l'encadré <b>« Bienvenue »</b> en haut de l'écran Tournois montre les étapes qui restent. Clique sur « Faire » pour y aller, ou sur « Masquer » pour le cacher.</p>
+      </section>
+
+      <section id="fiche">
+        <h2>Ma fiche joueur</h2>
+        <p class="ai-allers"><a class="ai-aller" href="./#v=profil">Ouvrir Mon profil →</a></p>
+        <p>Dans <b>Mon profil</b>, bloc « Ma fiche joueur ». Chaque changement est enregistré tout de suite dans ton compte.</p>
+        <div class="ai-tab"><table>
+          <thead><tr><th>Champ</th><th>À savoir</th></tr></thead>
+          <tbody>
+            <tr><td>Nom affiché, club</td><td>ce que tu veux voir écrit</td></tr>
+            <tr><td>N° de licence ffgolf</td><td>sert à retrouver tes places obtenues. <b>Une fois enregistrée, tu ne peux plus la changer</b> : seul l'administrateur la corrige. Vérifie-la bien.</td></tr>
+            <tr><td>Sexe</td><td>Messieurs ou Dames : sert à choisir les bons repères et à estimer ta place</td></tr>
+            <tr><td>Année de naissance</td><td>ta <b>catégorie d'âge</b> s'affiche dessous (ex. « Benjamin 1 (U14) en 2026 »). Elle décide des circuits ouverts à ton âge.</td></tr>
+            <tr><td>Index</td><td>rempli tout seul par ta fiche Mérite (« donnée ffgolf ») ; sinon, tu le saisis</td></tr>
+            <tr><td>Code postal du domicile</td><td>sert aux distances jusqu'aux golfs. Plusieurs communes pour un code ? Choisis la tienne dans la liste.</td></tr>
+            <tr><td>Distance maximale</td><td>en km depuis ton domicile</td></tr>
+            <tr><td>Circuit par défaut</td><td>Adultes (Grands Prix), Jeunes (U12 à U16), Mid-Amateurs (25 ans et +), Seniors (50 ans et +) ou tous. Les circuits fermés à ton âge sont grisés.</td></tr>
+          </tbody>
+        </table></div>
+        <p>La case « Appliquer cette distance à la carte et à la liste à chaque ouverture » remet ta distance maximale à chaque visite. Tu peux la changer sur la carte : elle revient à la prochaine ouverture. Le circuit par défaut marche pareil.</p>
+      </section>
+
+      <section id="merite">
+        <h2>Mon Mérite ffgolf</h2>
+        <p class="ai-allers"><a class="ai-aller" href="./#v=profil">Ouvrir Mon profil →</a></p>
+        <p>En haut de <b>Mon profil</b>, le bloc « Mon Mérite ffgolf » montre, pour chaque Mérite où tu figures (Jeunes, Adultes, Mid-Amateurs, Seniors) : ta place, ta moyenne par rapport au SSS sur 12 et 6 mois, et le nombre de tournois comptés.</p>
+        <ul>
+          <li>Pas encore de fiche ? Choisis Messieurs ou Dames, tape ton nom, puis « Me trouver ».</li>
+          <li>La fiche est relue le lendemain de chaque parution du Mérite. « Mettre à jour maintenant » lance un relevé tout de suite (une fois par jour au plus).</li>
+          <li>Mauvaise personne ? « Ce n'est pas moi » détache la fiche.</li>
+          <li>🔒 « joueur vérifié par la licence » : ta licence a été reconnue dans les résultats, la fiche ne peut plus changer.</li>
+        </ul>
+      </section>
+
+      <section id="tournois">
+        <h2>Carte et liste des tournois</h2>
+        <p class="ai-allers"><a class="ai-aller" href="./#k=avenir">Voir les compétitions à venir →</a></p>
+        <p>L'écran <b>Tournois</b> montre la carte à gauche et la liste à droite.</p>
+        <ul>
+          <li><b>Couleur des pastilles</b> : vert = à venir, jaune = inscriptions ouvertes, gris = passé. Les pastilles proches se regroupent en un rond avec un nombre : zoome pour les séparer.</li>
+          <li><b>La liste suit la carte</b> : quand tu zoomes ou déplaces la carte, la liste ne garde que les tournois de la zone affichée. Dézoome pour tout revoir.</li>
+          <li>Clique sur une pastille ou une ligne pour ouvrir la <b>fiche du tournoi</b>.</li>
+          <li>En haut : le <b>prochain tournoi</b> et des tuiles (cette semaine, ce mois-ci, à venir, la saison, les golfs). Clique sur une tuile pour filtrer, reclique pour annuler.</li>
+          <li>« <b>Aller au prochain</b> » fait défiler la liste jusqu'au prochain tournoi. Un trait « Aujourd'hui » sépare le passé du futur.</li>
+          <li>L'étoile ☆ devant un tournoi l'ajoute à <b>Ma saison</b>.</li>
+        </ul>
+      </section>
+
+      <section id="filtres">
+        <h2>Filtres et recherche</h2>
+        <p>Clique sur « <b>Critères</b> » pour ouvrir les filtres. Les filtres actifs s'affichent en pastilles à côté : tu peux les retirer une par une.</p>
+        <ul>
+          <li><b>Quand</b> : année, mois (ou « Cette semaine »), « À venir ».</li>
+          <li><b>Où</b> : pays, régions et départements (plusieurs choix possibles, ils s'additionnent), « Autour de » une ville ou ta position ◎, avec un rayon.</li>
+          <li><b>Quoi</b> : circuit, catégorie (masculin / féminin), nombre de tours.</li>
+        </ul>
+        <p>Le champ « <b>Chercher un tournoi ou un golf…</b> » ne cache rien : il surligne les tournois trouvés, va sur le premier et le montre sur la carte. Entrée (ou ↓) passe au suivant, Maj + Entrée (ou ↑) au précédent, Échap efface.</p>
+      </section>
+
+      <section id="fiche-tournoi">
+        <h2>La fiche d'un tournoi</h2>
+        <p>La fiche réunit tout ce qu'il faut savoir :</p>
+        <ul>
+          <li>dates, circuit, format, index maximum, <b>date de clôture des inscriptions</b>, lieu, distance, lien vers la page officielle ffgolf.org ;</li>
+          <li>le bouton « ☆ Ajouter à Ma saison », puis le statut et une note (covoiturage, hôtel…) ;</li>
+          <li><b>ta place probable</b> (voir plus bas) ;</li>
+          <li>le parcours de la compétition : repère, distance, par, SSS et slope ;</li>
+          <li>les <b>résultats des éditions passées</b> sur ce golf : score du vainqueur, du top 10, du top 20, du cut, et le classement, sans aucun nom.</li>
+        </ul>
+        <p>« Fiche complète du golf » montre tous les parcours et repères du golf, et tous ses tournois.</p>
+        <p class="ai-allers"><a class="ai-aller" href="./#k=golfs">Voir les golfs →</a></p>
+      </section>
+
+      <section id="place">
+        <h2>Ma place probable</h2>
+        <p>GolfNexus estime où tu aurais fini sur un tournoi. Il prend ta <b>moyenne par rapport au SSS</b> (Mérite du circuit du tournoi), l'ajoute au SSS du parcours, puis la compare au classement des éditions passées sur ce golf.</p>
+        <ul>
+          <li>Il faut : être connecté, avoir indiqué ton <b>sexe</b> et relié ta <b>fiche Mérite</b>.</li>
+          <li>Dans la fiche du tournoi, bloc « Ta place probable » : ta place estimée par édition, et si tu serais <b>dans les 50 %</b> (des points au Mérite) ou non.</li>
+          <li>Dans la liste, active « <b>Ma place</b> » : chaque tournoi affiche « ≈ 12e / 80 », « cut probable », « place : ? » (pas d'édition exploitable) ou « pas pour ton âge ».</li>
+        </ul>
+        <p>C'est une estimation : le résultat dépend du champ de l'année et de ta forme.</p>
+      </section>
+
+      <section id="ma-saison">
+        <h2>Ma saison</h2>
+        <p class="ai-allers"><a class="ai-aller" href="./#v=saison">Ouvrir Ma saison →</a></p>
+        <p>Ma saison regroupe les tournois que tu as choisis avec l'étoile ☆. Le nombre de tournois de l'année s'affiche sur l'onglet.</p>
+        <ul>
+          <li>Choisis l'<b>année</b> à côté du titre. Tu peux aussi construire une saison passée pour t'entraîner.</li>
+          <li>Chaque tournoi a un <b>statut</b> : <b>Envisagé</b> (au départ), <b>Inscrit</b>, <b>Joué</b>. Clique pour le changer.</li>
+          <li>Ajoute une <b>note</b> sous chaque tournoi. « Retirer » l'enlève de ta saison.</li>
+          <li>En haut, les chiffres : envisagés, inscrits, joués, semaines occupées, km aller-retour depuis chez toi (à vol d'oiseau), prochain tournoi.</li>
+          <li>La <b>carte</b> numérote tes tournois dans l'ordre ; ⌂ marque ton domicile. Tu peux changer le domicile au-dessus de la carte.</li>
+          <li>« + Ajouter des tournois » te ramène à l'écran Tournois.</li>
+        </ul>
+      </section>
+
+      <section id="calendrier">
+        <h2>Calendrier, alertes et agenda</h2>
+        <p class="ai-allers"><a class="ai-aller" href="./#v=saison">Ouvrir Ma saison →</a></p>
+        <ul>
+          <li>Le <b>calendrier</b> montre les 12 mois de l'année. Les jours pris ont la couleur du statut ; un jour avec deux tournois est marqué « chevauchement ». Clique sur un jour pour ouvrir le tournoi.</li>
+          <li>Les <b>alertes</b> te préviennent : deux tournois aux mêmes dates, clôture des inscriptions dans 7 jours ou moins, inscriptions closes, tournoi passé encore « Inscrit » (passe-le en « Joué »).</li>
+          <li>« <b>Exporter vers l'agenda</b> » télécharge un fichier .ics avec tes tournois « Inscrit » de l'année, à ouvrir dans Google Agenda, Apple ou Outlook.</li>
+        </ul>
+        <h3>Rappels d'inscription <a class="ai-aller" href="./#v=profil">Ouvrir →</a></h3>
+        <p>Dans Mon profil, active « M'envoyer un e-mail avant la clôture des inscriptions » : 7 jours avant, 3 jours avant ou la veille. Seulement pour les tournois encore « Envisagé ».</p>
+      </section>
+
+      <section id="evenements">
+        <h2>Événements</h2>
+        <p class="ai-allers"><a class="ai-aller" href="./#v=saison">Ouvrir Ma saison →</a></p>
+        <ul>
+          <li>« <b>+ Événement</b> » ajoute à ta saison une partie ou une compétition hors Mérite. Tu peux inviter d'autres joueurs.</li>
+          <li>Une invitation reçue s'affiche dans ta liste : « Accepter » ou « Refuser ». Accepté, l'événement entre dans ta saison et tes scores de cet événement sont visibles des participants.</li>
+          <li>Les événements apparaissent en violet dans le calendrier et la liste. « modifié » : la date, l'heure ou le golf a changé depuis ta réponse. Un événement annulé est barré.</li>
+          <li>Le jour J, les boutons « Ma carte » et « En direct » t'emmènent dans le module Carte.</li>
+          <li>Les événements ne vont pas dans les chiffres ni dans l'export agenda.</li>
+        </ul>
+      </section>
+
+      <section id="resultats">
+        <h2>Résultats ffgolf</h2>
+        <p>Grâce à ta <b>licence</b>, GolfNexus retrouve ta ligne dans les résultats ffgolf <b>chaque lundi</b>.</p>
+        <ul>
+          <li>Dans Ma saison, sous chaque tournoi passé : « Place obtenue », tes scores par tour, et l'écart avec ta place estimée.</li>
+          <li>Pas encore là ? « relevée le lundi suivant le tournoi ».</li>
+          <li>« d'après le Mérite » : les résultats détaillés manquent chez ffgolf, la place est lue dans ta fiche Mérite.</li>
+          <li>Pressé ? « Mettre à jour maintenant » (Mon profil) ou « Lancer mon relevé maintenant » : résultat en 1 à 2 minutes, une fois par jour au plus.</li>
+        </ul>
+      </section>
+
+      <section id="stats">
+        <h2>Mes stats</h2>
+        <p class="ai-allers"><a class="ai-aller" href="./#v=stats">Ouvrir Mes stats →</a></p>
+        <p>Une fois connecté, avec ta fiche Mérite et ta licence, l'onglet <b>Mes stats</b> montre ta place au Mérite, ta moyenne par rapport au SSS, ton index et tes points mois par mois, puis tes tournois comptés.</p>
+        <ul>
+          <li>Un onglet par circuit où tu joues (Jeunes, Adultes…).</li>
+          <li>Clique sur un tournoi compté pour voir sa <b>carte de score</b> (tour par tour, trou par trou quand ffgolf le publie).</li>
+        </ul>
+      </section>
+
+      <section id="coach">
+        <h2>Ton coach</h2>
+        <h3>Qui te suit <a class="ai-aller" href="./#v=profil">Ouvrir →</a></h3>
+        <ul>
+          <li>Un coach ou ton club demande à te suivre : la demande apparaît dans Mon profil, bloc « Qui te suit ». Tu choisis « Accepter » ou « Refuser ».</li>
+          <li>Il voit ta saison et tes stats <b>en lecture seule</b> : il ne peut rien modifier.</li>
+          <li>Si tu acceptes ton club, tous les coachs de son académie te voient ; un coach d'un autre club ne te voit que lui-même.</li>
+          <li>« Retirer l'accès » coupe le suivi à tout moment.</li>
+          <li>Moins de 18 ans : le compte est celui du parent. Il valide d'abord le compte, puis c'est lui qui accepte les coachs.</li>
+        </ul>
+        <h3>Ce que voit le coach</h3>
+        <p>Quand un coach regarde ta saison, une <b>bande jaune</b> s'affiche sous le bandeau : « 👁 ton nom · lecture seule », avec des raccourcis Saison, Carte, Stats et « ← Mon compte » pour revenir à son compte. Les boutons de modification sont cachés.</p>
+      </section>
+
+      <section id="donnees">
+        <h2>Données personnelles</h2>
+        <p class="ai-allers"><a class="ai-aller" href="./#v=rgpd">Lire « Tes données personnelles » →</a></p>
+        <ul>
+          <li>Pas de publicité, pas de mesure d'audience. Tes données ne sont jamais vendues.</li>
+          <li>Tes données ne sont vues que par toi, et par un coach que tu as accepté (lecture seule).</li>
+          <li>Les résultats des autres joueurs sont gardés <b>sans nom</b> : seule ta ligne est reliée à ton compte, grâce à ta licence.</li>
+          <li>Pour consulter, corriger ou supprimer tes données : <a href="mailto:golfnexus@sportsdatabucket.fr">golfnexus@sportsdatabucket.fr</a>. La suppression du compte se fait pour l'instant sur demande.</li>
+        </ul>
+        <p>Le texte complet s'ouvre aussi depuis le lien « Tes données personnelles » en bas de chaque page.</p>
+      </section>
+
+      <section id="faq">
+        <h2>Questions fréquentes</h2>
+        <h3>Je ne vois pas tous les tournois.</h3>
+        <p>Regarde les pastilles des filtres actifs (circuit, distance…) et dézoome la carte : la liste ne garde que la zone affichée.</p>
+        <h3>La distance revient toute seule. <a class="ai-aller" href="./#v=profil">Mon profil →</a></h3>
+        <p>C'est ta distance maximale : décoche « Appliquer cette distance… » dans Mon profil.</p>
+        <h3>Je me suis trompé de licence.</h3>
+        <p>Tu ne peux pas la changer : écris à l'administrateur.</p>
+        <h3>Ma place obtenue n'apparaît pas.</h3>
+        <p>Les résultats sont relevés le lundi suivant le tournoi. Vérifie que ta licence est bien saisie dans Mon profil.</p>
+        <h3>Pas d'estimation de place sur un tournoi.</h3>
+        <p>Il faut ton sexe et ta fiche Mérite. Sans édition passée exploitable sur ce golf, ou si le circuit n'est pas ouvert à ton âge, il n'y a pas d'estimation.</p>
+        <h3>Le bouton « Exporter vers l'agenda » est grisé.</h3>
+        <p>Aucun tournoi « Inscrit » cette année : passe au moins un tournoi en « Inscrit ».</p>
+        <h3>La page n'a pas changé après une mise à jour.</h3>
+        <p>Recharge-la complètement : Ctrl + Maj + R sur ordinateur.</p>
+      </section>
+
+      <p class="ai-rien" id="ai-rien" hidden>Aucun résultat. Essaie un autre mot, ou demande à l'administrateur.</p>
+    </main>
+  </div>
+
+  <script>
+    // menu depuis les sections, recherche sans accents, section courante surlignée dans le menu
+    (() => {
+      const plier = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+      const S = [...document.querySelectorAll("#ai-corps section")];
+      const menu = document.getElementById("ai-sommaire"), q = document.getElementById("ai-q");
+      const nb = document.getElementById("ai-nb"), rien = document.getElementById("ai-rien");
+      menu.innerHTML = S.map((s) => `<li data-id="${s.id}"><a href="#${s.id}">${s.querySelector("h2").textContent}<span class="b" hidden></span></a></li>`).join("");
+      const LI = Object.fromEntries([...menu.children].map((li) => [li.dataset.id, li]));
+      // texte d'origine de chaque nœud texte, pour surligner puis revenir en arrière
+      const noeuds = S.map((s) => { const w = document.createTreeWalker(s, NodeFilter.SHOW_TEXT), L = []; while (w.nextNode()) if (w.currentNode.nodeValue.trim()) L.push(w.currentNode); return L; });
+      const marques = [];
+      function effacer() { for (const m of marques.splice(0)) { const p = m.parentNode; if (p) { p.replaceChild(document.createTextNode(m.textContent), m); p.normalize(); } } }
+      function surligner(n, mots) {
+        const t = n.nodeValue, pt = plier(t); let iv = [];
+        for (const m of mots) { let i = 0; while ((i = pt.indexOf(m, i)) >= 0) { iv.push([i, i + m.length]); i += m.length; } }
+        if (!iv.length) return 0;
+        iv.sort((a, b) => a[0] - b[0]); const F = []; for (const x of iv) { const d = F[F.length - 1]; if (d && x[0] <= d[1]) d[1] = Math.max(d[1], x[1]); else F.push([...x]); }
+        const frag = document.createDocumentFragment(); let k = 0;
+        for (const [a, b] of F) { frag.append(t.slice(k, a)); const mk = document.createElement("mark"); mk.textContent = t.slice(a, b); marques.push(mk); frag.append(mk); k = b; }
+        frag.append(t.slice(k)); n.parentNode.replaceChild(frag, n); return F.length;
+      }
+      function chercher() {
+        effacer();
+        S.forEach((s, i) => { noeuds[i] = []; const w = document.createTreeWalker(s, NodeFilter.SHOW_TEXT); while (w.nextNode()) if (w.currentNode.nodeValue.trim() && !w.currentNode.parentNode.closest(".ai-aller")) noeuds[i].push(w.currentNode); });
+        const mots = plier(q.value).trim().split(/\s+/).filter((m) => m.length > 1);
+        let total = 0, sections = 0;
+        S.forEach((s, i) => {
+          const txt = plier(s.textContent), ok = !mots.length || mots.every((m) => txt.includes(m));
+          s.hidden = !ok; const li = LI[s.id], b = li.querySelector(".b");
+          li.classList.toggle("vide", !ok); b.hidden = true;
+          if (ok && mots.length) { let n = 0; for (const nd of noeuds[i]) n += surligner(nd, mots); total += n; sections++; b.textContent = n; b.hidden = !n; }
+        });
+        nb.textContent = mots.length ? (sections ? `${total} résultat${total > 1 ? "s" : ""} dans ${sections} section${sections > 1 ? "s" : ""}` : "") : "";
+        rien.hidden = !mots.length || sections > 0;
+        try { history.replaceState(null, "", mots.length ? "#q=" + encodeURIComponent(q.value.trim()) : location.pathname); } catch { /* */ }
+      }
+      let minuteur; q.addEventListener("input", () => { clearTimeout(minuteur); minuteur = setTimeout(chercher, 150); });
+      q.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") { q.value = ""; chercher(); }
+        if (e.key === "Enter") { const s = S.find((x) => !x.hidden); (s?.querySelector("mark") || s)?.scrollIntoView({ behavior: "smooth", block: "center" }); }
+      });
+      // section courante dans le menu
+      const vis = new IntersectionObserver((E) => { for (const e of E) if (e.isIntersecting) { for (const li of menu.children) li.firstChild.removeAttribute("aria-current"); LI[e.target.id]?.firstChild.setAttribute("aria-current", "true"); } }, { rootMargin: "-20% 0px -70% 0px" });
+      S.forEach((s) => vis.observe(s));
+      // lien direct : aide.html#q=licence ou aide.html#ma-saison
+      const h = decodeURIComponent(location.hash.slice(1));
+      if (h.startsWith("q=")) { q.value = h.slice(2); chercher(); }
+      else if (h && document.getElementById(h)) document.getElementById(h).scrollIntoView();
+      if (matchMedia("(min-width: 801px)").matches) q.focus();
+    })();
+  </script>
+  <!-- menu des modules sur le logo (12/11) : on lit le rôle du compte connecté pour afficher les mêmes modules qu'ailleurs -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.js"></script>
+  <script src="../commun/v1/nexus.js"></script>
+  <script src="../commun/v1/lanceur.js"></script>
+  <script>sb?.auth.getSession().then(({ data }) => { if (data?.session?.user) nexusLireProfil(data.session.user).catch(() => {}); });</script>
+</body>
+</html>
