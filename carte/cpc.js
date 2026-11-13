@@ -322,6 +322,15 @@ const CPC = (() => {
       etiquettes.push([(a[0] + 2 * cx + q[0]) / 4, (a[1] + 2 * cy + q[1]) / 4, Math.round(metres(G, O[k], c.p)) + " m"]);
       if (c.pos === "Zone à pénalité" && c.drop) { const r = Rp.rot(c.drop); svg.append(el("line", { x1: q[0], y1: q[1], x2: r[0], y2: r[1], stroke: "#8fd3ff", "stroke-width": 2.5, "stroke-dasharray": "4 5" })); }
     });
+    { // distance de la balle (dernier coup, ou départ) au drapeau : aide à poser le coup suivant à peu près au bon endroit
+      const der = W.coups[W.coups.length - 1];
+      if (!der || der.pos !== "Dans le trou") {
+        const de = !der ? departDu(i) : der.pos === "Hors limites" ? O[W.coups.length - 1] : der.pos === "Zone à pénalité" ? (der.drop || der.p) : der.p;
+        const a = Rp.rot(de), q = Rp.rot(drapeauDu(i));
+        svg.append(el("line", { x1: a[0], y1: a[1], x2: q[0], y2: q[1], stroke: "#ffd23f", "stroke-width": 1.8, "stroke-dasharray": "3 6", "stroke-linecap": "round", "vector-effect": "non-scaling-stroke", "pointer-events": "none" }));
+        etiquettes.push([(a[0] + q[0]) / 2, (a[1] + q[1]) / 2, "🚩 " + Math.round(metres(G, de, drapeauDu(i))) + " m"]);
+      }
+    }
     for (const [x, y, v] of etiquettes) {
       const g2 = ech(x, y, 16); g2.setAttribute("pointer-events", "none");
       g2.append(el("rect", { x: -4, y: -11, width: v.length * 8.4 + 8, height: 20, rx: 6, fill: "rgba(15,23,18,.82)" }));
