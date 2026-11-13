@@ -216,11 +216,12 @@ const CPC = (() => {
     const p = etat.partie, t = p.trous[i], G = geo(i), k = (p.id || "") + ":" + i;
     let W = S.travail.get(k);
     if (!W || W.G !== G) {
-      W = { G, coups: (t.coups || []).map((c) => ({ ...c, p: loc(G, c.ll), drop: c.drop ? loc(G, c.drop) : null })), dep: t.dep ? loc(G, t.dep) : null };
+      W = { G, coups: (t.coups || []).map((c) => ({ ...c, p: loc(G, c.ll), drop: c.drop ? loc(G, c.drop) : null })), dep: t.dep ? loc(G, t.dep) : null, drap: t.drap ? loc(G, t.drap) : null };
       S.travail.set(k, W);
     }
     return W;
   }
+  const drapeauDu = (i) => travail(i).drap || drapeauDe(travail(i).G);   // drapeau du jour (glissé par le joueur), sinon celui du plan
   const departDu = (i) => { const W = travail(i), G = W.G; if (W.dep) return W.dep; const T = plateformes(G); return T.length ? T[Math.min(planDe(etat.partie).rang ?? 1, T.length - 1)] : G.trou[0]; };
   function origines(i) {
     const W = travail(i); let o = departDu(i);
@@ -246,6 +247,9 @@ const CPC = (() => {
       return o;
     });
     if (W.dep) t.dep = glob(G, W.dep); else delete t.dep;
+    if (W.drap) t.drap = glob(G, W.drap); else delete t.drap;   // drapeau du jour placé par le joueur
+    t.cible = glob(G, drapeauDu(i));   // trou visé (drapeau du jour, sinon drapeau OSM ou bout de la ligne) : sert aux coups gagnés de Stats
+    if (C.length) t.depart = glob(G, departDu(i)); else delete t.depart;   // point de départ réel du 1er coup (pour Stats)
     if (!C.length) { delete t.coups; if (avait) { t.score = null; t.putts = null; t.pen = null; t.fw = null; t.bunker = null; t.puttsVu = false; } return; }
     const der = C[C.length - 1].pos;
     t.pen = C.filter((c) => PEN.includes(c.pos)).length;
@@ -302,8 +306,8 @@ const CPC = (() => {
     for (const f of formes(G, "bunker")) g.append(el("polygon", { points: pts(f.p), fill: "#e8cf8f", "fill-opacity": .85, stroke: "#fff3cf", "stroke-width": 1.4 }));
     g.append(el("polyline", { points: pts(G.trou), fill: "none", stroke: "#fff", "stroke-width": 2.5, "stroke-dasharray": "9 7", "stroke-opacity": .8 }));
     svg.append(g);
-    const d = Rp.rot(drapeauDe(G)), mat = ech(d[0], d[1]);
-    mat.append(el("line", { x1: 0, y1: 0, x2: 0, y2: -32, stroke: "#fff", "stroke-width": 3 }), el("polygon", { points: "0,-32 20,-26 0,-20", fill: "#e5484d" }));
+    const d = Rp.rot(drapeauDu(i)), mat = ech(d[0], d[1], 0, { "data-drapeau": 1, class: "cpc-balle" });
+    mat.append(el("circle", { cx: 6, cy: -16, r: 22, fill: "transparent" }), el("line", { x1: 0, y1: 0, x2: 0, y2: -32, stroke: "#fff", "stroke-width": 3 }), el("polygon", { points: "0,-32 20,-26 0,-20", fill: "#e5484d" }));
     svg.append(mat);
     const O = origines(i), etiquettes = [];
     const txt = (gg, x, y, v, taille, coul) => { const e = el("text", { "text-anchor": "middle", x, y, "font-size": taille, "font-weight": 800, fill: coul, "font-family": "inherit" }); e.textContent = v; gg.append(e); };
@@ -371,7 +375,7 @@ const CPC = (() => {
     const W = travail(i), C = W.coups, fini = C.length && ["Green", "Dans le trou"].includes(C[C.length - 1].pos);
     if (dropAttendu(W) >= 0) return `Coup ${dropAttendu(W) + 1} dans la zone à pénalité (+1) : touche la photo là où tu as droppé`;
     if (S.sel != null && C[S.sel]) return `Coup ${S.sel + 1} sélectionné : fais-le glisser, ou touche la photo pour le déplacer. Touche-le encore pour le lâcher.`;
-    if (fini) return C[C.length - 1].pos === "Green" ? "Balle sur le green : indique les putts" : "Balle dans le trou";
+    if (fini) return C[C.length - 1].pos === "Green" ? `Balle sur le green : indique les putts${W.drap ? "" : " · fais glisser le drapeau 🚩 à sa vraie place"}` : "Balle dans le trou";
     if (C.length) return C[C.length - 1].pos === "Hors limites" ? `Hors limites (+1) : tu rejoues d'où tu avais joué. Touche la photo là où a fini le coup ${C.length + 1}` : `Touche la photo là où a fini le coup ${C.length + 1}`;
     return "Touche la photo là où a fini ton départ";
   }
@@ -380,7 +384,7 @@ const CPC = (() => {
     const fini = C.length && ["Green", "Dans le trou"].includes(C[C.length - 1].pos);
     let lg = 0; for (let k = 0; k < G.trou.length - 1; k++) lg += metres(G, G.trou[k], G.trou[k + 1]);
     const lignes = C.map((c, k) => {
-      const d = Math.round(metres(G, O[k], c.p)), r = Math.round(metres(G, c.p, drapeauDe(G)));
+      const d = Math.round(metres(G, O[k], c.p)), r = Math.round(metres(G, c.p, drapeauDu(i)));
       return `<li class="cpc-coup${S.sel === k ? " choisi" : ""}"><button type="button" class="cpc-resume" data-cpc-ouvrir="${k}"><b>${k + 1}</b><span>${esc(c.club || "")} · <strong>${d} m</strong></span><span class="cpc-pos">${esc(c.pos)}</span><span class="cpc-reste">${c.pos === "Dans le trou" ? "dans le trou" : c.pos === "Green" ? r + " m du drapeau" : "reste " + r + " m"}</span></button></li>`;
     }).join("");
     return `<div class="cpc">
@@ -397,13 +401,17 @@ const CPC = (() => {
     const P = S.panneau, W = travail(i), G = W.G, C = W.coups, t = etat.partie.trous[i];
     const pied = (html) => `<div class="pan-pied">${html}</div>`;
     let corps;
-    if (P.type === "depart") {
+    if (P.type === "drapeau") {
+      corps = `<div class="pan-tete"><b>Drapeau</b><button type="button" class="pan-x" data-cpc-fermer aria-label="Fermer">×</button></div>
+        <p>Le drapeau change de place chaque jour. En arrivant sur le green, <b>fais-le glisser</b> à sa vraie place : la longueur des putts et des approches sera juste dans Stats.${W.drap ? "" : " Pour l'instant il est au centre du green."}</p>
+        ${pied(`${W.drap ? `<button type="button" class="lien" data-cpc-drap-auto>Remettre au centre</button>` : ""}<button type="button" class="btn plein" data-cpc-fermer>OK</button>`)}`;
+    } else if (P.type === "depart") {
       corps = `<div class="pan-tete"><b>Départ</b><button type="button" class="pan-x" data-cpc-fermer aria-label="Fermer">×</button></div>
         <p>Départ${etat.partie.repere ? ` des <b>${esc(etat.partie.repere)}</b>` : ""}, placé d'après le repère de ta carte. Seulement si le départ est ailleurs aujourd'hui (travaux, départ avancé) : fais glisser la balle <b>D</b>.</p>
         ${pied(`${W.dep ? `<button type="button" class="lien" data-cpc-dep-auto>Remettre le départ prévu</button>` : ""}<button type="button" class="btn plein" data-cpc-fermer>OK</button>`)}`;
     } else {
       const k = P.k, c = C[k]; if (!c) { S.panneau = null; return ""; }
-      const O = origines(i), d = Math.round(metres(G, O[k], c.p)), r = Math.round(metres(G, c.p, drapeauDe(G)));
+      const O = origines(i), d = Math.round(metres(G, O[k], c.p)), r = Math.round(metres(G, c.p, drapeauDu(i)));
       const fini = c.pos === "Green" || c.pos === "Dans le trou", dernier = k === C.length - 1;
       corps = `<div class="pan-tete"><b>Coup ${k + 1}</b><span>${d} m · ${c.pos === "Dans le trou" ? "dans le trou" : c.pos === "Green" ? r + " m du drapeau" : "reste " + r + " m"}</span><button type="button" class="pan-x" data-cpc-fermer aria-label="Fermer">×</button></div>
         <h3>Où a fini la balle ?</h3>
@@ -436,7 +444,7 @@ const CPC = (() => {
     const pan = $("cpc-panneau"), svg = $("cpc-svg"); if (!pan || !svg) return;
     if (innerWidth < 760) {
       document.body.style.paddingBottom = pan.offsetHeight + "px";
-      const b = svg.querySelector(S.panneau?.type === "depart" ? "[data-depart]" : `[data-balle="${S.panneau?.k}"]`) || svg;
+      const b = svg.querySelector(S.panneau?.type === "depart" ? "[data-depart]" : S.panneau?.type === "drapeau" ? "[data-drapeau]" : `[data-balle="${S.panneau?.k}"]`) || svg;
       const r = b.getBoundingClientRect(), haut = innerHeight - pan.offsetHeight - 24;
       if (r.bottom > haut || r.top < 8) window.scrollBy({ top: r.top + r.height / 2 - haut / 2 });
     } else {
@@ -486,6 +494,7 @@ const CPC = (() => {
     if (d.cpcClub != null) { const c = C[+d.cpcClub]; c.club = d.val; c.clubMain = true; majTrou(i); return true; }
     if (d.cpcPutts != null) { const t = etat.partie.trous[i]; t.putts = +d.cpcPutts; t.puttsVu = true; ecrire(i); sauver(); rendreSaisie(); return true; }
     if (d.cpcDepAuto != null) { W.dep = null; S.panneau = null; majTrou(i); return true; }
+    if (d.cpcDrapAuto != null) { W.drap = null; S.panneau = null; majTrou(i); return true; }
     if (d.cpcAnnuler != null) {
       S.sel = null; S.panneau = null; C.pop(); etat.partie.trous[i].puttsVu = false; majTrou(i); return true;
     }
@@ -539,9 +548,9 @@ const CPC = (() => {
         S.pince = { d: Math.hypot(x2 - x1, y2 - y1) || 1, m: [(x1 + x2) / 2, (y1 + y2) / 2] }; S.geste = null; e.preventDefault(); return;
       }
       if (S.doigts.size > 2) return;
-      const balle = e.target.closest("[data-balle]"), dep = e.target.closest("[data-depart]"), drop = e.target.closest("[data-drop]");
-      S.geste = { k: balle ? +balle.dataset.balle : null, dep: !!dep, drop: drop ? +drop.dataset.drop : null, x: e.clientX, y: e.clientY, bouge: false, id: e.pointerId };
-      if (balle || dep || drop) { svg.setPointerCapture(e.pointerId); e.preventDefault(); }
+      const balle = e.target.closest("[data-balle]"), dep = e.target.closest("[data-depart]"), drap = e.target.closest("[data-drapeau]"), drop = e.target.closest("[data-drop]");
+      S.geste = { k: balle ? +balle.dataset.balle : null, dep: !!dep, drap: !!drap, drop: drop ? +drop.dataset.drop : null, x: e.clientX, y: e.clientY, bouge: false, id: e.pointerId };
+      if (balle || dep || drap || drop) { svg.setPointerCapture(e.pointerId); e.preventDefault(); }
     });
     box.addEventListener("pointermove", (e) => {
       if (S.doigts.has(e.pointerId)) S.doigts.set(e.pointerId, [e.clientX, e.clientY]);
@@ -553,7 +562,7 @@ const CPC = (() => {
         S.pince = { d, m }; e.preventDefault(); return;
       }
       const g0 = S.geste;
-      if (g0 && e.pointerId === g0.id && g0.k == null && !g0.dep && g0.drop == null && svg) {   // un doigt sur la photo
+      if (g0 && e.pointerId === g0.id && g0.k == null && !g0.dep && !g0.drap && g0.drop == null && svg) {   // un doigt sur la photo
         const dx = e.clientX - (g0.lx ?? g0.x), dy = e.clientY - (g0.ly ?? g0.y);
         if (!g0.glisse && Math.hypot(e.clientX - g0.x, e.clientY - g0.y) < 8) return;
         g0.glisse = true; g0.lx = e.clientX; g0.ly = e.clientY;
@@ -561,11 +570,11 @@ const CPC = (() => {
         else window.scrollBy(0, -dy);   // photo entière : le doigt fait défiler la page
         return;
       }
-      const g = S.geste; if (!g || (g.k == null && !g.dep && g.drop == null) || e.pointerId !== g.id) return;
+      const g = S.geste; if (!g || (g.k == null && !g.dep && !g.drap && g.drop == null) || e.pointerId !== g.id) return;
       if (!g.bouge && Math.hypot(e.clientX - g.x, e.clientY - g.y) < 6) return;
       g.bouge = true;
       const W = travail(etat.i), q = versPhoto(e);
-      if (g.dep) W.dep = q; else if (g.drop != null) W.coups[g.drop].drop = q; else { S.sel = g.k; W.coups[g.k].p = q; }
+      if (g.dep) W.dep = q; else if (g.drap) W.drap = q; else if (g.drop != null) W.coups[g.drop].drop = q; else { S.sel = g.k; W.coups[g.k].p = q; }
       dessiner(etat.i);
     });
     const fin = (e) => { S.doigts.delete(e.pointerId); if (S.pince && S.doigts.size < 2) { S.pince = null; S.geste = null; return true; } return false; };
@@ -574,9 +583,10 @@ const CPC = (() => {
       if (fin(e)) return;
       const g = S.geste; if (!g || e.pointerId !== g.id) { S.geste = null; return; }
       S.geste = null;
-      if (!e.target.closest("#cpc-svg") && g.k == null && !g.dep && g.drop == null) return;
+      if (!e.target.closest("#cpc-svg") && g.k == null && !g.dep && !g.drap && g.drop == null) return;
       const i = etat.i; if (!actif(i)) return;
       const W = travail(i), C = W.coups;
+      if (g.drap) { if (g.bouge) { W.drap = versPhoto(e); S.panneau = null; majTrou(i); } else { S.sel = null; S.panneau = { type: "drapeau" }; rendreSaisie(); } return; }
       if (g.dep) { if (g.bouge) { W.dep = versPhoto(e); S.panneau = null; majTrou(i); } else { S.sel = null; S.panneau = { type: "depart" }; rendreSaisie(); } return; }
       if (g.drop != null) { if (g.bouge) { C[g.drop].drop = versPhoto(e); majTrou(i); } else { S.panneau = { type: "coup", k: g.drop }; rendreSaisie(); } return; }
       if (g.k != null) {
