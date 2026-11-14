@@ -193,15 +193,30 @@ const CPC = (() => {
     Object.defineProperty(G, "_dep", { value: T, enumerable: false });   // pas dans le cache JSON
     return T;
   }
+  // révision de chaque plan préparé (plans/revisions.json, écrit par finaliser_trace.py) : un plan republié remplace la copie gardée
+  let revisions = null;
+  const lireRevisions = () => (revisions ||= fetch("plans/revisions.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : {})).catch(() => ({})));
+  const slugDe = (p) => etat.golfs?.[p.golf]?.slug || "";
   function charger(p) {
     const k = cleP(p) + "|" + p.trous.map((t) => t.t).join(",") + "|" + (p.repere || "");
     if (S.plans.has(k)) return S.plans.get(k);
     let cache = null;
     try { cache = JSON.parse(localStorage.getItem("carte-cpc:" + k) || "null"); } catch { /* */ }
-    if (cache && cache.v === VERSION_PLAN && cache.etat === "ok") { S.plans.set(k, cache); return cache; }
+    if (cache && cache.v === VERSION_PLAN && cache.etat === "ok") {
+      S.plans.set(k, cache);
+      lireRevisions().then((R) => {
+        const rev = R[slugDe(p)];
+        if (!rev || rev === cache.rev) return;
+        try { localStorage.removeItem("carte-cpc:" + k); } catch { /* */ }
+        S.plans.delete(k); charger(p);
+        if (etat.ecran === "saisie" && etat.partie === p) rendreSaisie();
+      });
+      return cache;
+    }
     const P = { etat: "chargement" };
     S.plans.set(k, P);
-    construirePlan(p).then((r) => {
+    Promise.all([construirePlan(p), lireRevisions()]).then(([r, R]) => {
+      if (R[slugDe(p)]) r.rev = R[slugDe(p)];
       S.plans.set(k, r);
       if (r.etat === "ok") try { localStorage.setItem("carte-cpc:" + k, JSON.stringify(r)); } catch { /* place pleine : pas de cache */ }
     }).catch((e) => { S.plans.set(k, { etat: "erreur", raison: e.message || String(e) }); })
