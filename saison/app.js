@@ -23,6 +23,14 @@ const golfDe = (t) => etat.golfs[t.golf];
 // Mérites ffgolf, nommés et rangés comme les circuits (le Mérite National Amateur = circuit « Adultes »)
 const LISTES_M = { jeunes: "Jeunes", amateurs: "Adultes", midams: "Mid-Amateurs", seniors: "Seniors" };
 const LISTE_DU_CIRCUIT = { jeunes: "jeunes", gp: "amateurs", mid: "midams", seniors: "seniors" };
+// Mérite où le joueur cherche sa fiche (14/11) : il le choisit (un U12 n'est souvent qu'au Mérite Jeunes, un senior qu'au
+// Mérite Seniors) ; par défaut selon l'âge (ou « moins de 18 ans » sans année de naissance) ; Mérites impossibles grisés
+const MERITE_AGE = { amateurs: () => true, jeunes: (a) => a <= 21, midams: (a) => a >= 25, seniors: (a) => a >= 50 };
+const ageJoueur = () => { const n = +(Saison.fiche || {}).naissance; return n ? new Date().getFullYear() - n : null; };
+const meriteOk = (l) => { const a = ageJoueur(); return a == null || MERITE_AGE[l](a); };
+const meriteDefaut = () => { const a = ageJoueur(); return a != null ? (a <= 16 ? "jeunes" : "amateurs") : Saison.mineur ? "jeunes" : "amateurs"; };
+const choixMerite = (id, val) => `<select id="${id}" aria-label="Mérite où chercher">${Object.keys(MERITE_AGE).map((l) =>
+  `<option value="${l}" ${l === val ? "selected" : ""} ${meriteOk(l) ? "" : "disabled"}>Mérite ${LISTES_M[l]}</option>`).join("")}</select>`;
 // dernier mois relevé d'un Mérite (donnée ffgolf, relevée par le robot : lendemain du 1er jeudi et mercredi d'après)
 function dernierMerite(liste) {
   return (Saison.stats?.mois || []).filter((m) => m.liste === liste).sort((a, b) => a.mois.localeCompare(b.mois)).at(-1) || null;
@@ -32,7 +40,7 @@ function dernierMerite(liste) {
 function moyPour(t) {
   for (const l of [LISTE_DU_CIRCUIT[circuitDe(t)], "amateurs"]) { const m = dernierMerite(l); if (m?.moy != null) return { moy: +m.moy, liste: l }; }
   const fm = Saison.fiche?.merite;
-  return fm?.moy != null ? { moy: +fm.moy, liste: "amateurs" } : null;
+  return fm?.moy != null ? { moy: +fm.moy, liste: fm.liste || "amateurs" } : null;
 }
 // Éligibilité par l'âge (Vademecum ffgolf, voir MD_DOC/PLAN.md) : âge = année du tournoi − année de naissance.
 // Jeunes : jusqu'à 16 ans (U12 ≤ 12, U14 / Benjamins ≤ 14, U16 / Minimes ≤ 16) ; Adultes : tous ;
@@ -1563,8 +1571,8 @@ async function meriteListe(sexe, liste = "amateurs") {
   }).catch((e) => { delete meriteListes[k]; throw e; });
 }
 // fiche détaillée d'un joueur (fragment HTML) → valeurs utiles
-async function meriteFiche(code) {
-  const r = await fetch(`${FFG}/merite_details/${moisCourant()}/amateurs?h=${encodeURIComponent(code)}`, { headers: { "X-Requested-With": "XMLHttpRequest" } });
+async function meriteFiche(code, liste = "amateurs") {
+  const r = await fetch(`${FFG}/merite_details/${moisCourant()}/${liste}?h=${encodeURIComponent(code)}`, { headers: { "X-Requested-With": "XMLHttpRequest" } });
   if (!r.ok) throw new Error("HTTP " + r.status);
   const doc = new DOMParser().parseFromString(await r.text(), "text/html");
   const tete = doc.querySelector("#mer_det_head"); if (!tete) throw new Error("fiche introuvable");
@@ -1581,11 +1589,11 @@ async function meriteFiche(code) {
     golf: champ("Golf:"), placePrec: parseInt(champ("Place mois précédent:")) || null, placeAnPrec: parseInt(champ("Place année précédente:")) || null, meilleure: parseInt(champ("Meilleure place:")) || null,
     victoires: parseInt(champ("Victoire:")) || 0, moy: nombre(td[0]), moy6: nombre(td[1]), nb: parseInt(td[2]) || null, marques: parseInt(td[3]) || null, divisor: parseInt(td[4]) || null };
 }
-async function majMerite(code, base = {}) {
-  const f = await meriteFiche(code);
+async function majMerite(code, base = {}, liste = "amateurs") {
+  const f = await meriteFiche(code, liste);
   let periode = "";
-  try { const L = await meriteListe(Saison.fiche.sexe || "H"); periode = L.ma_title || ""; } catch { /* sans titre */ }
-  const merite = { code, ...base, ...f, periode, lu: AUJ };
+  try { const L = await meriteListe(Saison.fiche.sexe || "H", liste); periode = L.ma_title || ""; } catch { /* sans titre */ }
+  const merite = { code, liste, ...base, ...f, periode, lu: AUJ };
   Saison.setFiche({ merite, index: f.index ?? Saison.fiche.index });   // moyennes : par Mérite, dans merite (plus dans la fiche)
 }
 
@@ -1616,7 +1624,7 @@ function rendreProfil() {
   // une carte : nom et club, puis une section par Mérite où il figure (Jeunes, Adultes, Mid-Am, Seniors), d'après
   // le relevé du robot ; compte tout neuf (pas encore relevé) : les valeurs Adultes lues au choix de la fiche
   const secs = Object.keys(LISTES_M).map((l) => ({ l, d: dernierMerite(l) })).filter((x) => x.d);
-  if (!secs.length && m) secs.push({ l: "amateurs", d: { place: m.place, place_prec: m.placePrec, meilleure: m.meilleure, moy: m.moy, moy6: m.moy6, nb: m.nb, divisor: m.divisor, marques: m.marques, place_annee_prec: m.placeAnPrec,
+  if (!secs.length && m) secs.push({ l: m.liste || "amateurs", d: { place: m.place, place_prec: m.placePrec, meilleure: m.meilleure, moy: m.moy, moy6: m.moy6, nb: m.nb, divisor: m.divisor, marques: m.marques, place_annee_prec: m.placeAnPrec,
     index_golf: m.index, statut: m.statut, categorie: m.categorie, lu_le: m.lu } });
   const comm = secs.map((x) => x.d).find((d) => d.categorie || d.statut) || {}, lu = secs.map((x) => x.d.lu_le).filter(Boolean).sort().at(-1);
   const idx = secs.map((x) => x.d.index_golf).find((x) => x != null);
@@ -1637,8 +1645,10 @@ function rendreProfil() {
         ${Saison.demo ? "" : `· <button type="button" class="lien" id="p-releve">Mettre à jour maintenant</button>`}
         ${Saison.licence?.verif === "ok" ? `· <span title="Licence reconnue dans les résultats : joueur verrouillé">🔒 joueur vérifié par la licence</span>` : `· <button type="button" class="lien" id="p-oublier">Ce n'est pas moi</button>`}</div>
     </div>` : `
-    <p>Retrouve ta fiche du <b>Mérite National Amateur</b> : GolfNexus y lira ton index et ta <b>moyenne par rapport au SSS</b>, et les relira chaque mois.</p>
+    <p>Retrouve ta fiche <b>Mérite</b> : GolfNexus y lira ton index et ta <b>moyenne par rapport au SSS</b>, et les relira chaque mois.
+      Choisis le Mérite où tu figures (les U12-U16 sont souvent au seul <b>Mérite Jeunes</b>) ; tes autres Mérites sont retrouvés ensuite.</p>
     <form id="p-cherche-f" class="c-form">
+      ${choixMerite("p-cherche-liste", rech2.liste || meriteDefaut())}
       <select id="p-cherche-sexe" aria-label="Classement"><option value="H">Messieurs</option><option value="D" ${f.sexe === "D" ? "selected" : ""}>Dames</option></select>
       <input id="p-cherche" type="search" placeholder="Ton nom (et prénom)" aria-label="Nom à chercher" required minlength="2" autocomplete="family-name">
       <button type="submit" class="btn plein">Me trouver</button>
@@ -1646,7 +1656,7 @@ function rendreProfil() {
     <div id="p-resultats" class="p-resultats">${rech2.en_cours ? "<p>Lecture du Mérite (≈ 2,5 Mo)…</p>" : rech2.erreur ? `<p>${esc(rech2.erreur)}</p>` :
       rech2.resultats ? (rech2.resultats.length ? rech2.resultats.map((x, i) => `<button type="button" class="p-res" data-i="${i}">
         <b>${esc(x.NOM)} ${esc(x.PRENOM)}</b><span>${esc(x.CATEGORIE || "")} · ${esc(titre(x.GOLF || ""))} · ${/^\d+$/.test(String(x.RANK)) ? x.RANK + "e" : "non classé"} · moyenne ${signe(nombre(x.MOY_SSS))}</span></button>`).join("")
-        : "<p>Personne de ce nom au Mérite de ce mois. Seuls les joueurs qui ont joué des tournois comptés au Mérite y figurent.</p>") : ""}</div>`;
+        : `<p>Personne de ce nom au Mérite ${LISTES_M[rech2.liste] || ""} de ce mois. Essaie un autre Mérite : seuls les joueurs qui ont joué des tournois comptés y figurent.</p>`) : ""}</div>`;
   // champs saisis
   const v = (id, x) => { const el = $(id); if (document.activeElement !== el) el.value = x ?? ""; };
   v("p-nom", f.nom); v("p-club", f.club); v("p-sexe", f.sexe); v("p-naissance", f.naissance); v("p-index", f.index == null ? "" : String(f.index).replace(".", ","));
@@ -1689,11 +1699,11 @@ function rendreProfil() {
 $("ecran-profil").addEventListener("submit", async (e) => {
   if (e.target.id !== "p-cherche-f") return;
   e.preventDefault();
-  const sexe = $("p-cherche-sexe").value;
+  const sexe = $("p-cherche-sexe").value, liste = $("p-cherche-liste").value;
   const mots = plier($("p-cherche").value).split(" ").filter(Boolean);
-  Object.assign(rech2, { en_cours: true, erreur: "", resultats: null }); rendreProfil();
+  Object.assign(rech2, { en_cours: true, erreur: "", resultats: null, liste }); rendreProfil();
   try {
-    const L = await meriteListe(sexe);
+    const L = await meriteListe(sexe, liste);
     rech2.resultats = (L.datas || []).filter((x) => { const n = plier(x.NOM + " " + x.PRENOM); return mots.every((w) => n.includes(w)); }).slice(0, 25);
     rech2.sexe = sexe;
   } catch (err) { rech2.erreur = "Impossible de lire le Mérite ffgolf pour le moment (" + (err.message || err) + ")."; }
@@ -1706,8 +1716,8 @@ $("ecran-profil").addEventListener("click", async (e) => {
     b.disabled = true;
     try {
       Saison.setFiche({ sexe: rech2.sexe, nom: Saison.fiche.nom || titre(`${x.PRENOM} ${x.NOM}`), club: Saison.fiche.club || titre(x.GOLF || "") });
-      await majMerite(x.CODE, { nom: x.NOM, prenom: x.PRENOM });
-      rech2.resultats = null; signaler("Fiche Mérite reliée : tes autres Mérites (Jeunes, Mid-Am, Seniors) arrivent avec le relevé.");
+      await majMerite(x.CODE, { nom: x.NOM, prenom: x.PRENOM }, rech2.liste || "amateurs");
+      rech2.resultats = null; signaler("Fiche Mérite reliée : tes autres Mérites arrivent avec le relevé.");
       lancerReleve(true);   // historique Mérite et places obtenues sans attendre lundi
     } catch (err) { signaler("Lecture de la fiche impossible : " + (err.message || err)); }
     rendreProfil(); return;
@@ -2515,11 +2525,13 @@ function rendreAssistant() {
     parent: NEXUS_ETAPES.parent.html(pied("Valider")),
     merite: `<h2>Trouve ta fiche Mérite</h2><p>GolfNexus y lit ton index et ta moyenne par rapport au SSS : c'est ce qui sert à <b>estimer ta place</b> sur chaque tournoi et à remplir <b>« Mes stats »</b>.
       Même <b>non classé</b>, tu as une fiche dès que tu as joué des compétitions : cherche ton nom.</p>
+      <p class="meta">Les U12-U16 sont souvent au seul <b>Mérite Jeunes</b>, beaucoup de seniors au seul <b>Mérite Seniors</b> : choisis le Mérite où tu figures, les autres seront retrouvés ensuite.</p>
+      ${choixMerite("as-liste", asst.liste || meriteDefaut())}
       <div class="as-ligne"><select id="as-sexe"><option value="H">Messieurs</option><option value="D" ${f.sexe === "D" ? "selected" : ""}>Dames</option></select>
       <input id="as-nom" required minlength="2" placeholder="ton nom (et prénom)" autocomplete="family-name"></div>
       <div id="as-res">${asst.res === "…" ? "<p class='meta'>Lecture du Mérite…</p>" : Array.isArray(asst.res) ? (asst.res.length ? asst.res.map((x, i) =>
         `<button type="button" class="p-res" data-as-res="${i}"><b>${esc(x.NOM)} ${esc(x.PRENOM)}</b><span>${esc(x.CATEGORIE || "")} · ${esc(titre(x.GOLF || ""))} · ${/^\d+$/.test(String(x.RANK)) ? x.RANK + "e" : "non classé"}</span></button>`).join("")
-        : "<p class='meta'>Personne de ce nom au Mérite de ce mois.</p>") : typeof asst.res === "string" ? `<p class="meta">${esc(asst.res)}</p>` : ""}</div>
+        : `<p class='meta'>Personne de ce nom au Mérite ${LISTES_M[asst.liste] || ""} de ce mois : essaie un autre Mérite.</p>`) : typeof asst.res === "string" ? `<p class="meta">${esc(asst.res)}</p>` : ""}</div>
       <div class="as-pied"><button type="button" class="lien" data-as="pas-merite">Je ne trouve pas ma fiche</button><button type="submit" class="btn plein">Chercher</button></div>`,
     licence: `<h2>Ta licence ffgolf</h2><p>Elle sert à retrouver <b>tes places obtenues</b> dans les résultats (et le trou par trou). Elle est sur ta carte de licence ou l'appli ffgolf. <b>Vérifie-la bien : elle ne pourra plus être changée</b> (seul l'administrateur peut la corriger).</p>
       <input id="as-lic" inputmode="numeric" pattern="[0-9 ]{6,14}" required placeholder="ex. 123456789">
@@ -2547,8 +2559,8 @@ $("assistant").addEventListener("submit", async (e) => {
       await NEXUS_ETAPES[k].valider(Saison);
     } else if (k === "merite") {   // « Chercher » : la liste du Mérite du mois (lue une fois par session)
       const sexe = $("as-sexe").value, mots = plier($("as-nom").value).split(" ").filter(Boolean);
-      asst.res = "…"; rendreAssistant(); $("as-nom").value = mots.join(" "); $("as-sexe").value = sexe;
-      try { const L = await meriteListe(sexe); asst.res = (L.datas || []).filter((x) => { const n = plier(x.NOM + " " + x.PRENOM); return mots.every((w) => n.includes(w)); }).slice(0, 12); asst.sexe = sexe; }
+      asst.liste = $("as-liste").value; asst.res = "…"; rendreAssistant(); $("as-nom").value = mots.join(" "); $("as-sexe").value = sexe;
+      try { const L = await meriteListe(sexe, asst.liste); asst.res = (L.datas || []).filter((x) => { const n = plier(x.NOM + " " + x.PRENOM); return mots.every((w) => n.includes(w)); }).slice(0, 12); asst.sexe = sexe; }
       catch (err) { asst.res = "Mérite ffgolf illisible pour le moment : réessaie, ou « Je ne suis pas au Mérite »."; }
       rendreAssistant(); $("as-nom").value = mots.join(" "); $("as-sexe").value = sexe; return;
     } else if (k === "licence") {
@@ -2575,7 +2587,7 @@ $("assistant").addEventListener("click", async (e) => {
     const x = asst.res[+b.dataset.asRes]; b.disabled = true;
     try {
       Saison.setFiche({ sexe: asst.sexe, nom: Saison.fiche.nom || titre(`${x.PRENOM} ${x.NOM}`), club: Saison.fiche.club || titre(x.GOLF || "") });
-      await majMerite(x.CODE, { nom: x.NOM, prenom: x.PRENOM });
+      await majMerite(x.CODE, { nom: x.NOM, prenom: x.PRENOM }, asst.liste || "amateurs");
       suivant();   // le relevé part à la fin de l'assistant (fiche Mérite + licence d'un coup)
     } catch (err) { b.disabled = false; msgAs("Lecture de la fiche impossible : " + (err.message || err)); }
   }
