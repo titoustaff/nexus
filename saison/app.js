@@ -1290,10 +1290,13 @@ function rendreSaison() {
   $("s-annees").innerHTML = annees.map((a) => `<button type="button" data-an="${a}" aria-pressed="${a === an}">${a}</button>`).join("");
   const lid = Saison.active(an);
   const liste = Saison.entrees(lid).sort((a, b) => a.t.debut.localeCompare(b.t.debut));
+  // + les épreuves de la fiche Mérite absentes du calendrier collecté (ligue, comité, open…) : tout ce que montre le Mérite
+  // apparaît dans la saison (14/11), en « Joué », en lecture seule ; pas de golf connu → ni carte ni distance
+  const hors = horsCalendrier(an), tournois = [...liste, ...hors];
 
   // chiffres
-  const n = (s) => liste.filter((x) => x.e.statut === s).length;
-  const semaines = new Set(liste.map((x) => semaine(x.t.debut)[0]));
+  const n = (s) => tournois.filter((x) => x.e.statut === s).length;
+  const semaines = new Set(tournois.map((x) => semaine(x.t.debut)[0]));
   const prochain = liste.find((x) => x.t.fin >= AUJ);
   const dom = Saison.domicile();
   const dist = (t) => { const p = posDe(t); return dom && p ? km(dom, p) : null; };
@@ -1309,12 +1312,12 @@ function rendreSaison() {
   $("s-legende").innerHTML = STATUTS.map(([k, l]) => `<span><i class="puce-statut s-${k}"></i>${l}</span>`).join("") +
     `<span><i class="puce-statut s-ev"></i>événement</span><span><i class="puce-statut conflit"></i>chevauchement</span>`;
   const evs = evenementsDe(an);   // événements du coach : dans le calendrier et la liste, au milieu des tournois
-  const tout = [...liste, ...evs].sort((a, b) => a.t.debut.localeCompare(b.t.debut));
+  const tout = [...liste, ...hors, ...evs].sort((a, b) => a.t.debut.localeCompare(b.t.debut));
   $("s-cal").innerHTML = calendrier(an, tout);
   $("s-ics").disabled = !liste.some((x) => x.e.statut === "inscrit");
   carteSaison(liste);
 
-  if (!liste.length && horsCompte()) {
+  if (!tournois.length && horsCompte()) {
     $("s-liste").innerHTML = `<div class="s-vide"><p><b>Connecte-toi pour retrouver ta saison.</b></p>
       <p><button type="button" class="lien" data-connexion>Se connecter</button> en haut à droite, avec ton e-mail et ton mot de passe.</p></div>`;
     return;
@@ -1330,6 +1333,7 @@ function rendreSaison() {
   for (const { t, e } of tout) {
     const m = +t.debut.slice(5, 7) - 1;
     if (m !== mois) { if (mois >= 0) html += "</ol>"; html += `<h4 class="s-mois">${MOIS[m]}</h4><ol class="s-items">`; mois = m; }
+    if (t.horsCal) { html += itemHorsCal(t, m); continue; }
     if (t.ev) {   // événement (Club ou créé par un joueur) : invitation à accepter, carte le jour J, direct
       const jour = isoLocal(new Date()), ev = t.ev, insc = ev.insc || {}, moi = Saison.moi?.id, lecture = !!Saison.demo;
       const annule = ev.statut === "annule", invite = insc.statut === "invite", orga = !lecture && ev.cree_par === moi && nxEvOuvert(ev, Saison.role === "admin");
@@ -1364,6 +1368,31 @@ function rendreSaison() {
   $("s-liste").innerHTML = html + "</ol>";
 }
 
+// épreuves de la fiche Mérite (toutes listes) de l'année, introuvables dans le calendrier collecté
+function horsCalendrier(an) {
+  const vus = new Set(), R = [];
+  for (const m of Saison.stats?.tournois || []) {
+    if (!m.date || !m.date.startsWith(String(an)) || tournoiDuMerite(m)) continue;
+    const k = m.date + "|" + plier(m.nom); if (vus.has(k)) continue; vus.add(k);
+    const fin = new Date(m.date + "T12:00"); fin.setDate(fin.getDate() + Math.max(0, (m.tours?.length || 1) - 1));
+    R.push({ t: { id: "merite:" + k, nom: m.nom, debut: m.date, fin: isoLocal(fin), horsCal: true, m }, e: { statut: "joue", note: "" } });
+  }
+  return R;
+}
+function itemHorsCal(t, mois) {
+  const m = t.m, place = String(m.place || "").replace(/^(\d+)/, "$1ᵉ").replace(/ème|er/, "");
+  return `<li class="s-item s-joue passe s-hors">
+    <div class="date"><b>${new Date(t.debut + "T12:00").getDate()}</b><span>${MOIS_COURT[mois]}</span></div>
+    <div class="s-info">
+      <b class="s-nom-hors">${esc(titre(m.nom))}</b>
+      <div class="meta">${fmtDate(t.debut)} · <span title="Compétition comptée au Mérite mais hors des circuits fédéraux (Grands Prix, GP Jeunes, Seniors, Mid-Amateurs) : ligue, comité départemental, club, open…">hors circuit fédéral</span>${m.tours?.length ? ` · ${m.tours.length} tour${m.tours.length > 1 ? "s" : ""}` : ""}</div>
+      <div class="meta"><span class="tag circuit c-${circuitDeListe(m.liste)}">Mérite ${esc(LISTES_M[m.liste] || "")}</span>${m.cat ? ` · cat. Mérite ${esc(m.cat)}` : ""}</div>
+      <div class="meta obtenu"><b>Place obtenue : ${esc(place || "—")}</b>${m.tours?.length ? ` · ${m.tours.join("-")}` : ""}${m.moy_sss != null && m.tours?.length ? ` (${sg(+m.moy_sss, 1)} vs SSS)` : ""}${m.points != null ? ` · <b>${fx(+m.points, 2)}</b> pts Mérite ${esc(LISTES_M[m.liste] || "")}` : ""}
+        <span class="meta">· d'après le Mérite</span></div>
+    </div></li>`;
+}
+const circuitDeListe = (l) => Object.entries(LISTE_DU_CIRCUIT).find(([, x]) => x === l)?.[0] || "gp";
+
 // place obtenue (collecte du lundi, ligne du joueur seulement) comparée à l'estimation
 function blocObtenu(t) {
   const r = (Saison.resultats || {})[t.id], m = !r && meriteDe(t), est = estimePlace(t);
@@ -1381,6 +1410,7 @@ function blocObtenu(t) {
   return `<div class="meta obtenu"><b>Place obtenue : ${libPlace}</b>`
     + (tours?.length ? ` · ${tours.join("-")}${r?.par != null ? ` (${r.par > 0 ? "+" : ""}${r.par})` : m?.moy_sss != null ? ` (${sg(m.moy_sss, 1)} vs SSS)` : ""}` : "")
     + (estTxt ? ` · ${estTxt}${ecart ? ` <span class="${ecart < 0 ? "mieux" : "moins"}">(${ecart < 0 ? ecart : "+" + ecart})</span>` : ""}` : "")
+    + ((mp) => (mp?.points != null ? ` · <b>${fx(+mp.points, 2)}</b> pts Mérite ${esc(LISTES_M[mp.liste] || "")}` : ""))(m || meriteDe(t))   // tout ce que montre la fiche Mérite (14/11)
     + (m ? ` <span class="meta" title="Résultats détaillés absents chez ffgolf : place lue dans ta fiche Mérite">· d'après le Mérite</span>` : "") + "</div>";
 }
 // tournoi de la saison retrouvé dans la fiche Mérite (dates du tournoi + un mot du nom en commun)
@@ -1548,7 +1578,7 @@ async function meriteFiche(code) {
   const champ = (lib) => cases[lib] || null;
   const td = [...(doc.querySelector("table tbody tr") || { children: [] }).children].map((x) => x.textContent.trim());
   return { place: parseInt(champ("Place actuelle:")) || null, categorie: champ("Catégorie:"), index: nombre(champ("Index:")), statut: champ("Statut:"),
-    golf: champ("Golf:"), placePrec: parseInt(champ("Place mois précédent:")) || null, meilleure: parseInt(champ("Meilleure place:")) || null,
+    golf: champ("Golf:"), placePrec: parseInt(champ("Place mois précédent:")) || null, placeAnPrec: parseInt(champ("Place année précédente:")) || null, meilleure: parseInt(champ("Meilleure place:")) || null,
     victoires: parseInt(champ("Victoire:")) || 0, moy: nombre(td[0]), moy6: nombre(td[1]), nb: parseInt(td[2]) || null, marques: parseInt(td[3]) || null, divisor: parseInt(td[4]) || null };
 }
 async function majMerite(code, base = {}) {
@@ -1586,7 +1616,7 @@ function rendreProfil() {
   // une carte : nom et club, puis une section par Mérite où il figure (Jeunes, Adultes, Mid-Am, Seniors), d'après
   // le relevé du robot ; compte tout neuf (pas encore relevé) : les valeurs Adultes lues au choix de la fiche
   const secs = Object.keys(LISTES_M).map((l) => ({ l, d: dernierMerite(l) })).filter((x) => x.d);
-  if (!secs.length && m) secs.push({ l: "amateurs", d: { place: m.place, place_prec: m.placePrec, meilleure: m.meilleure, moy: m.moy, moy6: m.moy6, nb: m.nb, divisor: m.divisor,
+  if (!secs.length && m) secs.push({ l: "amateurs", d: { place: m.place, place_prec: m.placePrec, meilleure: m.meilleure, moy: m.moy, moy6: m.moy6, nb: m.nb, divisor: m.divisor, marques: m.marques, place_annee_prec: m.placeAnPrec,
     index_golf: m.index, statut: m.statut, categorie: m.categorie, lu_le: m.lu } });
   const comm = secs.map((x) => x.d).find((d) => d.categorie || d.statut) || {}, lu = secs.map((x) => x.d.lu_le).filter(Boolean).sort().at(-1);
   const idx = secs.map((x) => x.d.index_golf).find((x) => x != null);
@@ -1599,9 +1629,10 @@ function rendreProfil() {
         <tbody>${secs.map(({ l, d }) => { const dl = d.place && d.place_prec ? d.place_prec - d.place : 0;
           return `<tr><th scope="row">${LISTES_M[l]}${d.mois ? `<small>${moisLib(d.mois)}</small>` : ""}</th>
           <td><b>${d.place != null ? `${d.place}<sup>e</sup>` : "NC"}</b>${dl ? `<span class="${dl > 0 ? "mieux" : "moins"}">${dl > 0 ? "▲" : "▼"} ${Math.abs(dl)}</span>` : ""}
-            <small>${d.place == null ? "non classé" : d.meilleure ? `meilleure : ${d.meilleure}<sup>e</sup>` : ""}</small></td>
+            <small>${d.place == null ? "non classé" : d.meilleure ? `meilleure : ${d.meilleure}<sup>e</sup>` : ""}</small>
+            <small>année précédente : ${d.place_annee_prec ? `${d.place_annee_prec}<sup>e</sup>` : "NC"}</small></td>
           <td><b>${signe(d.moy == null ? null : +d.moy)}</b></td><td><b>${signe(d.moy6 == null ? null : +d.moy6)}</b></td>
-          <td><b>${d.nb ?? "—"}</b> / ${d.divisor ?? "—"}</td></tr>`; }).join("")}</tbody></table></div>
+          <td><b>${d.nb ?? "—"}</b> / ${d.divisor ?? "—"}${d.marques != null ? `<small>${d.marques} marqué${d.marques > 1 ? "s" : ""}</small>` : ""}</td></tr>`; }).join("")}</tbody></table></div>
       <div class="meta p-merite-pied">Relevé ${lu ? `le ${fmtDate(String(lu).slice(0, 10))}` : "pas encore fait"} · mis à jour le lendemain de chaque parution du Mérite
         ${Saison.demo ? "" : `· <button type="button" class="lien" id="p-releve">Mettre à jour maintenant</button>`}
         ${Saison.licence?.verif === "ok" ? `· <span title="Licence reconnue dans les résultats : joueur verrouillé">🔒 joueur vérifié par la licence</span>` : `· <button type="button" class="lien" id="p-oublier">Ce n'est pas moi</button>`}</div>
