@@ -413,6 +413,15 @@ html.cpt-mode, html.cpt-mode body { overflow: hidden; overscroll-behavior: none;
 .cpt-titre { flex: 1; min-width: 0; border: 0; background: none; color: #fff; font: inherit; font-size: 15px; text-align: center; cursor: pointer; line-height: 1.25; }
 .cpt-titre b { font-size: 17px; } .cpt-titre small { display: block; font-size: 12px; opacity: .85; }
 .cpt .cpc-aide { flex: none; margin: 6px 8px 0; padding: 6px 10px; font-size: 13px; }
+/* pastille du score à droite du titre (15/11, demande utilisateur) : mêmes couleurs que la saisie classique */
+.cpt-coups { flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 52px; height: 44px; padding: 2px 6px; border-radius: 10px; line-height: 1.05; background: #fff; color: #1f2937; }
+.cpt-coups b { font-size: 19px; } .cpt-coups small { font-size: 10px; font-weight: 600; white-space: nowrap; }
+.cpt-coups.cpt-encours { background: rgba(255,255,255,.14); color: #fff; border: 1.5px dashed rgba(255,255,255,.55); }
+.cpt-coups.sc-par { background: #fff; color: #1f2937; }
+.cpt-coups.sc-aigle { background: #f0b400; color: #2e2400; border-radius: 50%; width: 52px; }
+.cpt-coups.sc-birdie { background: #c2410c; color: #fff; border-radius: 50%; width: 52px; }
+.cpt-coups.sc-bogey { background: #dbeafe; color: #1e3a8a; }
+.cpt-coups.sc-double { background: #1e3a8a; color: #fff; box-shadow: 0 0 0 2px #fff; }
 .cpt .cpc-carte { flex: 1; min-height: 0; margin: 6px 8px 0; border-radius: 12px; }
 .cpt .cpc-carte svg { width: 100%; height: 100%; max-height: none; }
 .cpt-volet { flex: none; }

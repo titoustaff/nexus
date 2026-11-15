@@ -464,7 +464,7 @@ const CPC = (() => {
         ${c.pos === "Zone à pénalité" ? `<p class="cpc-regle"><b>+1 pénalité</b> : ${c.drop ? "drop placé (balle « d »), fais-le glisser pour le corriger." : "<b>touche la photo là où tu as droppé.</b>"}</p>` : ""}
         ${c.pos === "Green" && dernier ? `<h3>Putts</h3><div class="sa-choix" role="group">${[0, 1, 2, 3, 4].map((v) => `<button type="button" data-cpc-putts="${v}" aria-pressed="${t.putts === v}">${v}</button>`).join("")}<button type="button" class="sa-plus" data-cpc-putts="${Math.max(5, (t.putts || 0) + 1)}" aria-label="Ajouter 1">+</button></div>` : ""}
         ${c.pos === "Green" ? "" : `<h3 class="pan-club">Club <button type="button" class="lien" data-ecran="sac">🎒 Mon sac</button></h3><div class="cpc-puces cl-choix" role="group" aria-label="Club">${SAC.boutons(`data-cpc-club="${k}"`, c.club)}</div>`}
-        ${fini && dernier && t.score ? `<p class="pan-score">Score du trou : <b>${t.score}</b> (${ecartPar(t.score - t.par)})</p>` : ""}
+        ${fini && dernier && t.score ? `<p class="pan-score">Score du trou : <b>${t.score}</b> · ${nomEcart(t.score, t.par)}${t.score === t.par ? "" : ` (${ecartPar(t.score - t.par)})`}</p>` : ""}
         ${pied(`<button type="button" class="lien" data-cpc-suppr="${k}">Supprimer</button><button type="button" class="btn" data-cpc-deplacer="${k}">Déplacer</button><button type="button" class="btn plein" data-cpc-fermer>Valider</button>`)}`;
         // 15/11 : « Valider » partout ; le trou suivant se choisit ensuite (plus de bascule involontaire au trou suivant)
     }
@@ -501,6 +501,16 @@ const CPC = (() => {
     if (m) m.content = on ? VP + ", maximum-scale=1, user-scalable=no" : VP;
   }
   const quitter = () => { S.details = false; modeTel(false); };
+  // nom du score du trou (15/11, demande utilisateur : « bogey » plutôt que seulement « +1 ») et sa couleur (mêmes classes que la grille des trous)
+  const nomEcart = (s, par) => { const d = s - par; return s === 1 ? "trou en 1" : d <= -3 ? "albatros" : d === -2 ? "eagle" : d === -1 ? "birdie" : d === 0 ? "par" : d === 1 ? "bogey" : d === 2 ? "double" : "+" + d; };   // mêmes mots que la saisie classique
+  const classeEcart = (s, par) => { const d = s - par; return d <= -2 ? "sc-aigle" : d === -1 ? "sc-birdie" : d === 0 ? "sc-par" : d === 1 ? "sc-bogey" : "sc-double"; };
+  // pastille à droite du titre, comme le score de la saisie classique : coups joués pendant le trou, puis score coloré et son nom une fois le trou fini
+  function compteur(i, fini) {
+    const t = etat.partie.trous[i], C = travail(i).coups;
+    if (fini && t.score) return `<span class="cpt-coups ${classeEcart(t.score, t.par)}" aria-label="Score du trou : ${t.score}, ${nomEcart(t.score, t.par)}"><b>${t.score}</b><small>${nomEcart(t.score, t.par)}</small></span>`;
+    const pen = t.pen || 0, n = C.length + pen, green = C.length && C[C.length - 1].pos === "Green";
+    return `<span class="cpt-coups cpt-encours" aria-label="${n} coups joués"><b>${n}</b><small>${green ? "+ putts" : pen ? `dont ${pen} pén.` : n > 1 ? "coups" : "coup"}</small></span>`;
+  }
   function ecranTel(i, total) {
     const p = etat.partie, t = p.trous[i], W = travail(i), G = W.G, C = W.coups, n = p.trous.length;
     let lg = 0; for (let k = 0; k < G.trou.length - 1; k++) lg += metres(G, G.trou[k], G.trou[k + 1]);
@@ -510,13 +520,14 @@ const CPC = (() => {
       <div class="cpt-barre">
         <button type="button" class="cpt-fl" data-pas="-1" ${i ? "" : "disabled"} aria-label="Trou précédent">‹</button>
         <button type="button" class="cpt-titre" data-cpt-details aria-label="Détails du trou ${t.t}"><b>Trou ${t.t}</b> · Par ${t.par} · ${Math.round(lg)} m<small>${esc(total)}</small></button>
+        ${compteur(i, fini)}
         <button type="button" class="cpt-fl" data-pas="1" ${i < n - 1 ? "" : "disabled"} aria-label="Trou suivant">›</button>
       </div>
       <p class="cpc-aide" aria-live="polite">${aide(i)}</p>
       <div class="cpc-carte"><svg id="cpc-svg" role="img" aria-label="Photo aérienne du trou ${t.t}, départ en bas, green en haut"></svg>
         <div class="cpc-zoom"><button type="button" data-cpc-zoom="1.6" aria-label="Rapprocher la photo">+</button><button type="button" data-cpc-zoom="0.625" aria-label="Éloigner la photo">−</button></div></div>
       <div id="cpt-volet" class="cpt-volet">${S.panneau ? "" : `<div class="cpt-outils">
-        ${fini && t.score ? `<span class="cpt-fini">Trou ${t.t} : <b>${t.score}</b> (${ecartPar(t.score - t.par)})</span>${suite}`
+        ${fini && t.score ? `<span class="cpt-fini">Trou ${t.t} : <b>${t.score}</b> · ${nomEcart(t.score, t.par)}${t.score === t.par ? "" : ` (${ecartPar(t.score - t.par)})`}</span>${suite}`
           : `<button type="button" class="btn" data-cpc-gps>📍 Ma balle</button><button type="button" class="btn" data-cpc-annuler ${C.length ? "" : "disabled"}>↶ Annuler</button>`}
         <button type="button" class="btn" data-cpt-details>☰ Détails</button></div>`}</div>
     </div>`;
