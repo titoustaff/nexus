@@ -12,7 +12,7 @@ const SAC = (() => {
     ["Hybride 6", "hybride", 140], ["Hybride 7", "hybride", 130],
     ["Fer 1", "fer", 185], ["Fer 2", "fer", 175], ["Fer 3", "fer", 165], ["Fer 4", "fer", 155], ["Fer 5", "fer", 145],
     ["Fer 6", "fer", 135], ["Fer 7", "fer", 125], ["Fer 8", "fer", 115], ["Fer 9", "fer", 105],
-    ["PW", "wedge", 95], ["GW", "wedge", 80], ["SW", "wedge", 65], ["LW", "wedge", 50],
+    ["PW", "wedge", 95], ["AP", "wedge", 88], ["GW", "wedge", 80], ["SW", "wedge", 65], ["LW", "wedge", 50],
     ["46°", "wedge", 95], ["48°", "wedge", 90], ["50°", "wedge", 82], ["52°", "wedge", 75], ["54°", "wedge", 68],
     ["56°", "wedge", 62], ["58°", "wedge", 55], ["60°", "wedge", 48], ["62°", "wedge", 42], ["64°", "wedge", 36],
     ["Chipper", "putter", 25], ["Putter", "putter", 0],
@@ -27,7 +27,7 @@ const SAC = (() => {
     if (parNom[nom]) return parNom[nom].f;
     const n = String(nom || "").toLowerCase();
     return n.startsWith("driver") || n.startsWith("bois") ? "bois" : n.startsWith("hyb") ? "hybride" : n.startsWith("fer") ? "fer"
-      : n === "putter" || n === "chipper" ? "putter" : /^(pw|gw|aw|sw|lw|wedge|\d\d°)/.test(n) ? "wedge" : "fer";
+      : n === "putter" || n === "chipper" ? "putter" : /^(pw|ap|gw|aw|sw|lw|wedge|\d\d°)/.test(n) ? "wedge" : "fer";
   }
   // le sac du joueur : [{c, d}] trié comme le catalogue (sac par défaut s'il n'en a pas encore composé)
   function sac() {
