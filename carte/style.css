@@ -400,3 +400,40 @@ body.marqueur .pied { display: none; }
 .cl-ligne { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
 .cl-ligne .cl { min-height: 38px; padding: 4px 6px; font-size: 13px; font-weight: 700; border: 1.5px solid var(--bord); border-radius: 10px; background: var(--carte); color: var(--texte); cursor: pointer; white-space: nowrap; }
 .cpc-bascule .cpc-off { opacity: .45; cursor: not-allowed; }
+
+/* téléphone, coup par coup : saisie PLEIN ÉCRAN (15/11/2026, vidéo de l'utilisateur sur Galaxy A35) —
+   la page ne défile ni ne zoome (seule la photo zoome), rien ne se sélectionne, le volet s'ouvre en bas sous la photo */
+html.cpt-mode, html.cpt-mode body { overflow: hidden; overscroll-behavior: none; }
+.cpt { position: fixed; inset: 0; height: 100dvh; z-index: 40; display: flex; flex-direction: column; background: var(--fond);
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: pan-x pan-y; }
+.cpt * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.cpt-barre { flex: none; display: flex; align-items: center; gap: 4px; padding: 6px 6px 4px; background: var(--vert); color: #fff; }
+.cpt-fl { flex: none; width: 44px; height: 44px; border: 0; border-radius: 12px; background: rgba(255,255,255,.14); color: #fff; font: inherit; font-size: 28px; font-weight: 700; line-height: 1; cursor: pointer; }
+.cpt-fl:disabled { opacity: .3; }
+.cpt-titre { flex: 1; min-width: 0; border: 0; background: none; color: #fff; font: inherit; font-size: 15px; text-align: center; cursor: pointer; line-height: 1.25; }
+.cpt-titre b { font-size: 17px; } .cpt-titre small { display: block; font-size: 12px; opacity: .85; }
+.cpt .cpc-aide { flex: none; margin: 6px 8px 0; padding: 6px 10px; font-size: 13px; }
+.cpt .cpc-carte { flex: 1; min-height: 0; margin: 6px 8px 0; border-radius: 12px; }
+.cpt .cpc-carte svg { width: 100%; height: 100%; max-height: none; }
+.cpt-volet { flex: none; }
+.cpt-outils { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); }
+.cpt-outils .btn { min-height: 44px; }
+.cpt-fini { flex: 1 1 100%; font-size: 14px; }
+.cpt-volet .pan.volet { position: static; width: auto; max-height: 48dvh; overflow-y: auto; overscroll-behavior: contain; border-radius: 16px 16px 0 0;
+  padding: 10px 12px calc(8px + env(safe-area-inset-bottom)); margin-top: 6px; box-shadow: 0 -8px 24px rgba(0,0,0,.18); animation: volet-monte .16s ease-out; display: block; }
+.cpt-volet .pan.volet .pan-pied { position: sticky; bottom: calc(-8px - env(safe-area-inset-bottom)); margin-top: 8px; flex-wrap: nowrap; }
+.cpt-volet .pan h3 { margin: 6px 0 4px; }
+.cpt-volet .cpc-puces button { min-height: 36px; padding: 4px 9px; }
+/* clubs sur une seule ligne qui défile au doigt */
+.cpt-volet .cl-choix { display: block; }
+.cpt-volet .cl-lignes { display: flex; flex-wrap: nowrap; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; touch-action: pan-x; }
+.cpt-volet .cl-ligne { display: contents; }
+.cpt-volet .cl-ligne .cl { flex: none; min-width: 58px; }
+@keyframes volet-monte { from { transform: translateY(30px); opacity: .4; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .cpt-volet .pan.volet { animation: none; } }
+.cpt-details { position: fixed; inset: 0; z-index: 45; overflow-y: auto; overscroll-behavior: contain; background: var(--fond); padding: 10px 14px 24px; touch-action: pan-y; }
+.cpt-details[hidden] { display: none; }
+.cpt-details-tete { position: sticky; top: -10px; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: -10px -14px 8px; padding: 10px 14px; background: var(--fond); border-bottom: 1px solid var(--bord); }
+.cpt-details-tete b { font-size: 16px; }
+html.cpt-mode .toast { top: calc(58px + env(safe-area-inset-top)); bottom: auto; }
+html.cpt-mode input, html.cpt-mode select, html.cpt-mode textarea { font-size: 16px; }

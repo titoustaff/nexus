@@ -84,6 +84,7 @@ const dateLongue = (d) => new Date(d + "T12:00:00").toLocaleDateString("fr-FR", 
 function ecran(nom) {
   if (nom === "nouvelle" && etat.vue) nom = "liste";   // pas de saisie pour un joueur suivi (lecture seule)
   etat.ecran = nom;
+  if (nom !== "saisie" && typeof CPC !== "undefined") CPC.quitter();   // saisie plein écran du téléphone : la page retrouve son zoom
   for (const k of ["liste", "nouvelle", "saisie", "voir", "direct", "lives", "marqueur", "sac"]) $("ecran-" + k).hidden = k !== nom;
   if (nom !== "direct") { arreterDirect(); if (/(^|[#&])(evt|tournoi)=/.test(location.hash)) history.replaceState(null, "", location.pathname + location.search); }
   for (const b of document.querySelectorAll(".vues button[data-ecran]"))
@@ -304,13 +305,15 @@ function rendreSaisie() {
   for (let s = bas; s <= t.par + 4; s++) scores.push(s);
   const nomScore = (s) => { const d = s - t.par; return `<b>${s}</b><small>${s === 1 ? "trou en 1" : d <= -3 ? "albatros" : d === -2 ? "eagle" : d === -1 ? "birdie" : d === 0 ? "par" : d === 1 ? "bogey" : d === 2 ? "double" : "+" + d}</small>`; };
   const cpcV = (html) => (typeof CPC !== "undefined" ? CPC.verrou(etat.i, html) : html);   // coup par coup : champs calculés
-  $("sa-contenu").innerHTML = `
+  // téléphone en coup par coup (15/11) : écran plein de cpc.js, ce contenu-ci devient le panneau « Détails du trou »
+  const tel = typeof CPC !== "undefined" && CPC.plein(etat.i);
+  const html = `
     <div class="sa-tete"><div><h2 id="sa-titre">${esc(titre(p.golf_nom || p.golf))}</h2><p class="meta">${esc(p.parcours_nom || "")}${p.repere ? " · " + esc(p.repere) : ""} · ${dateLongue(p.jour)}</p></div>
       <div class="sa-total"><b>${b.n ? b.score : "—"}</b><small>${b.n ? ecartPar(b.ecart) + " · " + b.n + "/" + p.nb_trous : "à toi de jouer"}</small></div></div>
     <div class="sa-trous" role="tablist" aria-label="Trous">${p.trous.map((x, k) => `<button type="button" class="${classeScore(x)}${k === etat.i ? " actif" : ""}" data-aller="${k}" aria-label="Trou ${x.t}">${x.t}<small>${x.score || ""}</small></button>`).join("")}</div>
     <div class="bloc sa-trou">
       <div class="sa-num"><span>Trou <b>${t.t}</b></span><span class="sa-par">Par <b>${t.par}</b></span></div>
-      ${typeof CPC !== "undefined" ? CPC.bascule(etat.i) + (CPC.actif(etat.i) ? CPC.bloc(etat.i) : "") : ""}
+      ${typeof CPC !== "undefined" ? CPC.bascule(etat.i) + (CPC.actif(etat.i) && !tel ? CPC.bloc(etat.i) : "") : ""}
       <h3>Score</h3>${cpcV(choix("score", scores, nomScore, true))}${t.m ? `<p class="sa-marqueur">${corrige(t) ? `Corrigé : le marqueur avait noté <b>${t.sm}</b>. ` : ""}Score saisi par le marqueur${(() => { const d = new Date(t.m); return isNaN(d) ? "" : " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }); })()} : corrige-le seulement en cas d'erreur.</p>` : ""}
       ${t.score && (t.putts || 0) + (t.pen || 0) > t.score - 1 ? `<p class="sa-alerte">⚠ ${t.putts || 0} putt${t.putts > 1 ? "s" : ""}${t.pen ? ` + ${t.pen} pénalité${t.pen > 1 ? "s" : ""}` : ""} pour un score de ${t.score} : il manque au moins le coup de départ. Vérifie le score ou les putts.</p>` : ""}
       <div class="sa-ligne"><div><h3>Putts</h3>${choix("putts", [0, 1, 2, 3, 4], undefined, true)}</div><div><h3>Pénalités</h3>${cpcV(choix("pen", [0, 1, 2, 3], undefined, true))}</div></div>
@@ -323,6 +326,8 @@ function rendreSaisie() {
       ${etat.i < p.trous.length - 1 ? `<button type="button" class="btn plein" data-pas="1">Trou ${p.trous[etat.i + 1].t} →</button>` : `<button type="button" class="btn plein" data-finir>Terminer la partie ✓</button>`}
     </div>
     <p class="sa-bas"><button type="button" class="lien" data-ecran="liste">← Mes cartes</button> · <button type="button" class="lien" data-voir-carte>Voir la carte</button> · ${String(p.tournoi_id || "").startsWith("club:") ? `<button type="button" class="lien" data-direct-evt="${esc(p.tournoi_id.slice(5))}">📡 Direct de la partie</button> · ` : ""}<button type="button" class="lien" data-partager>🔗 Partager en direct</button></p>`;
+  $("sa-contenu").innerHTML = !tel ? html : CPC.ecranTel(etat.i, b.n ? `Total ${b.score} (${ecartPar(b.ecart)}) · ${b.n}/${p.nb_trous}` : "à toi de jouer")
+    + `<div class="cpt-details"${CPC.details ? "" : " hidden"} role="dialog" aria-label="Détails du trou ${t.t}"><div class="cpt-details-tete"><b>Détails du trou ${t.t}</b><button type="button" class="btn" data-cpt-details>Revenir à la photo</button></div>${html}</div>`;
   if (typeof CPC !== "undefined") CPC.apres(etat.i);
 }
 $("sa-contenu").addEventListener("click", (e) => {

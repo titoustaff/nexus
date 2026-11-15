@@ -301,14 +301,31 @@ const CPC = (() => {
     for (let tx = tx0; tx <= tx1; tx++) for (let ty = ty0; ty <= ty1; ty++) T.push([tx, ty]);
     return T.length > 120 ? G.tuiles : T;
   }
+  function cadre([vx, vy, vw, vh], BW, BH) {
+    if (!BW || !BH) return [vx, vy, vw, vh];
+    const a = BW / BH;
+    if (vw / vh < a) { const n = vh * a; vx -= (n - vw) / 2; vw = n; } else { const n = vw / a; vy -= (n - vh) / 2; vh = n; }
+    return [vx, vy, vw, vh];
+  }
   function dessiner(i) {
     const svg = $("cpc-svg"); if (!svg) return;
     const W = travail(i), G = W.G, Rp = repere(G);
-    if (!S.vue || S.vue.i !== i) {
-      // cadre élargi à la forme de l'écran (ordinateur : pas de bandes sombres sur les côtés)
-      let [vx, vy, vw, vh] = Rp.view; const W = svg.parentNode.clientWidth || 0;
-      if (W) { const H = Math.min(W * vh / vw, innerHeight * 0.62); if (W / H > vw / vh) { const n = vh * W / H; vx -= (n - vw) / 2; vw = n; } }
-      S.vue = { i, x: vx, y: vy, w: vw, h: vh, base: [vx, vy, vw, vh] };
+    {
+      // cadre élargi à la forme de la zone (pas de bandes sombres) ; téléphone plein écran (15/11) : la zone rétrécit
+      // quand le volet s'ouvre en bas → même échelle, centrée sur la balle concernée si elle sort du cadre
+      const box = svg.parentNode, BW = box.clientWidth || 0, [, , rw, rh] = Rp.view;
+      const BH = S.tel ? box.clientHeight || 0 : Math.min(BW * rh / rw, innerHeight * 0.62);
+      const base = cadre(Rp.view, BW, BH);
+      if (!S.vue || S.vue.i !== i) S.vue = { i, x: base[0], y: base[1], w: base[2], h: base[3], base, bw: BW };
+      else if (BW && BH && Math.abs(S.vue.w / S.vue.h - base[2] / base[3]) > 0.01) {
+        const v = S.vue, z = zoome(), upp = v.w / (v.bw || BW), cx = v.x + v.w / 2, cy = v.y + v.h / 2;
+        v.base = base; v.bw = BW;
+        if (!z) Object.assign(v, { x: base[0], y: base[1], w: base[2], h: base[3] });
+        else { v.w = Math.min(base[2], upp * BW); v.h = v.w * base[3] / base[2]; v.x = cx - v.w / 2; v.y = cy - v.h / 2; }
+        const pt = S.panneau?.type === "coup" && W.coups[S.panneau.k] ? Rp.rot(W.coups[S.panneau.k].p) : null;
+        if (pt && z && (pt[0] < v.x || pt[0] > v.x + v.w || pt[1] < v.y || pt[1] > v.y + v.h)) { v.x = pt[0] - v.w / 2; v.y = pt[1] - v.h / 2; }
+        borner();
+      }
     }
     appliquerVue();
     svg.replaceChildren();
@@ -338,9 +355,10 @@ const CPC = (() => {
       if (c.pos === "Zone à pénalité" && c.drop) { const r = Rp.rot(c.drop); svg.append(el("line", { x1: q[0], y1: q[1], x2: r[0], y2: r[1], stroke: "#8fd3ff", "stroke-width": 2.5, "stroke-dasharray": "4 5" })); }
     });
     { // distance de la balle (dernier coup, ou départ) au drapeau : aide à poser le coup suivant à peu près au bon endroit
-      const der = W.coups[W.coups.length - 1];
+      // 15/11 : depuis la balle qu'on pose ou qu'on fait glisser (on voit la distance au drapeau en la plaçant)
+      const ks = S.sel != null && W.coups[S.sel] ? S.sel : W.coups.length - 1, der = W.coups[ks];
       if (!der || der.pos !== "Dans le trou") {
-        const de = !der ? departDu(i) : der.pos === "Hors limites" ? O[W.coups.length - 1] : der.pos === "Zone à pénalité" ? (der.drop || der.p) : der.p;
+        const de = !der ? departDu(i) : ks === S.sel ? der.p : der.pos === "Hors limites" ? O[ks] : der.pos === "Zone à pénalité" ? (der.drop || der.p) : der.p;
         const a = Rp.rot(de), q = Rp.rot(drapeauDu(i));
         svg.append(el("line", { x1: a[0], y1: a[1], x2: q[0], y2: q[1], stroke: "#ffd23f", "stroke-width": 1.8, "stroke-dasharray": "3 6", "stroke-linecap": "round", "vector-effect": "non-scaling-stroke", "pointer-events": "none" }));
         etiquettes.push([(a[0] + q[0]) / 2, (a[1] + q[1]) / 2, "🚩 " + Math.round(metres(G, de, drapeauDu(i))) + " m"]);
@@ -399,6 +417,7 @@ const CPC = (() => {
     const W = travail(i), C = W.coups, fini = C.length && ["Green", "Dans le trou"].includes(C[C.length - 1].pos);
     if (dropAttendu(W) >= 0) return `Coup ${dropAttendu(W) + 1} dans la zone à pénalité (+1) : touche la photo là où tu as droppé`;
     if (S.sel != null && C[S.sel]) return `Coup ${S.sel + 1} sélectionné : fais-le glisser, ou touche la photo pour le déplacer. Touche-le encore pour le lâcher.`;
+    if (fini && C[C.length - 1].pos === "Green" && etat.partie.trous[i].puttsVu) return `Trou terminé${W.drap ? "" : " · fais glisser le drapeau 🚩 à sa vraie place si besoin"}`;
     if (fini) return C[C.length - 1].pos === "Green" ? `Balle sur le green : indique les putts${W.drap ? "" : " · fais glisser le drapeau 🚩 à sa vraie place"}` : "Balle dans le trou";
     if (C.length) return C[C.length - 1].pos === "Hors limites" ? `Hors limites (+1) : tu rejoues d'où tu avais joué. Touche la photo là où a fini le coup ${C.length + 1}` : `Touche la photo là où a fini le coup ${C.length + 1}`;
     return "Touche la photo là où a fini ton départ";
@@ -446,14 +465,21 @@ const CPC = (() => {
         ${c.pos === "Green" && dernier ? `<h3>Putts</h3><div class="sa-choix" role="group">${[0, 1, 2, 3, 4].map((v) => `<button type="button" data-cpc-putts="${v}" aria-pressed="${t.putts === v}">${v}</button>`).join("")}<button type="button" class="sa-plus" data-cpc-putts="${Math.max(5, (t.putts || 0) + 1)}" aria-label="Ajouter 1">+</button></div>` : ""}
         ${c.pos === "Green" ? "" : `<h3 class="pan-club">Club <button type="button" class="lien" data-ecran="sac">🎒 Mon sac</button></h3><div class="cpc-puces cl-choix" role="group" aria-label="Club">${SAC.boutons(`data-cpc-club="${k}"`, c.club)}</div>`}
         ${fini && dernier && t.score ? `<p class="pan-score">Score du trou : <b>${t.score}</b> (${ecartPar(t.score - t.par)})</p>` : ""}
-        ${pied(`<button type="button" class="lien" data-cpc-suppr="${k}">Supprimer</button><button type="button" class="btn" data-cpc-deplacer="${k}">Déplacer</button>${
-          fini && dernier && t.score && i < etat.partie.trous.length - 1 ? `<button type="button" class="btn plein" data-pas="1">Trou ${etat.partie.trous[i + 1].t} →</button>` : `<button type="button" class="btn plein" data-cpc-fermer>Valider</button>`}`)}`;
+        ${pied(`<button type="button" class="lien" data-cpc-suppr="${k}">Supprimer</button><button type="button" class="btn" data-cpc-deplacer="${k}">Déplacer</button><button type="button" class="btn plein" data-cpc-fermer>Valider</button>`)}`;
+        // 15/11 : « Valider » partout ; le trou suivant se choisit ensuite (plus de bascule involontaire au trou suivant)
     }
     return `<div class="pan volet" id="cpc-panneau" role="dialog" aria-label="Questions du coup">${corps}</div>`;
   }
   function apres(i) {
     document.body.style.paddingBottom = "";
+    modeTel(plein(i));
     if (!actif(i)) return;
+    if (S.tel) {   // téléphone : volet dans la colonne, sous la photo (la photo se resserre au-dessus)
+      if (S.panneau) $("cpt-volet").innerHTML = panneauHTML(i);
+      dessiner(i);
+      document.querySelector(".cpt-volet .cl[aria-pressed=\"true\"]")?.scrollIntoView({ inline: "center", block: "nearest" });   // club choisi visible dans la ligne
+      return;
+    }
     dessiner(i);
     if (S.panneau) {
       const svg = $("cpc-svg"), cadre = svg.parentNode;
@@ -461,6 +487,39 @@ const CPC = (() => {
       // volet sur le côté droit (12/11, demande utilisateur : pas de fenêtre par-dessus la photo) ; la photo reste visible à gauche
       placerVolet();
     }
+  }
+  // ---------------------------------------------------------------- téléphone : saisie plein écran (15/11/2026, vidéo de l'utilisateur)
+  // la photo prend tout l'écran, la page ne défile ni ne zoome (seule la photo zoome), le volet s'ouvre en bas,
+  // les détails du trou (score, putts, pénalités, mise en jeu, liste des coups, navigation) s'ouvrent à la demande
+  const plein = (i) => innerWidth < 760 && actif(i);
+  const VP = "width=device-width, initial-scale=1";
+  function modeTel(on) {
+    if (S.tel === on) return;
+    S.tel = on; S.vue = null;
+    document.documentElement.classList.toggle("cpt-mode", on);
+    const m = document.querySelector('meta[name="viewport"]');
+    if (m) m.content = on ? VP + ", maximum-scale=1, user-scalable=no" : VP;
+  }
+  const quitter = () => { S.details = false; modeTel(false); };
+  function ecranTel(i, total) {
+    const p = etat.partie, t = p.trous[i], W = travail(i), G = W.G, C = W.coups, n = p.trous.length;
+    let lg = 0; for (let k = 0; k < G.trou.length - 1; k++) lg += metres(G, G.trou[k], G.trou[k + 1]);
+    const fini = C.length && C[C.length - 1].pos === "Dans le trou" || (C.length && C[C.length - 1].pos === "Green" && t.puttsVu);
+    const suite = i < n - 1 ? `<button type="button" class="btn plein" data-pas="1">Trou ${p.trous[i + 1].t} →</button>` : `<button type="button" class="btn plein" data-finir>Terminer ✓</button>`;
+    return `<div class="cpt" id="cpt">
+      <div class="cpt-barre">
+        <button type="button" class="cpt-fl" data-pas="-1" ${i ? "" : "disabled"} aria-label="Trou précédent">‹</button>
+        <button type="button" class="cpt-titre" data-cpt-details aria-label="Détails du trou ${t.t}"><b>Trou ${t.t}</b> · Par ${t.par} · ${Math.round(lg)} m<small>${esc(total)}</small></button>
+        <button type="button" class="cpt-fl" data-pas="1" ${i < n - 1 ? "" : "disabled"} aria-label="Trou suivant">›</button>
+      </div>
+      <p class="cpc-aide" aria-live="polite">${aide(i)}</p>
+      <div class="cpc-carte"><svg id="cpc-svg" role="img" aria-label="Photo aérienne du trou ${t.t}, départ en bas, green en haut"></svg>
+        <div class="cpc-zoom"><button type="button" data-cpc-zoom="1.6" aria-label="Rapprocher la photo">+</button><button type="button" data-cpc-zoom="0.625" aria-label="Éloigner la photo">−</button></div></div>
+      <div id="cpt-volet" class="cpt-volet">${S.panneau ? "" : `<div class="cpt-outils">
+        ${fini && t.score ? `<span class="cpt-fini">Trou ${t.t} : <b>${t.score}</b> (${ecartPar(t.score - t.par)})</span>${suite}`
+          : `<button type="button" class="btn" data-cpc-gps>📍 Ma balle</button><button type="button" class="btn" data-cpc-annuler ${C.length ? "" : "disabled"}>↶ Annuler</button>`}
+        <button type="button" class="btn" data-cpt-details>☰ Détails</button></div>`}</div>
+    </div>`;
   }
   // téléphone : volet en bas (la photo reste visible au-dessus, on fait remonter la balle si elle est cachée) ;
   // ordinateur : volet à droite, sous le bandeau du haut
@@ -477,7 +536,7 @@ const CPC = (() => {
     }
   }
   addEventListener("scroll", () => { if (innerWidth >= 760 && $("cpc-panneau")) { const h = document.querySelector("header.bandeau")?.getBoundingClientRect().bottom || 0; $("cpc-panneau").style.top = Math.max(0, h) + "px"; } }, { passive: true });
-  addEventListener("resize", () => { if ($("cpc-svg")) echelle(); });
+  addEventListener("resize", () => { if (!$("cpc-svg")) return; if (S.tel && innerWidth >= 760) rendreSaisie(); else if (S.tel) dessiner(etat.i); else echelle(); });
   const verrou = (i, html) => (aDesCoups(i) ? html.replace(/<button /g, "<button disabled ") + `<p class="cpc-calc">Calculé à partir des coups</p>` : html);
 
   // ---------------------------------------------------------------- actions
@@ -506,7 +565,8 @@ const CPC = (() => {
     const d = b.dataset, i = etat.i;
     if (d.cpcOff) { signaler(d.cpcOff); return true; }
     if (d.cpcMode) { S.mode = d.cpcMode; try { localStorage.setItem("carte-cpc-mode", S.mode); } catch { /* */ } S.sel = null; S.panneau = null; rendreSaisie(); return true; }
-    if (d.aller != null || d.pas != null) { S.sel = null; S.panneau = null; return false; }   // changement de trou : géré par Carte
+    if (d.aller != null || d.pas != null) { S.sel = null; S.panneau = null; S.details = false; S.vue = null; return false; }   // changement de trou : géré par Carte
+    if (d.cptDetails != null) { S.details = !S.details; S.panneau = null; S.sel = null; rendreSaisie(); return true; }
     if (!actif(i)) return false;
     const W = travail(i), C = W.coups;
     if (d.cpcZoom != null) { zoomer(+d.cpcZoom); return true; }
@@ -562,6 +622,7 @@ const CPC = (() => {
   // gestes sur la photo
   const versPhoto = (e) => { const svg = $("cpc-svg"), pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; const q = pt.matrixTransform($("cpc-photo").getScreenCTM().inverse()); return [q.x, q.y]; };
   function brancher(box) {
+    box.addEventListener("contextmenu", (e) => { if (e.target.closest("#cpc-svg, .cpt")) e.preventDefault(); });
     box.addEventListener("pointerdown", (e) => {
       const svg = e.target.closest("#cpc-svg"); if (!svg) return;
       if (e.isPrimary) S.doigts.clear();   // premier doigt : on repart de zéro (photo redessinée entre-temps)
@@ -623,5 +684,5 @@ const CPC = (() => {
     });
   }
   brancher($("sa-contenu"));
-  return { bascule, bloc, apres, verrou, clic, actif, aDesCoups, charger: (p) => charger(p), get mode() { return S.mode; }, outils: { plateformes, longueur: longueurDepuis, planDe: () => planDe(etat.partie) } };
+  return { bascule, bloc, apres, plein, ecranTel, quitter, get details() { return !!S.details; }, verrou, clic, actif, aDesCoups, charger: (p) => charger(p), get mode() { return S.mode; }, outils: { plateformes, longueur: longueurDepuis, planDe: () => planDe(etat.partie) } };
 })();
