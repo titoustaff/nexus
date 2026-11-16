@@ -381,6 +381,17 @@ const CPC = (() => {
     const d = Rp.rot(drapeauDu(i)), mat = ech(d[0], d[1], 0, { "data-drapeau": 1, class: "cpc-balle" });
     mat.append(el("circle", { cx: 6, cy: -16, r: 22, fill: "transparent" }), el("line", { x1: 0, y1: 0, x2: 0, y2: -32, stroke: "#fff", "stroke-width": 3 }), el("polygon", { points: "0,-32 20,-26 0,-20", fill: "#e5484d" }));
     svg.append(mat);
+    // position du drapeau au format des feuilles de tournoi, au-dessus du drapeau, mise à jour pendant qu'on le fait glisser (16/11)
+    if (G.green && (W.drap || S.geste?.drap)) {
+      const f = pointVersFeuille(G, drapeauDu(i));
+      if (f) {
+        const v = `${f.e} m${f.s == null ? "" : f.c === "C" ? " · centre" : ` · ${f.s} m à ${f.c === "D" ? "droite" : "gauche"}`}`, lb = ech(d[0], d[1], 0); lb.setAttribute("pointer-events", "none");
+        const w = v.length * 8.6 + 16;
+        lb.append(el("rect", { x: -w / 2, y: -66, width: w, height: 24, rx: 8, fill: "rgba(15,23,18,.88)", stroke: "#e5484d", "stroke-width": 1.5 }));
+        const e3 = el("text", { x: 0, y: -49, "text-anchor": "middle", "font-size": 14, "font-weight": 800, fill: "#fff", "font-family": "inherit" }); e3.textContent = v; lb.append(e3);
+        svg.append(lb);
+      }
+    }
     const O = origines(i), etiquettes = [];
     const txt = (gg, x, y, v, taille, coul) => { const e = el("text", { "text-anchor": "middle", x, y, "font-size": taille, "font-weight": 800, fill: coul, "font-family": "inherit" }); e.textContent = v; gg.append(e); };
     W.coups.forEach((c, k) => {
@@ -780,7 +791,7 @@ const CPC = (() => {
       if (!e.target.closest("#cpc-svg") && g.k == null && !g.dep && !g.drap && g.drop == null) return;
       const i = etat.i; if (!actif(i)) return;
       const W = travail(i), C = W.coups;
-      if (g.drap) { if (g.bouge) { W.drap = versPhoto(e); delete etat.partie.trous[i].feuille; S.sel = null; S.panneau = { type: "drapeau" }; majTrou(i); } else { S.sel = null; S.panneau = { type: "drapeau" }; rendreSaisie(); } return; }
+      if (g.drap) { if (g.bouge) { W.drap = versPhoto(e); delete etat.partie.trous[i].feuille; S.sel = null; S.panneau = null; majTrou(i); } else { S.sel = null; S.panneau = { type: "drapeau" }; rendreSaisie(); } return; }
       if (g.dep) { if (g.bouge) { W.dep = versPhoto(e); S.panneau = null; majTrou(i); } else { S.sel = null; S.panneau = { type: "depart" }; rendreSaisie(); } return; }
       if (g.drop != null) { if (g.bouge) { C[g.drop].drop = versPhoto(e); majTrou(i); } else { S.panneau = { type: "coup", k: g.drop }; rendreSaisie(); } return; }
       if (g.k != null) {
