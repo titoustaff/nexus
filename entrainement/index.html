@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <title>GolfNexus · Entraînement</title>
+  <link rel="icon" type="image/svg+xml" href="../saison/favicon.svg">
+  <meta name="description" content="GolfNexus Entraînement — tes exercices et tes séances, saisis en un appui par balle.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="../commun/v1/charte.css">
+  <link rel="stylesheet" href="style.css?v=1794859643">
+</head>
+<body class="verrou">
+  <script>try { if (localStorage.getItem("gn-auth")) document.body.classList.add("reprise"); } catch { /* */ } if (/(^|[#&])cadre=1/.test(location.hash)) document.body.classList.add("cadre");</script>   <!-- déjà connecté : écran de chargement (charte.css, nexus.js) -->
+  <!-- Entraînement (module n° 5) : même accueil que Saison (connexion obligatoire, sur invitation) -->
+  <section id="accueil" class="accueil" aria-labelledby="a-titre">
+    <div class="a-haut">
+      <div class="a-marque">
+        <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#f4f7f2"/><ellipse cx="30" cy="52" rx="20" ry="5" fill="#cfe3d3"/><path d="M22 10v41" stroke="#14532d" stroke-width="4.5" stroke-linecap="round"/><path d="M24 10l22 8-22 8z" fill="#f0b400"/><circle cx="43" cy="45" r="7" fill="#fff" stroke="#14532d" stroke-width="2"/></svg>
+        <span class="nom">Golf<b>Nexus</b></span>
+      </div>
+      <div class="a-grille">
+        <div class="a-texte">
+          <h1 id="a-titre">Entraînement : des exercices mesurés pour progresser.</h1>
+          <p class="a-sous">Choisis un exercice ou une séance, saisis chaque balle d'un appui, et suis ton niveau d'une fois à l'autre.</p>
+          <ul class="a-points">
+            <li><b>Un catalogue</b> : les exercices de l'évaluation ffgolf pour commencer, d'autres ensuite.</li>
+            <li><b>Rapide</b> : un appui par balle, même sans réseau au practice.</li>
+            <li><b>Ton niveau</b> : comparé aux tableaux de la ffgolf, du golfeur 100 au meilleur pro.</li>
+          </ul>
+        </div>
+        <div class="a-carte" id="a-connexion">
+          <h2>Connexion</h2>
+          <form id="a-form" class="c-form c-col">
+            <input id="a-email" type="email" autocomplete="username" placeholder="ton e-mail" aria-label="Adresse e-mail" required>
+            <input id="a-mdp" type="password" autocomplete="current-password" placeholder="mot de passe" aria-label="Mot de passe">
+            <button type="submit" class="btn plein" id="a-ok">Se connecter</button>
+          </form>
+          <button type="button" class="lien" id="a-lien">Pas de mot de passe ou oublié ? Recevoir un lien par e-mail</button>
+          <p class="a-msg" id="a-msg" aria-live="polite"></p>
+          <p class="a-note">Accès sur invitation. Ton coach ou l'administrateur t'envoie un lien par e-mail.</p>
+        </div>
+      </div>
+    </div>
+    <p class="a-pied">Tes séances restent dans ton compte · tes données ne sont vues que par toi et ceux que tu acceptes · <a class="a-rgpd" href="../saison/#v=rgpd">Tes données personnelles</a></p>
+  </section>
+
+  <header class="bandeau">
+    <svg class="decor" aria-hidden="true" viewBox="0 0 1200 120" preserveAspectRatio="xMidYMid slice">
+      <g fill="none" stroke="currentColor" stroke-width="1.1">
+        <path d="M-20 100 C180 60 320 120 520 80 S860 10 1060 50 S1220 40 1240 30"/>
+        <path d="M-20 118 C190 80 330 138 530 100 S870 32 1070 72 S1220 62 1240 54"/>
+        <path d="M-20 136 C200 100 340 156 540 120 S880 54 1080 94 S1220 84 1240 78"/>
+        <path d="M560 -10 C640 20 700 40 820 30 S1000 -6 1100 10"/>
+        <path d="M600 -24 C680 8 740 22 860 14 S1020 -20 1120 -6"/>
+      </g>
+    </svg>
+    <div class="bandeau-in">
+      <div class="marque">
+        <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#f4f7f2"/><ellipse cx="30" cy="52" rx="20" ry="5" fill="#cfe3d3"/><path d="M22 10v41" stroke="#14532d" stroke-width="4.5" stroke-linecap="round"/><path d="M24 10l22 8-22 8z" fill="#f0b400"/><circle cx="43" cy="45" r="7" fill="#fff" stroke="#14532d" stroke-width="2"/></svg>
+        <div>
+          <div class="nom">Golf<span>Nexus</span> · Entraînement</div>
+          <p class="devise">Des exercices mesurés pour progresser</p>
+        </div>
+      </div>
+      <nav class="vues" aria-label="Écrans" id="vues">
+        <button type="button" data-vue="catalogue">Catalogue</button>
+        <button type="button" data-vue="seance">Séance</button>
+        <button type="button" data-vue="historique">Historique</button>
+      </nav>
+      <div class="b-compte" id="b-compte" aria-live="polite"></div>
+    </div>
+  </header>
+  <div class="b-pan-ancre"><div class="b-pan" id="b-pan" hidden></div></div>
+
+  <main class="en-ecran" id="ecran"><p class="meta">Chargement…</p></main>
+
+  <footer class="pied">Exercices de l'évaluation ffgolf (niveaux : tableaux de Mark Broadie) · <a href="../saison/#v=rgpd">Tes données personnelles</a> · <a href="../">GolfNexus</a></footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.js"></script>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <script src="../commun/v1/nexus.js"></script>
+  <script src="../commun/v1/lanceur.js"></script>
+  <script src="exercices.js?v=1794859643"></script>
+  <script src="app.js?v=1794859643"></script>
+</body>
+</html>
