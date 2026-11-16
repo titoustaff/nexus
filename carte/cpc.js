@@ -473,6 +473,24 @@ const CPC = (() => {
     if (C.length) return C[C.length - 1].pos === "Hors limites" ? `Hors limites (+1) : tu rejoues d'où tu avais joué. Touche la photo là où a fini le coup ${C.length + 1}` : `Touche la photo là où a fini le coup ${C.length + 1}`;
     return "Touche la photo là où a fini ton départ";
   }
+  // pendant qu'on fait glisser une balle, le départ ou le drapeau : les distances en direct dans la consigne en haut de la photo,
+  // car le doigt cache les étiquettes posées sur la photo (16/11, demande utilisateur)
+  function infoGlisse(i, g) {
+    const W = travail(i), G = W.G, C = W.coups, D = drapeauDu(i), m = (a, b) => Math.round(metres(G, a, b));
+    if (g.drap) {
+      const f = G.green && pointVersFeuille(G, D), der = C.length ? (C[C.length - 1].drop || C[C.length - 1].p) : null;
+      const pos = !f ? "" : f.s == null ? `${f.e} m de l'entrée, hors du green dessiné` : `<b>${f.e} m</b> de l'entrée · ${f.c === "C" ? "<b>centre</b>" : `<b>${f.s} m à ${f.c === "D" ? "droite" : "gauche"}</b>`}`;
+      return `🚩 Drapeau${pos ? " : " + pos : ""}${der ? ` · ${m(der, D)} m de ta balle` : ""}`;
+    }
+    if (g.dep) return `Départ : <b>${m(departDu(i), D)} m</b> du drapeau`;
+    if (g.drop != null && C[g.drop]?.drop) return `Drop : <b>${m(C[g.drop].drop, D)} m</b> du drapeau`;
+    if (g.k != null && C[g.k]) { const O = origines(i); return `Coup ${g.k + 1} : <b>${m(O[g.k], C[g.k].p)} m</b> · reste <b>${m(C[g.k].p, D)} m</b> du drapeau`; }
+    return "";
+  }
+  function montrerGlisse(i, g) {
+    const a = document.querySelector(".cpc-aide"), v = infoGlisse(i, g); if (!a || !v) return;
+    a.innerHTML = v; a.classList.add("cpc-direct");
+  }
   function bloc(i) {
     const W = travail(i), G = W.G, C = W.coups, O = origines(i), t = etat.partie.trous[i];
     const fini = C.length && ["Green", "Dans le trou"].includes(C[C.length - 1].pos);
@@ -781,6 +799,7 @@ const CPC = (() => {
       const W = travail(etat.i), q = versPhoto(e);
       if (g.dep) W.dep = q; else if (g.drap) W.drap = q; else if (g.drop != null) W.coups[g.drop].drop = q; else { S.sel = g.k; W.coups[g.k].p = q; }
       dessiner(etat.i);
+      montrerGlisse(etat.i, g);
     });
     const fin = (e) => { S.doigts.delete(e.pointerId); if (S.pince && S.doigts.size < 2) { S.pince = null; S.geste = null; return true; } return false; };
     box.addEventListener("pointercancel", (e) => { fin(e); S.geste = null; });
@@ -791,6 +810,7 @@ const CPC = (() => {
       if (!e.target.closest("#cpc-svg") && g.k == null && !g.dep && !g.drap && g.drop == null) return;
       const i = etat.i; if (!actif(i)) return;
       const W = travail(i), C = W.coups;
+      if (g.bouge) setTimeout(() => montrerGlisse(i, g), 0);   // après le nouveau rendu : la dernière mesure reste affichée en haut
       if (g.drap) { if (g.bouge) { W.drap = versPhoto(e); delete etat.partie.trous[i].feuille; S.sel = null; S.panneau = null; majTrou(i); } else { S.sel = null; S.panneau = { type: "drapeau" }; rendreSaisie(); } return; }
       if (g.dep) { if (g.bouge) { W.dep = versPhoto(e); S.panneau = null; majTrou(i); } else { S.sel = null; S.panneau = { type: "depart" }; rendreSaisie(); } return; }
       if (g.drop != null) { if (g.bouge) { C[g.drop].drop = versPhoto(e); majTrou(i); } else { S.panneau = { type: "coup", k: g.drop }; rendreSaisie(); } return; }

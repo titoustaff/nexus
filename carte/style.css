@@ -456,3 +456,5 @@ html.cpt-mode input, html.cpt-mode select, html.cpt-mode textarea { font-size: 1
 .cpf-pos { margin: 6px 0; } .cpf-aide { font-size: 13px; color: var(--doux, #666); margin: 6px 0; }
 .cpf-tab { width: 100%; border-collapse: collapse; } .cpf-tab th { font-size: 12px; text-align: left; } .cpf-tab td { padding: 2px 4px; }
 .cpt input, .cpt select { -webkit-user-select: text; user-select: text; }
+.cpc-aide.cpc-direct { background: #10231a; color: #fff; font-size: 15px; font-weight: 600; }
+.cpc-aide.cpc-direct b { color: #ffd23f; }
