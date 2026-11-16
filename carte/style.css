@@ -458,3 +458,5 @@ html.cpt-mode input, html.cpt-mode select, html.cpt-mode textarea { font-size: 1
 .cpt input, .cpt select { -webkit-user-select: text; user-select: text; }
 .cpc-aide.cpc-direct { background: #10231a; color: #fff; font-size: 15px; font-weight: 600; }
 .cpc-aide.cpc-direct b { color: #ffd23f; }
+.cpc-aide:has(.cpc-mesure) { background: #10231a; color: #e8f0ea; }
+.cpc-mesure { font-size: 15px; color: #fff; } .cpc-mesure b { color: #ffd23f; }

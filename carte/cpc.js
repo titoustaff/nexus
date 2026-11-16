@@ -467,9 +467,13 @@ const CPC = (() => {
   function aide(i) {
     const W = travail(i), C = W.coups, fini = C.length && ["Green", "Dans le trou"].includes(C[C.length - 1].pos);
     if (dropAttendu(W) >= 0) return `Coup ${dropAttendu(W) + 1} dans la zone à pénalité (+1) : touche la photo là où tu as droppé`;
-    if (S.sel != null && C[S.sel]) return `Coup ${S.sel + 1} sélectionné : fais-le glisser, ou touche la photo pour le déplacer. Touche-le encore pour le lâcher.`;
+    // 16/11 (3e vidéo) : les distances du coup choisi, sinon du dernier coup, en tête de consigne (bandeau foncé) — la photo est sous le doigt
+    const mesure = (k) => { const G = W.G, D = drapeauDu(i), O = origines(i), c = C[k];
+      return `<span class="cpc-mesure">Coup ${k + 1} : <b>${Math.round(metres(G, O[k], c.p))} m</b>${c.pos === "Dans le trou" ? " · dans le trou" : ` · ${c.pos === "Green" ? "" : "reste "}<b>${Math.round(metres(G, c.p, D))} m</b> du drapeau`}</span>`; };
+    if (S.sel != null && C[S.sel]) return `${mesure(S.sel)}<br>Fais-le glisser ou touche la photo pour le déplacer.`;
+    if (C.length && !fini && !PEN.includes(C[C.length - 1].pos)) return `${mesure(C.length - 1)}<br>Touche la photo là où a fini le coup ${C.length + 1}`;
     if (fini && C[C.length - 1].pos === "Green" && etat.partie.trous[i].puttsVu) return `Trou terminé${W.drap ? "" : " · fais glisser le drapeau 🚩 à sa vraie place si besoin"}`;
-    if (fini) return C[C.length - 1].pos === "Green" ? `Balle sur le green : indique les putts${W.drap ? "" : " · fais glisser le drapeau 🚩 à sa vraie place"}` : "Balle dans le trou";
+    if (fini) return C[C.length - 1].pos === "Green" ? `${mesure(C.length - 1)}<br>Balle sur le green : indique les putts${W.drap ? "" : " · fais glisser le drapeau 🚩 à sa vraie place"}` : "Balle dans le trou";
     if (C.length) return C[C.length - 1].pos === "Hors limites" ? `Hors limites (+1) : tu rejoues d'où tu avais joué. Touche la photo là où a fini le coup ${C.length + 1}` : `Touche la photo là où a fini le coup ${C.length + 1}`;
     return "Touche la photo là où a fini ton départ";
   }
