@@ -35,10 +35,12 @@ const CPC = (() => {
   const centreDe = (p) => [p.reduce((s, q) => s + q[0], 0) / p.length, p.reduce((s, q) => s + q[1], 0) / p.length];
   const drapeauDe = (G) => G.pin || G.trou[G.trou.length - 1];
   const formes = (G, k) => G.f.filter((f) => f.k === k && f.p.length > 2);
-  function deviner(G, p) {
+  function deviner(G, p, D) {
     if (G.green && dedans(p, G.green)) return ["Green", "contour du green"];
     if (formes(G, "bunker").some((f) => dedans(p, f.p))) return ["Bunker", "contour du bunker"];
     if (formes(G, "water_hazard").some((f) => dedans(p, f.p))) return ["Zone à pénalité", "contour de la zone à pénalité"];
+    // 16/11 (4e vidéo) : le drapeau est toujours sur le green, même quand le green OSM est mal dessiné → balle à 5 m au plus = green
+    if (D && Math.hypot(p[0] - D[0], p[1] - D[1]) * G.mpp <= 5) return ["Green", "balle tout près du drapeau"];
     const F = formes(G, "fairway");
     if (F.some((f) => dedans(p, f.p))) return ["Fairway", "contour du fairway"];
     // 16/11 (3e vidéo : balle au milieu du fairway devinée « Rough ») : fairway pas dessiné dans OSM autour de la balle →
@@ -290,7 +292,8 @@ const CPC = (() => {
   const dropAttendu = (W) => W.coups.findIndex((c) => c.pos === "Zone à pénalité" && !c.drop);
   function recalculer(i) {
     const W = travail(i), G = W.G;
-    W.coups.forEach((c) => { if (c.devine) { const [pos, raison] = deviner(G, c.p); c.pos = pos; c.raison = raison; } if (c.pos !== "Zone à pénalité") c.drop = null; });
+    const D = W.drap || drapeauDe(G);
+    W.coups.forEach((c) => { if (c.devine) { const [pos, raison] = deviner(G, c.p, D); c.pos = pos; c.raison = raison; } if (c.pos !== "Zone à pénalité") c.drop = null; });
     const O = origines(i);
     W.coups.forEach((c, k) => { if (!c.clubMain) c.club = clubPour(metres(G, O[k], c.p), k > 0 && W.coups[k - 1].pos === "Green"); });
     const j = W.coups.findIndex((c) => c.pos === "Dans le trou");
@@ -480,8 +483,8 @@ const CPC = (() => {
     const W = travail(i), G = W.G, C = W.coups, D = drapeauDu(i), m = (a, b) => Math.round(metres(G, a, b));
     if (g.drap) {
       const f = G.green && pointVersFeuille(G, D), der = C.length ? (C[C.length - 1].drop || C[C.length - 1].p) : null;
-      const pos = !f ? "" : f.s == null ? `${f.e} m de l'entrée, hors du green dessiné` : `<b>${f.e} m</b> de l'entrée · ${f.c === "C" ? "<b>centre</b>" : `<b>${f.s} m à ${f.c === "D" ? "droite" : "gauche"}</b>`}`;
-      return `🚩 Drapeau${pos ? " : " + pos : ""}${der ? ` · ${m(der, D)} m de ta balle` : ""}`;
+      const pos = !f ? "" : f.e < 0 ? `<b>${-f.e}\u00a0m devant</b> le green dessiné` : f.s == null ? `${f.e}\u00a0m de l'entrée, hors du green dessiné` : `<b>${f.e} m</b> de l'entrée · ${f.c === "C" ? "<b>centre</b>" : `<b>${f.s} m à ${f.c === "D" ? "droite" : "gauche"}</b>`}`;
+      return `🚩 Drapeau${pos ? " : " + pos : ""}${der ? ` · ${m(der, D)}\u00a0m de ta balle` : ""}`;
     }
     if (g.dep) return `Départ : <b>${m(departDu(i), D)} m</b> du drapeau`;
     if (g.drop != null && C[g.drop]?.drop) return `Drop : <b>${m(C[g.drop].drop, D)} m</b> du drapeau`;
