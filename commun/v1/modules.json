@@ -36,8 +36,8 @@
    "nom": "Entraînement",
    "verbe": "Progresser",
    "couleur": "#b45309",
-   "adresse": null,
-   "etat": "bientot",
+   "adresse": "entrainement/",
+   "etat": "ouvert",
    "icone": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><circle cx=\"12\" cy=\"12\" r=\"5\"/><circle cx=\"12\" cy=\"12\" r=\"1.6\" fill=\"currentColor\"/></svg>",
    "vueJoueur": true
   },
