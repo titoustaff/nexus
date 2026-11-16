@@ -576,12 +576,24 @@ const CPC = (() => {
     const d = b.dataset, i = etat.i;
     if (d.cpcOff) { signaler(d.cpcOff); return true; }
     if (d.cpcMode) { S.mode = d.cpcMode; try { localStorage.setItem("carte-cpc-mode", S.mode); } catch { /* */ } S.sel = null; S.panneau = null; rendreSaisie(); return true; }
-    if (d.aller != null || d.pas != null) { S.sel = null; S.panneau = null; S.details = false; S.vue = null; return false; }   // changement de trou : géré par Carte
+    if (d.aller != null || d.pas != null) {
+      // on quitte un trou dont la balle est sur le green : les putts proposés (déjà comptés dans le score) sont acquis
+      const t = etat.partie.trous[i], C = actif(i) ? travail(i).coups : [];
+      if (C.length && C[C.length - 1].pos === "Green" && !t.puttsVu) { t.puttsVu = true; if (t.putts == null) t.putts = 2; ecrire(i); sauver(); }
+      S.sel = null; S.panneau = null; S.details = false; S.vue = null; return false; }   // changement de trou : géré par Carte
     if (d.cptDetails != null) { S.details = !S.details; S.panneau = null; S.sel = null; rendreSaisie(); return true; }
     if (!actif(i)) return false;
     const W = travail(i), C = W.coups;
-    if (d.cpcZoom != null) { zoomer(+d.cpcZoom); return true; }
-    if (d.cpcFermer != null) { S.panneau = null; S.sel = null; rendreSaisie(); return true; }
+    if (d.cpcZoom != null) { zoomer(+d.cpcZoom, ...pointFixe(i)); return true; }
+    if (d.cpcFermer != null) {
+      // 16/11 (vidéo de l'utilisateur) : « Valider » sur le dernier coup posé sur le green confirme les putts proposés (2 par défaut) ;
+      // avant, il fallait toucher « 2 » alors qu'il était déjà allumé, sinon le trou restait « + putts » et ne se terminait jamais
+      const P = S.panneau, W = travail(i), t = etat.partie.trous[i];
+      const fin = P?.type === "coup" && P.k === W.coups.length - 1 && W.coups[P.k]?.pos === "Green" && !t.puttsVu;
+      S.panneau = null; S.sel = null;
+      if (fin) { t.puttsVu = true; if (t.putts == null) t.putts = 2; ecrire(i); sauver(); }
+      rendreSaisie(); return true;
+    }
     if (d.cpcDeplacer != null) { S.sel = +d.cpcDeplacer; S.panneau = null; rendreSaisie(); signaler(`Fais glisser la balle ${S.sel + 1}, ou touche la photo là où elle a fini.`); return true; }
     if (d.cpcSuppr != null) { C.splice(+d.cpcSuppr, 1); S.sel = null; S.panneau = null; majTrou(i); return true; }
     if (d.cpcOuvrir != null) { S.sel = +d.cpcOuvrir; S.panneau = { type: "coup", k: S.sel }; rendreSaisie(); return true; }
@@ -615,6 +627,13 @@ const CPC = (() => {
   }
   // zoom de la photo seule (pincer, glisser un doigt, boutons + −) : la page ne zoome pas, le volet garde sa taille
   function appliquerVue() { const svg = $("cpc-svg"), v = S.vue; if (svg && v) { svg.setAttribute("viewBox", [v.x, v.y, v.w, v.h].map((n) => n.toFixed(1)).join(" ")); echelle(); } }
+  // boutons + − : la balle choisie (sinon la dernière posée) reste à sa place à l'écran, au lieu du centre de la photo (16/11, vidéo)
+  function pointFixe(i) {
+    const svg = $("cpc-svg"), C = travail(i).coups; if (!svg || !S.vue) return [];
+    const k = S.sel ?? (S.panneau?.type === "coup" ? S.panneau.k : C.length - 1), b = k >= 0 && svg.querySelector(`[data-balle="${k}"]`); if (!b) return [];
+    const r = b.getBoundingClientRect(), R = svg.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+    return x > R.left && x < R.right && y > R.top && y < R.bottom ? versVue(svg, x, y) : [];
+  }
   function zoomer(f, cx, cy) {   // f > 1 : on rapproche ; (cx, cy) : point fixe, en unités de la photo
     const v = S.vue; if (!v) return;
     const [bx, by, bw, bh] = v.base, w = Math.max(bw / 8, Math.min(bw, v.w / f)), k = w / v.w;
