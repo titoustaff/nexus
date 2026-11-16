@@ -502,14 +502,16 @@ const CPC = (() => {
   }
   const quitter = () => { S.details = false; modeTel(false); };
   // nom du score du trou (15/11, demande utilisateur : « bogey » plutôt que seulement « +1 ») et sa couleur (mêmes classes que la grille des trous)
-  const nomEcart = (s, par) => { const d = s - par; return s === 1 ? "trou en 1" : d <= -3 ? "albatros" : d === -2 ? "eagle" : d === -1 ? "birdie" : d === 0 ? "par" : d === 1 ? "bogey" : d === 2 ? "double" : "+" + d; };   // mêmes mots que la saisie classique
-  const classeEcart = (s, par) => { const d = s - par; return d <= -2 ? "sc-aigle" : d === -1 ? "sc-birdie" : d === 0 ? "sc-par" : d === 1 ? "sc-bogey" : "sc-double"; };
+  const nomEcart = (s, par) => { const d = s - par; return s === 1 ? "trou en 1" : d <= -3 ? "albatros" : d === -2 ? "eagle" : d === -1 ? "birdie" : d === 0 ? "par" : d === 1 ? "bogey" : d === 2 ? "double" : d === 3 ? "triple" : "+" + d; };   // mêmes mots que la saisie classique
+  const classeEcart = (s, par) => { const d = s - par; return d <= -2 ? "sc-aigle" : d === -1 ? "sc-birdie" : d === 0 ? "sc-par" : d === 1 ? "sc-bogey" : d === 2 ? "sc-double" : "cpt-triple"; };
   // pastille à droite du titre, comme le score de la saisie classique : coups joués pendant le trou, puis score coloré et son nom une fois le trou fini
   function compteur(i, fini) {
     const t = etat.partie.trous[i], C = travail(i).coups;
-    if (fini && t.score) return `<span class="cpt-coups ${classeEcart(t.score, t.par)}" aria-label="Score du trou : ${t.score}, ${nomEcart(t.score, t.par)}"><b>${t.score}</b><small>${nomEcart(t.score, t.par)}</small></span>`;
-    const pen = t.pen || 0, n = C.length + pen, green = C.length && C[C.length - 1].pos === "Green";
-    return `<span class="cpt-coups cpt-encours" aria-label="${n} coups joués"><b>${n}</b><small>${green ? "+ putts" : pen ? `dont ${pen} pén.` : n > 1 ? "coups" : "coup"}</small></span>`;
+    // 16/11 (demande utilisateur) : le score s'affiche dès que la balle est sur le green (putts proposés compris), plus « 3 + putts »
+    const green = C.length && C[C.length - 1].pos === "Green";
+    if ((fini || green) && t.score) return `<span class="cpt-coups ${classeEcart(t.score, t.par)}" aria-label="Score du trou : ${t.score}, ${nomEcart(t.score, t.par)}"><b>${t.score}</b><small>${nomEcart(t.score, t.par)}</small></span>`;
+    const pen = t.pen || 0, n = C.length + pen;
+    return `<span class="cpt-coups cpt-encours" aria-label="${n} coups joués"><b>${n}</b><small>${pen ? `dont ${pen} pén.` : n > 1 ? "coups" : "coup"}</small></span>`;
   }
   function ecranTel(i, total) {
     const p = etat.partie, t = p.trous[i], W = travail(i), G = W.G, C = W.coups, n = p.trous.length;

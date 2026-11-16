@@ -303,7 +303,7 @@ function rendreSaisie() {
   };
   const scores = [], bas = 1;   // toujours à partir de 1 : trou en un, albatros, eagle…
   for (let s = bas; s <= t.par + 4; s++) scores.push(s);
-  const nomScore = (s) => { const d = s - t.par; return `<b>${s}</b><small>${s === 1 ? "trou en 1" : d <= -3 ? "albatros" : d === -2 ? "eagle" : d === -1 ? "birdie" : d === 0 ? "par" : d === 1 ? "bogey" : d === 2 ? "double" : "+" + d}</small>`; };
+  const nomScore = (s) => { const d = s - t.par; return `<b>${s}</b><small>${s === 1 ? "trou en 1" : d <= -3 ? "albatros" : d === -2 ? "eagle" : d === -1 ? "birdie" : d === 0 ? "par" : d === 1 ? "bogey" : d === 2 ? "double" : d === 3 ? "triple" : "+" + d}</small>`; };
   const cpcV = (html) => (typeof CPC !== "undefined" ? CPC.verrou(etat.i, html) : html);   // coup par coup : champs calculés
   // téléphone en coup par coup (15/11) : écran plein de cpc.js, ce contenu-ci devient le panneau « Détails du trou »
   const tel = typeof CPC !== "undefined" && CPC.plein(etat.i);

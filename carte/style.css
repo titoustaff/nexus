@@ -422,6 +422,7 @@ html.cpt-mode, html.cpt-mode body { overflow: hidden; overscroll-behavior: none;
 .cpt-coups.sc-birdie { background: #c2410c; color: #fff; border-radius: 50%; width: 52px; }
 .cpt-coups.sc-bogey { background: #dbeafe; color: #1e3a8a; }
 .cpt-coups.sc-double { background: #1e3a8a; color: #fff; box-shadow: 0 0 0 2px #fff; }
+.cpt-coups.cpt-triple { background: #111827; color: #fff; box-shadow: 0 0 0 2px #fff; }
 .cpt .cpc-carte { flex: 1; min-height: 0; margin: 6px 8px 0; border-radius: 12px; }
 .cpt .cpc-carte svg { width: 100%; height: 100%; max-height: none; }
 .cpt-volet { flex: none; }
