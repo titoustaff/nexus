@@ -39,7 +39,12 @@ const CPC = (() => {
     if (G.green && dedans(p, G.green)) return ["Green", "contour du green"];
     if (formes(G, "bunker").some((f) => dedans(p, f.p))) return ["Bunker", "contour du bunker"];
     if (formes(G, "water_hazard").some((f) => dedans(p, f.p))) return ["Zone à pénalité", "contour de la zone à pénalité"];
-    if (formes(G, "fairway").some((f) => dedans(p, f.p))) return ["Fairway", "contour du fairway"];
+    const F = formes(G, "fairway");
+    if (F.some((f) => dedans(p, f.p))) return ["Fairway", "contour du fairway"];
+    // 16/11 (3e vidéo : balle au milieu du fairway devinée « Rough ») : fairway pas dessiné dans OSM autour de la balle →
+    // on juge d'après l'écart à la ligne de jeu (un fairway fait 30 à 40 m de large)
+    const pres = F.some((f) => f.p.some((q) => Math.hypot(q[0] - p[0], q[1] - p[1]) * G.mpp < 70));
+    if (!pres) return surLigne(G, p).d * G.mpp <= 16 ? ["Fairway", "fairway non dessiné, balle près de la ligne de jeu"] : ["Rough", "fairway non dessiné, balle loin de la ligne de jeu"];
     return ["Rough", "hors des contours dessinés"];
   }
   // club deviné d'après la distance et le sac du joueur (sac.js, écran « Mon sac »)
@@ -383,17 +388,7 @@ const CPC = (() => {
     const d = Rp.rot(drapeauDu(i)), mat = ech(d[0], d[1], 0, { "data-drapeau": 1, class: "cpc-balle" });
     mat.append(el("circle", { cx: 6, cy: -16, r: 22, fill: "transparent" }), el("line", { x1: 0, y1: 0, x2: 0, y2: -32, stroke: "#fff", "stroke-width": 3 }), el("polygon", { points: "0,-32 20,-26 0,-20", fill: "#e5484d" }));
     svg.append(mat);
-    // position du drapeau au format des feuilles de tournoi, au-dessus du drapeau, mise à jour pendant qu'on le fait glisser (16/11)
-    if (G.green && (W.drap || S.geste?.drap)) {
-      const f = pointVersFeuille(G, drapeauDu(i));
-      if (f) {
-        const v = `${f.e} m${f.s == null ? "" : f.c === "C" ? " · centre" : ` · ${f.s} m à ${f.c === "D" ? "droite" : "gauche"}`}`, lb = ech(d[0], d[1], 0); lb.setAttribute("pointer-events", "none");
-        const w = v.length * 8.6 + 16, bas = d[1] - 72 * unites(svg) < S.vue.y, y0 = bas ? 14 : -66;   // près du haut de la photo : sous le drapeau
-        lb.append(el("rect", { x: -w / 2, y: y0, width: w, height: 24, rx: 8, fill: "rgba(15,23,18,.88)", stroke: "#e5484d", "stroke-width": 1.5 }));
-        const e3 = el("text", { x: 0, y: y0 + 17, "text-anchor": "middle", "font-size": 14, "font-weight": 800, fill: "#fff", "font-family": "inherit" }); e3.textContent = v; lb.append(e3);
-        svg.append(lb);
-      }
-    }
+    // 16/11 : plus d'étiquette « 9 m · 3 m à droite » sur la photo (doublon avec le bandeau du haut, demande utilisateur)
     const O = origines(i), etiquettes = [];
     const txt = (gg, x, y, v, taille, coul) => { const e = el("text", { "text-anchor": "middle", x, y, "font-size": taille, "font-weight": 800, fill: coul, "font-family": "inherit" }); e.textContent = v; gg.append(e); };
     W.coups.forEach((c, k) => {
