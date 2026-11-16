@@ -430,7 +430,7 @@ html.cpt-mode, html.cpt-mode body { overflow: hidden; overscroll-behavior: none;
 .cpt-outils .btn { min-height: 44px; }
 .cpt-fini { flex: 1 1 100%; font-size: 14px; }
 .cpt-volet .pan.volet { position: static; width: auto; max-height: 48dvh; overflow-y: auto; overscroll-behavior: contain; border-radius: 16px 16px 0 0;
-  padding: 10px 12px calc(8px + env(safe-area-inset-bottom)); margin-top: 6px; box-shadow: 0 -8px 24px rgba(0,0,0,.18); animation: volet-monte .16s ease-out; display: block; }
+  padding: 10px 12px calc(8px + env(safe-area-inset-bottom)); margin-top: 6px; box-shadow: 0 -8px 24px rgba(0,0,0,.18); display: block; }
 .cpt-volet .pan.volet .pan-pied { position: sticky; bottom: calc(-8px - env(safe-area-inset-bottom)); margin-top: 8px; flex-wrap: nowrap; }
 .cpt-volet .pan h3 { margin: 6px 0 4px; }
 .cpt-volet .cpc-puces button { min-height: 36px; padding: 4px 9px; }
@@ -440,7 +440,8 @@ html.cpt-mode, html.cpt-mode body { overflow: hidden; overscroll-behavior: none;
 .cpt-volet .cl-ligne { display: contents; }
 .cpt-volet .cl-ligne .cl { flex: none; min-width: 58px; }
 @keyframes volet-monte { from { transform: translateY(30px); opacity: .4; } to { transform: none; opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .cpt-volet .pan.volet { animation: none; } }
+.cpt-volet .pan.volet.anime { animation: volet-monte .16s ease-out; }
+@media (prefers-reduced-motion: reduce) { .cpt-volet .pan.volet.anime { animation: none; } }
 .cpt-details { position: fixed; inset: 0; z-index: 45; overflow-y: auto; overscroll-behavior: contain; background: var(--fond); padding: 10px 14px 24px; touch-action: pan-y; }
 .cpt-details[hidden] { display: none; }
 .cpt-details-tete { position: sticky; top: -10px; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: -10px -14px 8px; padding: 10px 14px; background: var(--fond); border-bottom: 1px solid var(--bord); }

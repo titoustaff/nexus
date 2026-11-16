@@ -363,7 +363,9 @@ const CPC = (() => {
         if (!z) Object.assign(v, { x: base[0], y: base[1], w: base[2], h: base[3] });
         else { v.w = Math.min(base[2], upp * BW); v.h = v.w * base[3] / base[2]; v.x = cx - v.w / 2; v.y = cy - v.h / 2; }
         const pt = S.panneau?.type === "coup" && W.coups[S.panneau.k] ? Rp.rot(W.coups[S.panneau.k].p) : null;
-        if (pt && z && (pt[0] < v.x || pt[0] > v.x + v.w || pt[1] < v.y || pt[1] > v.y + v.h)) { v.x = pt[0] - v.w / 2; v.y = pt[1] - v.h / 2; }
+        // 16/11 (3e vidéo) : balle collée au bord (à moins de 18 % du cadre) → on la recentre aussi, pas seulement hors du cadre
+        const mx = v.w * 0.18, my = v.h * 0.18;
+        if (pt && z && (pt[0] < v.x + mx || pt[0] > v.x + v.w - mx || pt[1] < v.y + my || pt[1] > v.y + v.h - my)) { v.x = pt[0] - v.w / 2; v.y = pt[1] - v.h / 2; }
         borner();
       }
     }
@@ -386,9 +388,9 @@ const CPC = (() => {
       const f = pointVersFeuille(G, drapeauDu(i));
       if (f) {
         const v = `${f.e} m${f.s == null ? "" : f.c === "C" ? " · centre" : ` · ${f.s} m à ${f.c === "D" ? "droite" : "gauche"}`}`, lb = ech(d[0], d[1], 0); lb.setAttribute("pointer-events", "none");
-        const w = v.length * 8.6 + 16;
-        lb.append(el("rect", { x: -w / 2, y: -66, width: w, height: 24, rx: 8, fill: "rgba(15,23,18,.88)", stroke: "#e5484d", "stroke-width": 1.5 }));
-        const e3 = el("text", { x: 0, y: -49, "text-anchor": "middle", "font-size": 14, "font-weight": 800, fill: "#fff", "font-family": "inherit" }); e3.textContent = v; lb.append(e3);
+        const w = v.length * 8.6 + 16, bas = d[1] - 72 * unites(svg) < S.vue.y, y0 = bas ? 14 : -66;   // près du haut de la photo : sous le drapeau
+        lb.append(el("rect", { x: -w / 2, y: y0, width: w, height: 24, rx: 8, fill: "rgba(15,23,18,.88)", stroke: "#e5484d", "stroke-width": 1.5 }));
+        const e3 = el("text", { x: 0, y: y0 + 17, "text-anchor": "middle", "font-size": 14, "font-weight": 800, fill: "#fff", "font-family": "inherit" }); e3.textContent = v; lb.append(e3);
         svg.append(lb);
       }
     }
@@ -557,9 +559,11 @@ const CPC = (() => {
         ${pied(`<button type="button" class="lien" data-cpc-suppr="${k}">Supprimer</button><button type="button" class="btn" data-cpc-deplacer="${k}">Déplacer</button><button type="button" class="btn plein" data-cpc-fermer>Valider</button>`)}`;
         // 15/11 : « Valider » partout ; le trou suivant se choisit ensuite (plus de bascule involontaire au trou suivant)
     }
-    return `<div class="pan volet" id="cpc-panneau" role="dialog" aria-label="Questions du coup">${corps}</div>`;
+    const cle = JSON.stringify(S.panneau), anime = cle !== S.panCle; S.panCle = cle;   // le volet ne monte qu'à l'ouverture, pas à chaque choix
+    return `<div class="pan volet${anime ? " anime" : ""}" id="cpc-panneau" role="dialog" aria-label="Questions du coup">${corps}</div>`;
   }
   function apres(i) {
+    if (!S.panneau) S.panCle = null;
     document.body.style.paddingBottom = "";
     modeTel(plein(i));
     if (!actif(i)) return;
