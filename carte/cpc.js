@@ -39,8 +39,8 @@ const CPC = (() => {
     if (G.green && dedans(p, G.green)) return ["Green", "contour du green"];
     if (formes(G, "bunker").some((f) => dedans(p, f.p))) return ["Bunker", "contour du bunker"];
     if (formes(G, "water_hazard").some((f) => dedans(p, f.p))) return ["Zone à pénalité", "contour de la zone à pénalité"];
-    // 16/11 (4e vidéo) : le drapeau est toujours sur le green, même quand le green OSM est mal dessiné → balle à 5 m au plus = green
-    if (D && Math.hypot(p[0] - D[0], p[1] - D[1]) * G.mpp <= 5) return ["Green", "balle tout près du drapeau"];
+    // 16/11 (4e vidéo) : règle, le drapeau est à 3 m au moins du bord du green → balle à 3 m au plus du drapeau = green, même si le green OSM est mal dessiné
+    if (D && Math.hypot(p[0] - D[0], p[1] - D[1]) * G.mpp <= 3) return ["Green", "balle tout près du drapeau"];
     const F = formes(G, "fairway");
     if (F.some((f) => dedans(p, f.p))) return ["Fairway", "contour du fairway"];
     // 16/11 (3e vidéo : balle au milieu du fairway devinée « Rough ») : fairway pas dessiné dans OSM autour de la balle →
