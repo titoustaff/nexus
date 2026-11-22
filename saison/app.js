@@ -1388,15 +1388,16 @@ function horsCalendrier(an) {
   return R;
 }
 function itemHorsCal(t, mois) {
-  const m = t.m, place = String(m.place || "").replace(/^(\d+)/, "$1ᵉ").replace(/ème|er/, "");
+  const m = t.m, r = resHors(m), place = String(r?.place || m.place || "").replace(/^(\d+)/, "$1ᵉ").replace(/ème|er/, "");
+  const tours = r?.tours?.length ? r.tours : m.tours;
   return `<li class="s-item s-joue passe s-hors">
     <div class="date"><b>${new Date(t.debut + "T12:00").getDate()}</b><span>${MOIS_COURT[mois]}</span></div>
     <div class="s-info">
       <b class="s-nom-hors">${esc(titre(m.nom))}</b>
       <div class="meta">${fmtDate(t.debut)} · <span title="Compétition comptée au Mérite mais hors des circuits fédéraux (Grands Prix, GP Jeunes, Seniors, Mid-Amateurs) : ligue, comité départemental, club, open…">hors circuit fédéral</span>${m.tours?.length ? ` · ${m.tours.length} tour${m.tours.length > 1 ? "s" : ""}` : ""}</div>
       <div class="meta"><span class="tag circuit c-${circuitDeListe(m.liste)}">Mérite ${esc(LISTES_M[m.liste] || "")}</span>${m.cat ? ` · cat. Mérite ${esc(m.cat)}` : ""}</div>
-      <div class="meta obtenu"><b>Place obtenue : ${esc(place || "—")}</b>${m.tours?.length ? ` · ${m.tours.join("-")}` : ""}${m.moy_sss != null && m.tours?.length ? ` (${sg(+m.moy_sss, 1)} vs SSS)` : ""}${m.points != null ? ` · <b>${fx(+m.points, 2)}</b> pts Mérite ${esc(LISTES_M[m.liste] || "")}` : ""}
-        <span class="meta">· d'après le Mérite</span></div>
+      <div class="meta obtenu"><b>Place obtenue : ${esc(place || "—")}${r?.classes ? ` / ${r.classes} classés` : ""}</b>${tours?.length ? ` · ${tours.join("-")}` : ""}${r?.par != null ? ` (${r.par > 0 ? "+" : ""}${r.par})` : m.moy_sss != null && m.tours?.length ? ` (${sg(+m.moy_sss, 1)} vs SSS)` : ""}${m.points != null ? ` · <b>${fx(+m.points, 2)}</b> pts Mérite ${esc(LISTES_M[m.liste] || "")}` : ""}
+        <span class="meta">· ${r ? "résultats ffgolf" + (r.trous ? ", trou par trou dans Mes stats" : "") : "d'après le Mérite"}</span></div>
     </div></li>`;
 }
 const circuitDeListe = (l) => Object.entries(LISTE_DU_CIRCUIT).find(([, x]) => x === l)?.[0] || "gp";
@@ -2003,7 +2004,7 @@ function rendreStats() {
     const t = tournoiDuMerite(m);
     if (t ? circuitDe(t) !== st.circuit : m.liste !== st.liste) continue;
     vus.add(cleM(m));
-    J.push({ date: m.date, nom: m.nom, place: m.place, tours: m.tours || [], m });
+    J.push({ date: m.date, nom: m.nom, place: m.place, tours: m.tours || [], m, rh: t ? null : resHors(m) });
   }
   J.sort((a, b) => a.date.localeCompare(b.date));
   const J12 = J.filter((t) => t.date >= il12), source = `tournois ${LIB}`;
@@ -2104,7 +2105,8 @@ function rendreStats() {
 
   // 1. trou par trou (GP relevés)
   const H = [];
-  for (const r of R) (r.trous || []).forEach((tr, k) => tr && r.pars?.[k] && tr.forEach((s, i) => { const p = r.pars[k][i]; if (s > 0 && p > 0) H.push({ s, p, d: s - p, i, parcours: r.parcours || r.t.golf_nom, tid: r.t.id }); }));
+  const RH = J.filter((j) => j.rh).map((j) => ({ ...j.rh, t: { id: cleHors(j.m), golf_nom: j.rh.parcours || "" } }));
+  for (const r of [...R, ...RH]) (r.trous || []).forEach((tr, k) => tr && r.pars?.[k] && tr.forEach((s, i) => { const p = r.pars[k][i]; if (s > 0 && p > 0) H.push({ s, p, d: s - p, i, parcours: r.parcours || r.t.golf_nom, tid: r.t.id }); }));
   if (H.length) {
     const parType = [3, 4, 5].map((p) => ({ p, v: moyenne(H.filter((x) => x.p === p).map((x) => x.d)), c: H.filter((x) => x.p === p).length })).filter((x) => x.c);
     const rep = [["birdie ou mieux", (d) => d <= -1, "r-bir"], ["par", (d) => d === 0, "r-par"], ["bogey", (d) => d === 1, "r-bog"], ["double ou plus", (d) => d >= 2, "r-dbl"]]
@@ -2177,7 +2179,13 @@ function rendreStats() {
 // ---- carte de score d'un tournoi (06/11) : clic sur une ligne de « Tous les tournois comptés »
 const ICONE_CARTE = `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v16M13 4v16"/></svg>`;
 // résultat relevé par la licence (trou par trou, place) pour une ligne du Mérite
-function scoreDe(m) { const t = tournoiDuMerite(m); const r = t && Saison.resultats?.[t.id]; return r ? { ...r, t } : t ? { t } : null; }
+function scoreDe(m) {
+  const t = tournoiDuMerite(m), r = t ? Saison.resultats?.[t.id] : resHors(m);
+  return r ? { ...r, t } : t ? { t } : null;
+}
+// épreuve du Mérite hors calendrier (ligue, comité, open…) : relevée par le robot sous « res:<id de la page de résultats> » (22/11)
+function cleHors(m) { const i = String(m?.url_res || "").replace(/\/+$/, "").split("/").pop(); return /^\d+$/.test(i) ? "res:" + i : null; }
+function resHors(m) { const k = cleHors(m); return (k && Saison.resultats?.[k]) || null; }
 function carteScore(m) {
   const sc = scoreDe(m) || {}, t = sc.t, sx = (Saison.fiche?.sexe === "D") ? "D" : "H";
   const tours = (sc.tours?.length ? sc.tours : m.tours || []).filter((x) => x > 0), nt = tours.length;
